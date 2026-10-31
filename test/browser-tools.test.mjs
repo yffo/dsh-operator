@@ -149,3 +149,18 @@ test("browser_dom_probe：报告 AppleScript 与 CDP 两个通道状态", async 
 	assert.equal(value.cdp.browser, "Chrome/140");
 	assert.equal(value.browserCdpPort, 9222);
 });
+
+test("browser_dom_snapshot：通道 disabled 不写入失败样本（软不可用）", async (t) => {
+	if (!darwin) return t.diagnostic("skipped: darwin only");
+	const { configureFailureStore, digestFailures } = await import("../lib/failure-store.js");
+	const failDir = join(dir, "failures");
+	configureFailureStore({ dir: failDir });
+	const disabled = () => Promise.resolve({ ok: false, stdout: "", stderr: "通过 AppleScript 执行 JavaScript 的功能已关闭。", error: "" });
+	const tools = setup({ osascript: disabled, config: { failureSamples: true } });
+	const value = await tools.browser_dom_snapshot.execute({}, exec);
+	assert.equal(value.available, false);
+	assert.equal(value.reason, "disabled");
+	const digest = digestFailures({ dir: failDir });
+	assert.equal(digest.total, 0);
+	configureFailureStore({});
+});
