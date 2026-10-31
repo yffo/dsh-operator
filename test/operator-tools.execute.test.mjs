@@ -198,6 +198,45 @@ test("window_move：布局预设按主屏几何计算、回显 layout；非法�
 	assert.match(noGeometry.error, /no display geometry for layout/);
 });
 
+test("window_move：首次 frame 未落地时重试一次并测试 retried 标记", async (t) => {
+	if (!darwin) {
+		t.skip("darwin only");
+		return;
+	}
+	const frames = [];
+	const { tools } = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			setWindowFrame: async (options) => {
+				frames.push(options);
+				return frames.length === 1
+					? { ok: true, windowTitle: "dest", frame: { x: 0, y: 0, width: 920, height: 436 } }
+					: { ok: true, windowTitle: "dest", frame: { x: 50, y: 28, width: 50, height: 172 } };
+			}
+		}
+	});
+	const value = await tools.window_move.execute({ layout: "right-half", window_title: "dest" }, exec);
+	assert.equal(value.ok, true);
+	assert.equal(value.retried, true);
+	assert.deepEqual(frames[1], { pid: 12, frame: { x: 50, y: 28, width: 50, height: 172 }, windowTitle: "dest" });
+	assert.match(tools.window_move.output.render({}, value)[0].text, /frame re-applied after first attempt differed/);
+
+	const singleFrames = [];
+	const single = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			setWindowFrame: async (options) => {
+				singleFrames.push(options);
+				return { ok: true, windowTitle: "dest", frame: { x: 50, y: 28, width: 50, height: 172 } };
+			}
+		}
+	});
+	const once = await single.tools.window_move.execute({ layout: "right-half", window_title: "dest" }, exec);
+	assert.equal(once.retried, undefined);
+	assert.equal(singleFrames.length, 1);
+});
+
+
 test("screenshot_window：attach=true 带图片、attach=false 只给路径、非法参数拒绝", async (t) => {
 	if (!darwin) {
 		t.skip("darwin only");
