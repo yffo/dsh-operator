@@ -156,6 +156,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.5.3** — 修复 AX 坐标空间：多窗口截图时按截图区域（screen.bounds）归一化，避免多窗口时坐标偏移。
 - **0.5.2** — 修复 AX 观察拿不到 pid（`foregroundFromFrontmost` 把 pid 丢了，AX 助手从不运行）。
 - **0.5.1** — 修复 0.5.0 的 AX 文本未进入工具输出：工具结果是 `resultBlocks` 从 screens 重建的，AX 改为挂在观察结果的 `axText` 字段并全链路透传。
 - **0.5.0** — 原生 App 观察附 AX 文本快照（`lib/ax-observer.js` + `lib/bin/ax-snapshot`）：侧栏/按钮/菜单直接给角色、标题、值与 0–1000 位置，Web/Electron 自动退回纯视觉；`Config` 新增 `axObservation` / `axMaxNodes`。

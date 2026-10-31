@@ -1,0 +1,23 @@
+[
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "AX 观察：截图区域变量",
+		"marker": "PATCH(computer-use): ax capture region",
+		"find": "\tconst screens = [];\n\tconst captures = [];\n\tconst persistCapture = options.persistCapture;\n",
+		"replace": "\tconst screens = [];\n\tconst captures = [];\n\tconst persistCapture = options.persistCapture;\n\t// PATCH(computer-use): ax capture region\n\t// 截图可能合并同一 App 的多个窗口；AX 坐标必须按截图区域归一化（screen.bounds）。\n\tlet captureRegion;\n"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "AX 观察：记录本次 capture 区域",
+		"marker": "PATCH(computer-use): ax region assign",
+		"find": "\t\tconst captured = await backend.capture(screen, signal);\n",
+		"replace": "\t\tconst captured = await backend.capture(screen, signal);\n\t\t// PATCH(computer-use): ax region assign\n\t\tcaptureRegion = screen.bounds;\n"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "AX 观察：按截图区域换算坐标",
+		"marker": "PATCH(computer-use): ax region pass",
+		"find": "\tconst axText = await observeAxSnapshot(foreground);\n",
+		"replace": "\t// PATCH(computer-use): ax region pass\n\tconst axText = await observeAxSnapshot(foreground, captureRegion);\n"
+	}
+]

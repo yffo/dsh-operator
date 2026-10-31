@@ -50,6 +50,12 @@ check(!text.includes("窗口外"), "窗口外节点被过滤");
 check(!text.includes("AXGroup"), "无身份的容器节点被过滤");
 check(text.includes("0–1000"), "尾部说明坐标空间");
 
+// 截图区域比窗口大（同一 App 多窗口并集）时，坐标要按截图区域换算。
+const unionText = formatAxSnapshot(sample, { appName: "示例应用" }, { x: 100, y: 100, width: 1600, height: 900 });
+check(unionText.includes('[2] AXButton "显示器" @(313,389)'), "按截图区域归一化（多窗口并集）");
+check(!unionText.includes("窗口外"), "截图区域外的节点仍被过滤");
+check(formatAxSnapshot(sample, { appName: "示例应用" }, { x: 0, y: 0, width: 0, height: 0 }).includes("@(625,417)"), "非法区域退回窗口 frame 归一化");
+
 check(formatAxSnapshot({ nodes: [] }, {}) === undefined, "空节点返回 undefined");
 check(formatAxSnapshot({ windowFrame: sample.windowFrame, nodes: sample.nodes.filter(n => n.role === "AXButton") }, {}) === undefined, "重要节点少于 4 个时返回 undefined");
 

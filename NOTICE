@@ -83,3 +83,8 @@ dsh-operator
   `foregroundFromFrontmost` 时只保留了 appName / windowTitle，pid 被丢掉，
   AX 助手因此从不运行。补丁在 `foregroundFromFrontmost` 里透传 `pid`
   （`scripts/vendor-patches/p3.json`）。
+
+- 0.5.3 修复 AX 坐标空间：观测截图可能合并同一 App 的多个窗口，而 AX 快照
+  之前按前台窗口 frame 归一化，多窗口时坐标与截图坐标空间不一致（模型会点
+  偏）。现在观察结果会带上本次截图区域 `screen.bounds`，AX 坐标按截图区域
+  归一化（`scripts/vendor-patches/p4.json`）。
