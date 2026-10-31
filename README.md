@@ -287,6 +287,8 @@ node scripts/test-shrink.mjs
 
 - **0.14.0** — 策略段加入「Operator protocol」：多应用/登录/长任务先 `task_profile`（complex → `plan_create`+`plan_run` 逐阶段验证，simple 直接做）；优先复用 `skill_*`；浏览器优先 `browser_dom_*`（先 `browser_dom_probe` 探通道）；`operator_status` 作自诊断入口。
 
+- **0.14.1** — `task_profile` 分层改进：多应用（≥2 个 App 线索）+3 动作 + 多个连接词会显著加分，跨应用任务不再误判 simple；新增 2 项回归测试。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）

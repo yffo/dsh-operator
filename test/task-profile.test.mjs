@@ -47,3 +47,14 @@ test("task-profile：返回值结构稳定（tier/profile/estSteps）", () => {
 	assert.equal(result.profile.tier, result.tier);
 	assert.equal(result.estSteps, 3);
 });
+test("task-profile：多应用 + 多动作描述判 complex（0.14.1 回归）", () => {
+	const result = classifyTask("从浏览器复制当前页面地址，打开备忘录记录标题和链接，再在日历创建明天上午的提醒");
+	assert.equal(result.tier, "complex");
+	assert.ok(result.matched.some((entry) => entry.startsWith("apps:")), `matched=${result.matched.join(",")}`);
+	assert.ok(result.matched.some((entry) => entry.startsWith("actions:")), `matched=${result.matched.join(",")}`);
+});
+
+test("task-profile：单应用多动作仍按 standard（不误判 complex）", () => {
+	const result = classifyTask("在备忘录里新建两条记录，保存后回到列表再打开第一条");
+	assert.notEqual(result.tier, "complex");
+});
