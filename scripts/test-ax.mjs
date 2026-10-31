@@ -41,7 +41,7 @@ const sample = {
 
 const text = formatAxSnapshot(sample, { appName: "示例应用", windowTitle: "设置" });
 check(typeof text === "string", "formatAxSnapshot 返回文本");
-check(text.includes('<ax_snapshot app="示例应用" window="设置" nodes="4" truncated="true">'), "头部包含 app/window/nodes/truncated");
+check(text.includes('<ax_snapshot app="示例应用" window="设置" nodes="4" schema_version="1" truncated="true">'), "头部包含 app/window/nodes/schema_version/truncated");
 check(text.includes('[2] AXButton "显示器" @(625,417)'), "按钮标题与 0–1000 坐标换算正确");
 check(text.includes('value="内建显示器"'), "静态文本以 value 呈现");
 check(text.includes("[4] AXSecureTextField"), "安全输入框保留但值不外泄");
@@ -49,6 +49,7 @@ check(!text.includes("AXMenuBarItem"), "菜单栏节点被过滤");
 check(!text.includes("窗口外"), "窗口外节点被过滤");
 check(!text.includes("AXGroup"), "无身份的容器节点被过滤");
 check(text.includes("0–1000"), "尾部说明坐标空间");
+check(text.includes('schema_version="1"'), "头部带 schema_version=1（P2 契约版本）");
 
 // 截图区域比窗口大（同一 App 多窗口并集）时，坐标要按截图区域换算。
 const unionText = formatAxSnapshot(sample, { appName: "示例应用" }, { x: 100, y: 100, width: 1600, height: 900 });
@@ -56,6 +57,8 @@ check(unionText.includes('[2] AXButton "显示器" @(313,389)'), "按截图区�
 check(!unionText.includes("窗口外"), "截图区域外的节点仍被过滤");
 check(formatAxSnapshot(sample, { appName: "示例应用" }, { x: 0, y: 0, width: 0, height: 0 }).includes("@(625,417)"), "非法区域退回窗口 frame 归一化");
 
+check(formatAxSnapshot(sample, { appName: "示例应用" }, { x: 100, y: 100, width: 1600, height: 900 }, 20) === undefined, "浅树阈值：保留节点数 < axMinNodes 时返回 undefined");
+check(formatAxSnapshot(sample, { appName: "示例应用" }, { x: 100, y: 100, width: 1600, height: 900 }, 4) !== undefined, "浅树阈值：节点数达到阈值时正常返回");
 check(formatAxSnapshot({ nodes: [] }, {}) === undefined, "空节点返回 undefined");
 check(formatAxSnapshot({ windowFrame: sample.windowFrame, nodes: sample.nodes.filter(n => n.role === "AXButton") }, {}) === undefined, "重要节点少于 4 个时返回 undefined");
 

@@ -88,3 +88,33 @@ dsh-operator
   之前按前台窗口 frame 归一化，多窗口时坐标与截图坐标空间不一致（模型会点
   偏）。现在观察结果会带上本次截图区域 `screen.bounds`，AX 坐标按截图区域
   归一化（`scripts/vendor-patches/p4.json`）。
+
+- 0.6.0 补齐审计剩余项（本仓库代码，vendored 仅接线）：
+  - `lib/operator-tools.js` 注册三个扩展工具：`list_windows`（CGWindowList 窗口 +
+    NSScreen 显示器 + 前台 App）、`screenshot_window`（screencapture -l 单窗口）、
+    `verify_state`（window_title / frontmost_app / app_running / ax_text /
+    ax_element 谓词轮询，只返回事实，不带截图）。
+  - `lib/macos-query.js` 调 AX 助手 `--list-windows`（200ms 缓存）；
+    `lib/audit-log.js` 写无内容审计日志（脱敏：标量/数量/耗时，不含标题、
+    坐标、输入文本、剪贴板；5MB 轮转）。
+  - `lib/ax-observer.js` 增加 `schema_version="1"` 与浅 AX 树阈值 `axMinNodes`
+    （默认 16；Electron/Web 浅树不再附带）。
+  - `Config` 新增 `axMinNodes`、`auditLog`；`apply()` 接线
+    `configureAuditLog` / `registerOperatorTools`，`recapture` 记
+    `audit("action", ...)`。以上补丁在 `scripts/vendor-patches/p5.json`。
+  - 扩展工具与 AX 只在 macOS 注册；Windows 仅保留 vendored 基础工具。
+
+- 0.6.1 修复 0.6.0 加载失败：`screenshot_window` 输出 schema 里的嵌套 `image`
+  object 少了 `additionalProperties`，DSH 的 schema 编译器抛
+  `JsonSchemaError: unsupported JSON schema:
+  schema.properties.image.additionalProperties must be explicitly true or false`，
+  插件 apply 整体失败、所有 GUI 工具消失。补上后三个扩展工具都能用真实
+  `defineTool` 注册；`test-operator.mjs` 增加「每个 object 必须显式
+  additionalProperties」的递归断言，防止同类回归。
+
+- 0.6.2 修正浅 AX 树阈值：0.6.0/0.6.1 用「原始 AX 节点数」判断，而原始树里
+  有大量被格式化过滤掉的容器/菜单节点（Harness 原始 30+、实际保留 13），
+  导致 Electron/Web 的浅树仍被附带。现在按格式化后真正保留的节点数判断，
+  低于 `axMinNodes`（默认 16）不附；`formatAxSnapshot` 增加可选第 4 参数
+  `minimumNodes`，`test-ax.mjs` 增加对应断言。
+

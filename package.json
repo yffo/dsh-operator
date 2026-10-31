@@ -1,61 +1,63 @@
 {
-  "name": "dsh-operator",
-  "version": "0.5.3",
-  "description": "给每个 DSH 会话一双手：全局 Computer Use——13 个桌面 GUI 工具 + 后台 code_agent，观察截图自动降 token，原生 App 附 AX 文本快照，动作结果带结构化校验（confirmed / suspected_noop / unverifiable）",
-  "type": "module",
-  "main": "index.js",
-  "exports": {
-    ".": "./index.js",
-    "./code-agent": "./lib/computer-use/code-agent.js",
-    "./code-agent-registry": "./lib/computer-use/code-agent-registry.js",
-    "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "index.js",
-    "lib",
-    "cordis.patch.yml",
-    "README.md",
-    "LICENSE",
-    "NOTICE",
-    "scripts"
-  ],
-  "scripts": {
-    "build:ax": "bash scripts/build-ax-helper.sh",
-    "test:ax": "node scripts/test-ax.mjs",
-    "test:shrink": "node scripts/test-shrink.mjs",
-    "check:p0": "node scripts/check-p0.mjs"
-  },
-  "keywords": [
-    "dsh",
-    "deepseek-harness",
-    "computer-use",
-    "desktop",
-    "gui",
-    "agent",
-    "plugin"
-  ],
-  "homepage": "https://github.com/yffo/dsh-operator#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/yffo/dsh-operator.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yffo/dsh-operator/issues"
-  },
-  "license": "MIT",
-  "author": "yffto (https://github.com/yffo)；上游 dsh-orb 作者 mini-yifan",
-  "dependencies": {
-    "zod": "^3.25.76"
-  },
-  "engines": {
-    "node": ">=22.18.0",
-    "dsh": ">=0.2.1-rc.2 <0.3.0"
-  },
-  "dsh": {
-    "manifestVersion": 1,
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    }
-  }
+	"name": "dsh-operator",
+	"version": "0.6.2",
+	"description": "给每个 DSH 会话一双手：全局 Computer Use——13 个桌面 GUI 工具 + 后台 code_agent，观察截图自动降 token，原生 App 附 AX 文本快照，动作结果带结构化校验，另有 list_windows / screenshot_window / verify_state 与无内容审计日志",
+	"type": "module",
+	"main": "index.js",
+	"exports": {
+		".": "./index.js",
+		"./code-agent": "./lib/computer-use/code-agent.js",
+		"./code-agent-registry": "./lib/computer-use/code-agent-registry.js",
+		"./cordis.patch.yml": "./cordis.patch.yml",
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"index.js",
+		"lib",
+		"cordis.patch.yml",
+		"README.md",
+		"LICENSE",
+		"NOTICE",
+		"scripts"
+	],
+	"scripts": {
+		"build:ax": "bash scripts/build-ax-helper.sh",
+		"test:ax": "node scripts/test-ax.mjs",
+		"test:shrink": "node scripts/test-shrink.mjs",
+		"check:p0": "node scripts/check-p0.mjs",
+		"test:operator": "node scripts/test-operator.mjs",
+		"test": "node scripts/test-shrink.mjs && node scripts/test-ax.mjs && node scripts/test-operator.mjs"
+	},
+	"keywords": [
+		"dsh",
+		"deepseek-harness",
+		"computer-use",
+		"desktop",
+		"gui",
+		"agent",
+		"plugin"
+	],
+	"homepage": "https://github.com/yffo/dsh-operator#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/yffo/dsh-operator.git"
+	},
+	"bugs": {
+		"url": "https://github.com/yffo/dsh-operator/issues"
+	},
+	"license": "MIT",
+	"author": "yffto (https://github.com/yffo)；上游 dsh-orb 作者 mini-yifan",
+	"dependencies": {
+		"zod": "^3.25.76"
+	},
+	"engines": {
+		"node": ">=22.18.0",
+		"dsh": ">=0.2.1-rc.2 <0.3.0"
+	},
+	"dsh": {
+		"manifestVersion": 1,
+		"bundle": {
+			"patch": "./cordis.patch.yml"
+		}
+	}
 }

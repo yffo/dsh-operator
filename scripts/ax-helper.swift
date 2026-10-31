@@ -1,7 +1,11 @@
-// dsh-operator AX snapshot helper（P1-6）
+// dsh-operator macOS helper（P1-6 / P1-8 / P2 多屏标注）
 //
-// 用 macOS Accessibility API 读一份“最小取证”的 AX 树：只取有 frame 的节点，
-// 输出 JSON（节点上限与深度由参数控制），供 Node 侧转成模型可读的文本快照。
+// 两个模式：
+//   ax-snapshot --pid <pid> [--max-nodes N] [--max-depth N]
+//       读一份“最小取证”的 AX 树，输出 JSON（节点上限/深度由参数控制）。
+//   ax-snapshot --list-windows [--pid <pid>]
+//       输出显示器列表 + 可视窗口列表（CGWindowList）+ 前台 App。用于 list_windows 工具。
+//
 // 编译：scripts/build-ax-helper.sh（xcrun swiftc -O）
 
 import AppKit
@@ -29,6 +33,31 @@ struct Output: Codable {
     let windowTitle: String?
     let windowFrame: Frame?
     let nodes: [Node]
+    let truncated: Bool
+}
+
+struct DisplayInfo: Codable {
+    let index: Int
+    let primary: Bool
+    let scale: Double
+    let bounds: Frame
+}
+
+struct WindowInfo: Codable {
+    let pid: Int32
+    let app: String
+    let title: String
+    let windowID: Int
+    let layer: Int
+    let onScreen: Bool
+    let bounds: Frame
+}
+
+struct WindowListOutput: Codable {
+    let frontmostPid: Int32
+    let frontmostApp: String
+    let displays: [DisplayInfo]
+    let windows: [WindowInfo]
     let truncated: Bool
 }
 
@@ -84,30 +113,135 @@ func valueAttribute(_ element: AXUIElement, role: String) -> String? {
     return trimmed
 }
 
+// MARK: - 窗口 / 显示器
+
+/// 系统自己的“窗口”：列出来只会干扰模型。
+let systemWindowOwners: Set<String> = [
+    "Window Server", "Dock", "Control Center", "Spotlight", "Notification Center",
+    "SystemUIServer", "TextInputMenuAgent", "TextInputSwitcher", "com.apple.notificationcenterui"
+]
+
+/// Cocoa 坐标（左下原点）换成 CG 坐标（左上原点）。
+func cgFrame(_ rect: NSRect, primaryHeight: CGFloat) -> Frame {
+    Frame(
+        x: Double(rect.origin.x),
+        y: Double(primaryHeight - rect.origin.y - rect.height),
+        width: Double(rect.width),
+        height: Double(rect.height)
+    )
+}
+
+func displayList() -> [DisplayInfo] {
+    let screens = NSScreen.screens
+    let primaryHeight = screens.first?.frame.height ?? 0
+    return screens.enumerated().map { index, screen in
+        DisplayInfo(
+            index: index,
+            primary: index == 0,
+            scale: Double(screen.backingScaleFactor),
+            bounds: cgFrame(screen.frame, primaryHeight: primaryHeight)
+        )
+    }
+}
+
+func windowList(pidFilter: Int32, limit: Int) -> WindowListOutput {
+    let raw = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]) ?? []
+    var windows: [WindowInfo] = []
+    var truncated = false
+    let ownPid = Int32(ProcessInfo.processInfo.processIdentifier)
+    for entry in raw {
+        if windows.count >= limit {
+            truncated = true
+            break
+        }
+        guard let pid = entry[kCGWindowOwnerPID as String] as? Int32 else { continue }
+        if pid == 0 || pid == ownPid { continue }
+        if pidFilter > 0 && pid != pidFilter { continue }
+        let layer = entry[kCGWindowLayer as String] as? Int ?? 0
+        if layer > 25 { continue }
+        let owner = entry[kCGWindowOwnerName as String] as? String ?? ""
+        if systemWindowOwners.contains(owner) { continue }
+        guard let boundsRaw = entry[kCGWindowBounds as String] as? [String: CGFloat],
+              let rect = CGRect(dictionaryRepresentation: boundsRaw as CFDictionary) else { continue }
+        if rect.width < 80 || rect.height < 40 { continue }
+        let windowID = entry[kCGWindowNumber as String] as? Int ?? 0
+        if windowID <= 0 { continue }
+        let title = entry[kCGWindowName as String] as? String ?? ""
+        windows.append(WindowInfo(
+            pid: pid,
+            app: owner,
+            title: String(title.prefix(120)),
+            windowID: windowID,
+            layer: layer,
+            onScreen: (entry[kCGWindowIsOnscreen as String] as? Bool) ?? true,
+            bounds: Frame(
+                x: Double(rect.minX),
+                y: Double(rect.minY),
+                width: Double(rect.width),
+                height: Double(rect.height)
+            )
+        ))
+    }
+    windows.sort { left, right in
+        if left.layer != right.layer { return left.layer < right.layer }
+        if left.pid != right.pid { return left.pid < right.pid }
+        return left.windowID < right.windowID
+    }
+    let frontmost = NSWorkspace.shared.frontmostApplication
+    return WindowListOutput(
+        frontmostPid: frontmost?.processIdentifier ?? 0,
+        frontmostApp: frontmost?.localizedName ?? "",
+        displays: displayList(),
+        windows: windows,
+        truncated: truncated
+    )
+}
+
 func main() -> Int32 {
     let arguments = CommandLine.arguments
     var pid: Int32 = 0
+    var pidFilter: Int32 = 0
     var maxNodes = 120
     var maxDepth = 12
+    var listWindowsMode = false
     var index = 1
     while index < arguments.count {
         switch arguments[index] {
         case "--pid":
             index += 1
-            pid = Int32(arguments[index]) ?? 0
+            let value = Int32(arguments[index]) ?? 0
+            pid = value
+            pidFilter = value
         case "--max-nodes":
             index += 1
             maxNodes = max(1, Int(arguments[index]) ?? 120)
         case "--max-depth":
             index += 1
             maxDepth = max(1, Int(arguments[index]) ?? 12)
+        case "--list-windows":
+            listWindowsMode = true
         default:
             break
         }
         index += 1
     }
+
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.withoutEscapingSlashes]
+
+    if listWindowsMode {
+        let output = windowList(pidFilter: pidFilter, limit: 200)
+        guard let data = try? encoder.encode(output) else {
+            FileHandle.standardError.write(Data("ax-snapshot: failed to encode window list\n".utf8))
+            return 4
+        }
+        FileHandle.standardOutput.write(data)
+        FileHandle.standardOutput.write(Data("\n".utf8))
+        return 0
+    }
+
     guard pid > 0 else {
-        FileHandle.standardError.write(Data("ax-snapshot: --pid is required\n".utf8))
+        FileHandle.standardError.write(Data("ax-snapshot: --pid is required (or --list-windows)\n".utf8))
         return 2
     }
     if AXIsProcessTrusted() == false {
@@ -167,8 +301,6 @@ func main() -> Int32 {
         nodes: nodes,
         truncated: truncated
     )
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.withoutEscapingSlashes]
     guard let data = try? encoder.encode(output) else {
         FileHandle.standardError.write(Data("ax-snapshot: failed to encode output\n".utf8))
         return 4

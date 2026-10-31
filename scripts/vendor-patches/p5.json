@@ -1,0 +1,37 @@
+[
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "import operator tools + audit",
+		"marker": "import { registerOperatorTools } from \"../operator-tools.js\";",
+		"find": "// PATCH(computer-use): ax observer import\nimport { observeAxSnapshot, configureAxObservation } from \"../ax-observer.js\";\n",
+		"replace": "// PATCH(computer-use): ax observer import\nimport { observeAxSnapshot, configureAxObservation } from \"../ax-observer.js\";\n// PATCH(computer-use): import operator tools\nimport { registerOperatorTools } from \"../operator-tools.js\";\nimport { audit, configureAuditLog } from \"../audit-log.js\";\n"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "config: axMinNodes + auditLog",
+		"marker": "axMinNodes: z.number().default(16)",
+		"find": "\taxMaxNodes: z.number().default(120)\n});",
+		"replace": "\taxMaxNodes: z.number().default(120),\n\t// PATCH(computer-use): config operator tools\n\taxMinNodes: z.number().default(16),\n\tauditLog: z.boolean().default(true)\n});"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "resolve: axMinNodes + auditLog",
+		"marker": "axMinNodes: Math.min(400",
+		"find": "\t\taxMaxNodes: Math.min(400, requireFiniteNonNegative(config.axMaxNodes ?? 120, \"axMaxNodes\"))\n\t};",
+		"replace": "\t\taxMaxNodes: Math.min(400, requireFiniteNonNegative(config.axMaxNodes ?? 120, \"axMaxNodes\")),\n\t\t// PATCH(computer-use): resolve operator tools\n\t\taxMinNodes: Math.min(400, requireFiniteNonNegative(config.axMinNodes ?? 16, \"axMinNodes\")),\n\t\tauditLog: config.auditLog !== false\n\t};"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "recapture: audit action",
+		"marker": "audit(\"action\", { settleMs",
+		"find": "\treturn {\n\t\tscreens: [...observation.screens],\n\t\tforeground: compactForeground(observation.foreground),\n\t\tcaptures: [...observation.captures],\n\t\t// PATCH(computer-use): recapture ax\n\t\t...observation.axText === void 0 ? {} : { axText: observation.axText },\n\t\tactionEffect: effect.actionEffect,\n\t\t...effect.note === void 0 ? {} : { note: effect.note }\n\t};",
+		"replace": "\tconst result = {\n\t\tscreens: [...observation.screens],\n\t\tforeground: compactForeground(observation.foreground),\n\t\tcaptures: [...observation.captures],\n\t\t// PATCH(computer-use): recapture ax\n\t\t...observation.axText === void 0 ? {} : { axText: observation.axText },\n\t\tactionEffect: effect.actionEffect,\n\t\t...effect.note === void 0 ? {} : { note: effect.note }\n\t};\n\t// PATCH(computer-use): audit action\n\taudit(\"action\", { settleMs, effect: effect.actionEffect, screens: result.screens.length, ax: observation.axText === void 0 ? 0 : 1, captures: result.captures.length });\n\treturn result;"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "apply: audit + operator tools",
+		"marker": "registerOperatorTools(ctx, resolvedConfig",
+		"find": "\t// PATCH(computer-use): apply ax\n\tconfigureAxObservation({\n\t\tenabled: resolvedConfig.axObservation,\n\t\tmaxNodes: resolvedConfig.axMaxNodes\n\t});\n\tapplyComputerUse(ctx, withCaptureDownscale(desktopBackend(ctx, createPlatformBackend(process.platform, excludedRegionCapture)), resolvedConfig), resolvedConfig);",
+		"replace": "\t// PATCH(computer-use): apply ax\n\tconfigureAxObservation({\n\t\tenabled: resolvedConfig.axObservation,\n\t\tmaxNodes: resolvedConfig.axMaxNodes,\n\t\tminNodes: resolvedConfig.axMinNodes\n\t});\n\t// PATCH(computer-use): apply audit + operator tools\n\tconfigureAuditLog({ enabled: resolvedConfig.auditLog });\n\tconst desktop = withCaptureDownscale(desktopBackend(ctx, createPlatformBackend(process.platform, excludedRegionCapture)), resolvedConfig);\n\tregisterOperatorTools(ctx, resolvedConfig, { backend: desktop, defineTool, AttachmentId });\n\taudit(\"plugin_start\", { platform: process.platform, ax: resolvedConfig.axObservation, audit: resolvedConfig.auditLog });\n\tapplyComputerUse(ctx, desktop, resolvedConfig);"
+	}
+]

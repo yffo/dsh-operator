@@ -34,6 +34,7 @@
 | 键盘 | `input_text`（可替换原内容、回车提交）、`hotkey` |
 | 等待 | `wait`、`long_wait` |
 | 应用 / 文件 | `list_apps`、`open_app`、`open_in_browser`、`open_in_finder` |
+| 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图） |
 | 后台会话 | `code_agent`、`code_agent_status`、`code_agent_stop` |
 
 每次工具调用后自动附带新的前台窗口截图，坐标用 0–1000 归一化（Retina / 多倍屏都按比例，不是像素）。
@@ -84,6 +85,8 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 | `jpegQuality` | `80` | 缩放后 JPEG 质量。`100` 表示不重编码（仍会缩放） |
 | `axObservation` | `true` | 原生 App 观察时是否附 AX 文本快照；设 `false` 退回纯视觉 |
 | `axMaxNodes` | `120` | AX 快照节点上限（20–400）。越大信息越全，token 越多 |
+| `axMinNodes` | `16` | 浅 AX 树阈值：节点数少于它就不附 AX 文本（Electron / Web 通常只有十几个节点） |
+| `auditLog` | `true` | 写无内容审计日志到 `~/.dsh/dsh-operator/audit.jsonl`（事件名 / 数量 / 布尔 / 耗时，不含截图、坐标、标题、输入文本） |
 
 ## 安全
 
@@ -94,10 +97,10 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 ## 已知限制
 
-- **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证；Linux 不提供 GUI 操作。
-- **多屏 / 混合 DPI**：截图取「前台 App 窗口 union」，跨屏或缩放不一致时可能裁错（上游 dsh-orb issue #38），本插件未修。
+- **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 快照只在 macOS 注册；Linux 不提供 GUI 操作。
+- **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
 - **纯视觉定位**：UI 变化、遮挡、动画过渡会导致定位失败；校验提示只能减少浪费，不能保证成功。适合可重复、可验收的操作。
-- **AX 只覆盖原生 App**：AX 树在 AppKit 原生应用里好用（系统设置、访达、备忘录、预览等），Electron / Web 应用（Chrome、Harness、微信）树很浅或不可见，会自动退回纯视觉。AX 助手是预编译的 macOS 二进制；换架构/平台需要 `pnpm run build:ax` 重新编译（需要 Xcode Command Line Tools）。
+- **AX 只覆盖原生 App**：AX 树在 AppKit 原生应用里好用（系统设置、访达、备忘录、预览等），Electron / Web 应用（Chrome、Harness、微信）树很浅或不可见，少于 `axMinNodes`（默认 16）时自动不附、退回纯视觉。AX 助手是预编译的 macOS 二进制；换架构/平台需要 `pnpm run build:ax` 重新编译（需要 Xcode Command Line Tools）。
 - **首次授权**：屏幕录制 / 辅助功能需要用户手动在系统设置里允许；未授权时截图与输入都会失败。
 - 上游代码按「照搬 + 幂等补丁」维护，上游大改时 `sync-from-orb.sh` 可能需要跟着调锚点。
 
@@ -121,18 +124,26 @@ dsh-operator/
 │   ├── capture-downscale.js    # 截图缩放 / 重编码（本仓库代码）
 │   ├── policy-slim.js          # 精简策略提示词（本仓库代码）
 │   ├── ax-observer.js          # AX 文本快照格式化 / 降级（本仓库代码）
+│   ├── macos-query.js          # 窗口 / 显示器查询（调 AX 助手 --list-windows）
+│   ├── audit-log.js            # 无内容审计日志（脱敏 + 5MB 轮转）
+│   ├── operator-tools.js       # 扩展工具：list_windows / screenshot_window / verify_state
 │   ├── bin/ax-snapshot         # 预编译 AX 助手（macOS arm64）
 │   └── computer-use/           # vendored：上游 dsh-orb dist/computer-use
 └── scripts/
     ├── apply-vendor-patches.mjs # 幂等补丁器（--check 只检查；补丁在 vendor-patches/*.json）
     ├── vendor-patches/p0.json   # 0.4.0 P0 补丁集
     ├── vendor-patches/p1.json   # 0.5.0 AX 观察补丁集
+    ├── vendor-patches/p2.json   # 0.5.1 axText 透传
+    ├── vendor-patches/p3.json   # 0.5.2 pid 透传
+    ├── vendor-patches/p4.json   # 0.5.3 截图区域归一化
+    ├── vendor-patches/p5.json   # 0.6.0 扩展工具 / 审计 / 浅 AX 阈值接线
     ├── sync-from-orb.sh         # 从 npm 同步上游 dist/computer-use 并重打补丁
     ├── ax-helper.swift          # AX 助手源码（build-ax-helper.sh 编译）
     ├── build-ax-helper.sh       # 编译 AX 助手到 lib/bin/ax-snapshot
     ├── check-p0.mjs             # P0 冒烟检查（策略体积、字段、补丁幂等）
     ├── test-shrink.mjs          # 截图缩放冒烟测试
-    └── test-ax.mjs              # AX 快照格式化 / 降级测试
+    ├── test-ax.mjs              # AX 快照格式化 / 降级测试
+    └── test-operator.mjs        # 扩展工具 / 审计日志测试
 ```
 
 > 本地开发提示：`dsh plugin add file:...` 会把包装成硬链接。若用会替换 inode 的编辑器改文件
@@ -148,6 +159,8 @@ node scripts/apply-vendor-patches.mjs --check   # 幂等性
 node scripts/test-shrink.mjs                    # 13 项断言
 node scripts/check-p0.mjs                       # P0 冒烟检查
 node scripts/test-ax.mjs                        # AX 快照 / 降级测试
+node scripts/test-operator.mjs                  # 扩展工具 / 审计日志测试
+npm test                                        # 上面三套测试一起跑
 ./scripts/build-ax-helper.sh                    # 重新编译 AX 助手（macOS）
 bash -n scripts/sync-from-orb.sh
 ```
@@ -161,11 +174,13 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.6.2** — 修正浅 AX 树阈值：改为按格式化后实际保留的节点数判断（原来按原始节点数，Electron/Web 浅树仍会被附带）。
+- **0.6.1** — 修复 0.6.0 的加载失败（`screenshot_window` 输出 schema 的嵌套 `image` object 缺 `additionalProperties`，DSH schema 编译器直接拒绝，插件整体不加载）；`test-operator.mjs` 加同类 schema 形状断言。
+- **0.6.0** — 补齐审计剩余项：`list_windows`（窗口/显示器/前台 App，多屏显式标注）、`screenshot_window`（按窗口截图，绕开多窗口并集）、`verify_state`（谓词轮询：window_title / frontmost_app / app_running / ax_text / ax_element，只返回事实）、无内容审计日志 `~/.dsh/dsh-operator/audit.jsonl`、AX 文本带 `schema_version=1`、浅 AX 树阈值 `axMinNodes`（默认 16）。
 - **0.5.3** — 修复 AX 坐标空间：多窗口截图时按截图区域（screen.bounds）归一化，避免多窗口时坐标偏移。
 - **0.5.2** — 修复 AX 观察拿不到 pid（`foregroundFromFrontmost` 把 pid 丢了，AX 助手从不运行）。
 - **0.5.1** — 修复 0.5.0 的 AX 文本未进入工具输出：工具结果是 `resultBlocks` 从 screens 重建的，AX 改为挂在观察结果的 `axText` 字段并全链路透传。
 - **0.5.0** — 原生 App 观察附 AX 文本快照（`lib/ax-observer.js` + `lib/bin/ax-snapshot`）：侧栏/按钮/菜单直接给角色、标题、值与 0–1000 位置，Web/Electron 自动退回纯视觉；`Config` 新增 `axObservation` / `axMaxNodes`。
-- **0.4.1** — 修复 0.4.0 的 schema 回归（`screens[].image.required: false` 在 DSH schema 里非法，导致插件加载即失败、GUI 工具全部消失）；`check-p0.mjs` 增加回归断言。
 - **0.4.1** — 修复 0.4.0 的 schema 回归（`screens[].image.required: false` 在 DSH schema 里非法，导致插件加载即失败、GUI 工具全部消失）；`check-p0.mjs` 增加回归断言。
 - **0.4.0** — 按源码审计落地 P0：策略提示词 8.4KB → 3.9KB、截图存储失败降级为纯文本观察、跨屏窗口 `clipped` 元数据、结构化 `actionEffect`、工具名冲突检测。
 - **0.3.2** — 修复 `open_app` 激活已运行 App：JXA 没有 `activateWithOptions_` 桥接、中文显示名 `open -a` 也找不到，改走 `open -b <bundleId>`。
@@ -178,7 +193,9 @@ node scripts/test-shrink.mjs
 ## 路线图
 
 - 用 5 类真实任务（Finder、系统设置、浏览器、办公 App、多步跨应用）记录成功率 / token / 耗时的基线。
-- AX 树文本观察（省 token 又提精度）、zoom 局部放大、历史截图轮转、多屏 DPI 修正。
+- zoom 局部放大、历史截图轮转、多屏 DPI 修正（`list_windows` 已给出显示器 bounds/scale，剩下是截图侧）。
+- P1-10：AXPress 后台投递（只读 AX 已可用，动作仍走 HID）。
+- Windows 侧验证与做厚（当前仅 vendored 基础工具）。
 
 ## 上游与许可
 
