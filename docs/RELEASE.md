@@ -30,6 +30,9 @@ npm run release -- 0.16.0 --yes --install
 5. `git add package.json` + commit `release: vX`；
 6. `git tag -a vX` + `git push origin main --tags`；
 7. `--install`：`dsh plugin --profile desktop remove/add file:<repo>`，再跑 `scripts/doctor.mjs`。
+   ⚠️ pnpm 的 `file:` 依赖会复用旧内容（新文件缺失/旧文件残留）：装完必须再同步一次再校验——
+   `rsync -a --delete --exclude .git --exclude node_modules --exclude test --exclude docs --exclude bench --exclude archive --exclude .github <repo>/ ~/.dsh/profiles/desktop/node_modules/dsh-operator/`
+   然后逐文件 `cmp`（至少 index.js / package.json / lib/operator-tools.js / lib/computer-use/index.js / client/client.js）。
 
 ## 发版后
 
