@@ -34,7 +34,7 @@
 | 键盘 | `input_text`（可替换原内容、回车提交）、`hotkey` |
 | 等待 | `wait`、`long_wait` |
 | 应用 / 文件 | `list_apps`、`open_app`、`open_in_browser`、`open_in_finder` |
-| 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图）、`ax_press` / `ax_set_value`（按 AX 快照 index 后台点按/写入）、`ax_scroll`（AX 滚动区域，可给 index 或按 role/title 自动选容器；原生动作优先、不支持时提窗滚轮回退）、`ax_menu`（菜单路径触发）、`zoom_region`（局部原生放大） |
+| 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图）、`ax_press` / `ax_set_value`（按 AX 快照 index 后台点按/写入）、`ax_scroll`（AX 滚动区域，可给 index 或按 role/title 自动选容器；原生动作优先、不支持时提窗滚轮回退）、`ax_menu`（菜单路径触发）、`window_move`（按 pid/标题后台移动/缩放窗口，AXPosition/AXSize）、`zoom_region`（局部原生放大） |
 | 后台会话 | `code_agent`、`code_agent_status`、`code_agent_stop` |
 
 每次工具调用后自动附带新的前台窗口截图，坐标用 0–1000 归一化（Retina / 多倍屏都按比例，不是像素）。
@@ -312,6 +312,8 @@ node scripts/test-shrink.mjs
 - **0.18.2** — 修 `cu_observe` 入参必填串味：合并成员工具的 `required` 被带进并集，导致 `windows/screenshot` 也强制要 `window_id/kind`；改为合并后全部可选，必填按 action 在 `requiredByAction` 校验。
 
 - **0.20.0** — 加载预检固化：新增 `scripts/preflight.mjs`（`npm run preflight`）——在**隔离的临时 DSH_HOME** 里用 headless profile 真实引导插件，`JsonSchemaError`/`plugin apply failed` 等加载错误直接判失败；`release` 流程在测试后自动跑预检（`--skip-preflight` 可跳过，dsh 缺失时自动 skip）。起因：0.10.5 / 0.17.0 / 0.18.0 三次加载问题都是重启后才暴露。`npm test` 164 项。
+
+- **0.21.0** — 新增 `window_move`：AXPosition/AXSize 后台移动/缩放原生窗口（按 `pid` 或 `window_title` 定位，不抢前台、不动光标；先 size 后 position，适配 Finder 的位置夹取）。用途：把两个窗口摆成并排后再做跨窗拖拽/对照操作（L2-05 的前置能力）。`npm test` 164 项。
 
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 

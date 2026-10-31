@@ -355,6 +355,13 @@ struct ScrollOutput: Codable {
 let resolvedNote = "index drifted; re-resolved by role/title"
 
 
+struct SetFrameOutput: Codable {
+    let ok: Bool
+    let windowTitle: String?
+    let frame: Frame?
+    let error: String?
+}
+
 struct MenuOutput: Codable {
     let ok: Bool
     let path: [String]
@@ -452,6 +459,8 @@ func main() -> Int32 {
     var scrollPage = false
     var setValueIndex: Int? = nil
     var setValueText: String? = nil
+    var setFrameText: String? = nil
+    var setFrameTitle: String? = nil
     var menuPath: [String]? = nil
     var expectRole: String? = nil
     var expectTitle: String? = nil
@@ -485,6 +494,12 @@ func main() -> Int32 {
         case "--set-value":
             index += 1
             setValueIndex = Int(arguments[index])
+        case "--set-frame":
+            index += 1
+            setFrameText = arguments[index]
+        case "--set-frame-title":
+            index += 1
+            setFrameTitle = arguments[index]
         case "--value":
             index += 1
             setValueText = arguments[index]
@@ -532,6 +547,30 @@ func main() -> Int32 {
     }
 
     let app = AXUIElementCreateApplication(pid)
+
+    // 移动/缩放 native 窗口（AXPosition/AXSize，不抢前台、不动光标）
+    if let frameText = setFrameText {
+        let parts = frameText.split(separator: ",").map { Double($0.trimmingCharacters(in: .whitespaces)) ?? Double.nan }
+        guard parts.count == 4, parts.allSatisfy({ $0.isFinite }) else {
+            return emit(encoder, SetFrameOutput(ok: false, windowTitle: nil, frame: nil, error: "frame must be \"x,y,width,height\" (4 numbers)"))
+        }
+        let windows = windowListOf(app: app)
+        guard windows.isEmpty == false else {
+            return emit(encoder, SetFrameOutput(ok: false, windowTitle: nil, frame: nil, error: "no AX window found for pid \(pid)"))
+        }
+        var target = windows[0]
+        if let wanted = setFrameTitle {
+            guard let match = windows.first(where: { axTitleOf($0).contains(wanted) }) else {
+                return emit(encoder, SetFrameOutput(ok: false, windowTitle: nil, frame: nil, error: "no window title matching \"\(wanted)\""))
+            }
+            target = match
+        }
+        let title = axTitleOf(target)
+        if let failure = setFrameOf(target, x: parts[0], y: parts[1], width: parts[2], height: parts[3]) {
+            return emit(encoder, SetFrameOutput(ok: false, windowTitle: title, frame: axFrameOf(target), error: failure))
+        }
+        return emit(encoder, SetFrameOutput(ok: true, windowTitle: title, frame: axFrameOf(target), error: nil))
+    }
 
     // 后台写原生文本框的值（不经过剪贴板/键盘）
     if let target = setValueIndex {
@@ -704,6 +743,59 @@ func main() -> Int32 {
     FileHandle.standardOutput.write(data)
     FileHandle.standardOutput.write(Data("\n".utf8))
     return 0
+}
+
+// MARK: - 窗口移动/缩放（AXPosition/AXSize）
+//
+// 只改位置/尺寸，不抢前台：先按标题（可选）在 app 的窗口列表里找目标，
+// 找不到标题就用第一个窗口；设置后回读 frame 作为事实。
+
+func windowListOf(app: AXUIElement) -> [AXUIElement] {
+    var value: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &value) == .success,
+          let windows = value as? [AXUIElement] else { return [] }
+    return windows
+}
+
+func axTitleOf(_ element: AXUIElement) -> String {
+    var value: CFTypeRef?
+    if AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &value) == .success,
+       let title = value as? String {
+        return title
+    }
+    return ""
+}
+
+func axFrameOf(_ element: AXUIElement) -> Frame? {
+    var positionValue: CFTypeRef?
+    var sizeValue: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionValue) == .success,
+          AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeValue) == .success,
+          let position = positionValue, let size = sizeValue else { return nil }
+    var point = CGPoint.zero
+    var cgSize = CGSize.zero
+    guard AXValueGetValue(position as! AXValue, .cgPoint, &point),
+          AXValueGetValue(size as! AXValue, .cgSize, &cgSize) else { return nil }
+    return Frame(x: Double(point.x), y: Double(point.y), width: Double(cgSize.width), height: Double(cgSize.height))
+}
+
+func setFrameOf(_ element: AXUIElement, x: Double, y: Double, width: Double, height: Double) -> String? {
+    var point = CGPoint(x: x, y: y)
+    var cgSize = CGSize(width: width, height: height)
+    // 先尺寸后位置：部分 App（Finder）在尺寸变化时会把位置夹回原处，顺序反过来更稳。
+    if let sizeValue = AXValueCreate(.cgSize, &cgSize) {
+        let status = AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, sizeValue)
+        if status != .success { return "failed to set AXSize (\(status.rawValue))" }
+    } else {
+        return "failed to create CGSize AXValue"
+    }
+    if let positionValue = AXValueCreate(.cgPoint, &point) {
+        let status = AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, positionValue)
+        if status != .success { return "failed to set AXPosition (\(status.rawValue))" }
+    } else {
+        return "failed to create CGPoint AXValue"
+    }
+    return nil
 }
 
 func emit<T: Codable>(_ encoder: JSONEncoder, _ value: T) -> Int32 {

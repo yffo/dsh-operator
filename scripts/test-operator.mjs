@@ -79,7 +79,7 @@ const fakeCtx = {
 };
 registerOperatorTools(fakeCtx, { axMaxNodes: 120, failureSamples: false }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
-check(registered.length === 24, "注册二十四个扩展工具");
+check(registered.length === 25, "注册二十五个扩展工具");
 check(
 	names.includes("list_windows") &&
 		names.includes("screenshot_window") &&
@@ -88,6 +88,7 @@ check(
 		names.includes("ax_scroll") &&
 		names.includes("ax_set_value") &&
 		names.includes("ax_menu") &&
+		names.includes("window_move") &&
 		names.includes("zoom_region"),
 	"工具名齐全"
 );
