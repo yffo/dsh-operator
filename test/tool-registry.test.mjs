@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { hasTool, mergeToolRegistries, registryNames } from "../lib/tool-registry.js";
 import { registerOperatorTools, registerV2Tools } from "../lib/operator-tools.js";
+import { mergeParameters, parameterSpecs } from "../lib/tool-surface.js";
 
 function forkDefs() {
 	return new Map([
@@ -99,6 +100,41 @@ test("registerV2Tools 注册 cu_observe：action 枚举、输出并集、分派�
 	const value = await cuObserve.execute({ action: "screenshot" }, {});
 	assert.deepEqual(value, { schemaVersion: 1 });
 	await assert.rejects(() => cuObserve.execute({ action: "nope" }, {}), /unknown action/);
+});
+
+test("mergeParameters 兼容 defineTool 编译后的 JSON Schema 形态（0.17.1 回归）", () => {
+	// 真实宿主里 defineTool 返回的 definition.parameters 是 JSON Schema：
+	// { type: "object", properties: {...}, required: [...] }，不能把 type/properties 当成参数名
+	const compiled = {
+		definition: {
+			parameters: {
+				type: "object",
+				properties: { pid: { type: "integer", description: "process id" }, attach: { type: "boolean" } },
+				required: ["pid"],
+				additionalProperties: false
+			}
+		}
+	};
+	const legacy = { definition: { parameters: { limit: { type: "number", required: false, description: "max" } } } };
+	const specs = parameterSpecs(compiled.definition);
+	assert.deepEqual(Object.keys(specs).sort(), ["attach", "pid"]);
+	assert.equal(specs.pid.required, true);
+	assert.equal(specs.attach.required, void 0, "DSL 不接受 required:false");
+	const { properties } = mergeParameters([compiled, legacy]);
+	assert.deepEqual(Object.keys(properties).sort(), ["attach", "limit", "pid"]);
+	assert.equal(properties.type, void 0);
+	assert.equal(properties.properties, void 0);
+	const cu = registerV2Tools({
+		handle: {
+			handlers: new Map(),
+			buildRegistry: () => new Map([["screenshot", { execute: async () => ({}) }], ["list_windows", { definition: compiled.definition, execute: async () => ({}) }], ["screenshot_window", { definition: { parameters: { window_id: { type: "string", required: true } } }, execute: async () => ({}) }], ["zoom_region", { definition: { parameters: { x: { type: "number", required: true } } }, execute: async () => ({}) }], ["verify_state", { definition: { parameters: { kind: { type: "string", required: true } } }, execute: async () => ({}) }]]),
+			registerExtra: () => {}
+		},
+		defineTool: (definition) => definition
+	});
+	assert.ok(cu.parameters.pid !== void 0);
+	assert.ok(cu.parameters.window_id !== void 0);
+	assert.equal(cu.parameters.type, void 0, "参数映射里不应混入 JSON Schema 的顶层键");
 });
 
 test("registerV2Tools 在缺少 fork 工具时抛错（注册表不完整要快速暴露）", { skip: process.platform !== "darwin" }, () => {
