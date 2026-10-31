@@ -61,6 +61,14 @@ struct WindowListOutput: Codable {
     let truncated: Bool
 }
 
+struct PressOutput: Codable {
+    let pressed: Bool
+    let index: Int
+    let role: String
+    let title: String
+    let error: String?
+}
+
 func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
     var value: CFTypeRef?
     let error = AXUIElementCopyAttributeValue(element, name as CFString, &value)
@@ -204,6 +212,9 @@ func main() -> Int32 {
     var maxNodes = 120
     var maxDepth = 12
     var listWindowsMode = false
+    var pressIndex: Int? = nil
+    var expectRole: String? = nil
+    var expectTitle: String? = nil
     var index = 1
     while index < arguments.count {
         switch arguments[index] {
@@ -220,6 +231,15 @@ func main() -> Int32 {
             maxDepth = max(1, Int(arguments[index]) ?? 12)
         case "--list-windows":
             listWindowsMode = true
+        case "--press":
+            index += 1
+            pressIndex = Int(arguments[index])
+        case "--expect-role":
+            index += 1
+            expectRole = arguments[index]
+        case "--expect-title":
+            index += 1
+            expectTitle = arguments[index]
         default:
             break
         }
@@ -259,6 +279,70 @@ func main() -> Int32 {
     }
     let windowTitle = window.flatMap { stringAttribute($0, kAXTitleAttribute) }
     let windowFrame = window.flatMap { frameAttribute($0) }
+
+    // AXPress 后台投递：按快照里的节点 index 重新遍历（索引语义与快照一致），
+    // 命中后先校验 role/title 期望，再对元素直接发 AXPress（不动光标、不抢焦点）。
+    if let target = pressIndex {
+        var validCount = 0
+        var found: AXUIElement? = nil
+        var foundRole = ""
+        var foundTitle = ""
+        var explored = 0
+        var pressStack: [(element: AXUIElement, depth: Int)] = [(app, 0)]
+        while pressStack.isEmpty == false && explored < 20000 {
+            explored += 1
+            let current = pressStack.removeLast()
+            let element = current.element
+            let role = stringAttribute(element, kAXRoleAttribute) ?? ""
+            if !role.isEmpty, frameAttribute(element) != nil {
+                if validCount == target {
+                    found = element
+                    foundRole = role
+                    let rawTitle = stringAttribute(element, kAXTitleAttribute) ?? ""
+                    let rawDescription = stringAttribute(element, kAXDescriptionAttribute) ?? ""
+                    foundTitle = rawTitle.isEmpty ? rawDescription : rawTitle
+                    break
+                }
+                validCount += 1
+            }
+            if current.depth < maxDepth {
+                let childElements = children(of: element)
+                for child in childElements.reversed() {
+                    pressStack.append((child, current.depth + 1))
+                }
+            }
+        }
+        var pressed = false
+        var error: String? = nil
+        if found == nil {
+            error = "element not found (index out of range)"
+        } else if let role = expectRole, foundRole != role {
+            error = "role mismatch: expected \(role), got \(foundRole)"
+        } else if let needle = expectTitle, foundTitle.contains(needle) == false {
+            error = "title mismatch: expected to contain \"\(needle)\""
+        } else {
+            let result = AXUIElementPerformAction(found!, kAXPressAction as CFString)
+            if result == .success {
+                pressed = true
+            } else {
+                error = "AXPress failed (AXError \(result.rawValue))"
+            }
+        }
+        let output = PressOutput(
+            pressed: pressed,
+            index: target,
+            role: foundRole,
+            title: String(foundTitle.prefix(100)),
+            error: error
+        )
+        guard let data = try? encoder.encode(output) else {
+            FileHandle.standardError.write(Data("ax-snapshot: failed to encode press output\n".utf8))
+            return 4
+        }
+        FileHandle.standardOutput.write(data)
+        FileHandle.standardOutput.write(Data("\n".utf8))
+        return 0
+    }
 
     var nodes: [Node] = []
     var truncated = false

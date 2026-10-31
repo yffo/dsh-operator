@@ -118,3 +118,11 @@ dsh-operator
   低于 `axMinNodes`（默认 16）不附；`formatAxSnapshot` 增加可选第 4 参数
   `minimumNodes`，`test-ax.mjs` 增加对应断言。
 
+- 0.7.0 新增：
+  - P1-10 `ax_press` 工具：按 `<ax_snapshot>` 的节点 index 对原生控件后台触发
+    AXPress（不动光标、不抢焦点，先校验 role/title 再按，拒绝过期/错位节点）；
+    Swift 助手新增 `--press/--expect-role/--expect-title` 模式。
+  - P1-9 合并一次观察里的两次 JXA：`listScreens` 与 `inspectForeground` 共用
+    250ms 前台缓存（backend 补丁 p6.json），每步省 100–200ms。
+  - 工具面：list_windows / screenshot_window / verify_state / ax_press 四个扩展工具。
+

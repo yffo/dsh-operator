@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * 0.6.0 扩展工具自检：
+ * 0.7.0 扩展工具自检：
  * - verify_state 的谓词评估（纯参数校验分支 + 未知 kind）
  * - audit-log 的脱敏/截断/开关/写盘格式
- * - registerOperatorTools 注册面（list_windows / screenshot_window / verify_state）
+ * - registerOperatorTools 注册面（list_windows / screenshot_window / verify_state / ax_press）
  * - 依赖窗口助手的分支在无 helper 时优雅降级
  *
  * 用法：node scripts/test-operator.mjs
@@ -79,8 +79,14 @@ const fakeCtx = {
 };
 registerOperatorTools(fakeCtx, { axMaxNodes: 120 }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
-check(registered.length === 3, "注册三个扩展工具");
-check(names.includes("list_windows") && names.includes("screenshot_window") && names.includes("verify_state"), "工具名齐全");
+check(registered.length === 4, "注册四个扩展工具");
+check(
+	names.includes("list_windows") &&
+		names.includes("screenshot_window") &&
+		names.includes("verify_state") &&
+		names.includes("ax_press"),
+	"工具名齐全"
+);
 const verify = registered.find((tool) => tool.name === "verify_state");
 check(
 	verify !== undefined && Object.keys(verify.parameters).length >= 10 && Array.isArray(verify.parameters.kind.enum) && verify.parameters.kind.enum.length === 5,

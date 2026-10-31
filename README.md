@@ -174,6 +174,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.7.0** — 新增 `ax_press`（后台 AXPress，按快照 index 命中并校验 role/title）；合并一次观察里的两次 JXA（前台缓存，每步省 100–200ms）。
 - **0.6.2** — 修正浅 AX 树阈值：改为按格式化后实际保留的节点数判断（原来按原始节点数，Electron/Web 浅树仍会被附带）。
 - **0.6.1** — 修复 0.6.0 的加载失败（`screenshot_window` 输出 schema 的嵌套 `image` object 缺 `additionalProperties`，DSH schema 编译器直接拒绝，插件整体不加载）；`test-operator.mjs` 加同类 schema 形状断言。
 - **0.6.0** — 补齐审计剩余项：`list_windows`（窗口/显示器/前台 App，多屏显式标注）、`screenshot_window`（按窗口截图，绕开多窗口并集）、`verify_state`（谓词轮询：window_title / frontmost_app / app_running / ax_text / ax_element，只返回事实）、无内容审计日志 `~/.dsh/dsh-operator/audit.jsonl`、AX 文本带 `schema_version=1`、浅 AX 树阈值 `axMinNodes`（默认 16）。
