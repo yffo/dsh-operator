@@ -96,7 +96,11 @@ test("browser-dom：DevToolsActivePort 解析", () => {
 	assert.equal(parseDevToolsActivePort("not-a-port\nx"), null);
 });
 
-test("browser-dom：CDP 连接在 Node 22+ 可用（类型自检，不连网）", async () => {
-	assert.equal(typeof WebSocket, "function", "Node 应内置 WebSocket");
+test("browser-dom：CDP 连接在 Node 22+ 可用（类型自检，不连网）", async (t) => {
+	if (typeof WebSocket !== "function") {
+		t.diagnostic(`skipped: Node ${process.version} 无全局 WebSocket（CI 的 Node 20 正常）`);
+		await assert.rejects(() => cdpConnect("ws://127.0.0.1:1/x"), /WebSocket unavailable/);
+		return;
+	}
 	await assert.rejects(() => cdpConnect("ws://127.0.0.1:1/devtools/browser/none"), /CDP connect failed|ECONNREFUSED|error/i);
 });
