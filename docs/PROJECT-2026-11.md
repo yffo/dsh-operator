@@ -293,6 +293,13 @@ v2 做两件事：
 - ✅ GitHub Actions CI（macos-14 × Node 20/22：build helper + npm test）
 - ⏳ 运行态生效：`failureSamples` 是 JS 改动，需重启 App；重启后 `doctor`/`failures` 走一遍即算验收
 
+## 8.3 0.11.1 交付状态
+
+- 浏览器 DOM 通道：`lib/browser-dom.js`（AppleScript 后端 + CDP 后端、probe/snapshot/click/fill、错误提示 `APPLESCRIPT_DISABLED_HINT`），`scripts/browser-spike.mjs` 真机通过（headless 临时 profile：读页 → 点按钮 → 校验 before/after，跑完清理）。
+- 测试补缺：`test/guard-fuzz.test.mjs`（500 轮热键 + 300 轮危险标题 fuzz）、`test/audit-rotation.test.mjs`（脱敏/轮转/开关，轮转阈值可注入）、`test/browser-dom.test.mjs`（转义/probe 三态/脚本构造/DevToolsActivePort/CDP 类型自检）；`npm test` 105 项全绿，失败样本目录不再被测试污染。
+- 已知限制：AppleScript JS 默认被 Chrome 关闭（需用户一次性开菜单开关「查看 → 开发者 → 允许 Apple 事件中的 JavaScript」）；CDP 路径要求独立 profile，暂无法复用日常 Chrome 登录态（0.11.2 做 profile 复用与登录接力）。
+- 下一步（0.11.2）：把 DOM 能力包成 `browser` 工具族 + 技能库录制/回放，并在 guard 里加浏览器动作分类。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972
