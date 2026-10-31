@@ -10,6 +10,7 @@
 //   ax-snapshot --pid <pid> --set-value <index> --value <文本> [--expect-role R]
 //       直接写原生文本框的值（AXTextField/AXTextArea/AXComboBox/AXSearchField），不经过剪贴板。
 //   ax-snapshot --pid <pid> --menu <路径，用 / 分隔> [--menu-item 段]...
+//   ax-snapshot --pid <pid> --scroll <index> --direction up|down|left|right [--page] [--expect-role R] [--expect-title T]
 //       后台点菜单路径（如 "文件/新建"）。
 //
 // 编译：scripts/build-ax-helper.sh（xcrun swiftc -O）
@@ -249,6 +250,47 @@ func findNodeIndexed(app: AXUIElement, target: Int, maxDepth: Int) -> FoundNode?
     return nil
 }
 
+/// 索引漂移兜底：按 role + title 在新鲜树里重定位（要求唯一命中）。
+func findNodeByIdentity(app: AXUIElement, role: String?, title: String?, maxDepth: Int, target: Int, maxDistance: Int = 16) -> FoundNode? {
+    // 索引漂移是常态（观察与动作之间树会变）。按 role/title 在新鲜树里重新定位：
+    // 取“节点索引与旧 index 最近”的唯一候选，距离超过 maxDistance 视为不可信，宁可失败。
+    var best: (node: FoundNode, distance: Int)? = nil
+    var validCount = 0
+    var explored = 0
+    var stack: [(element: AXUIElement, depth: Int)] = [(app, 0)]
+    while stack.isEmpty == false && explored < 20000 {
+        explored += 1
+        let current = stack.removeLast()
+        let element = current.element
+        let nodeRole = stringAttribute(element, kAXRoleAttribute) ?? ""
+        var nodeIndex = -1
+        if !nodeRole.isEmpty, frameAttribute(element) != nil {
+            nodeIndex = validCount
+            validCount += 1
+        }
+        if nodeIndex >= 0 {
+            let rawTitle = stringAttribute(element, kAXTitleAttribute) ?? ""
+            let rawDescription = stringAttribute(element, kAXDescriptionAttribute) ?? ""
+            let nodeTitle = rawTitle.isEmpty ? rawDescription : rawTitle
+            let roleOk = role == nil || nodeRole == role!
+            let titleOk = title == nil || nodeTitle.contains(title!)
+            if roleOk && titleOk && !(role == nil && title == nil) {
+                let distance = abs(nodeIndex - target)
+                if best == nil || distance < best!.distance {
+                    best = (FoundNode(element: element, role: nodeRole, title: nodeTitle), distance: distance)
+                }
+            }
+        }
+        if current.depth < maxDepth {
+            for child in children(of: element).reversed() {
+                stack.append((child, current.depth + 1))
+            }
+        }
+    }
+    guard let candidate = best, candidate.distance <= maxDistance else { return nil }
+    return candidate.node
+}
+
 // MARK: - 输出结构（新增模式）
 
 struct SetValueOutput: Codable {
@@ -256,8 +298,22 @@ struct SetValueOutput: Codable {
     let index: Int
     let role: String
     let title: String
+    let resolved: String?
     let error: String?
 }
+
+struct ScrollOutput: Codable {
+    let ok: Bool
+    let index: Int
+    let role: String
+    let direction: String
+    let page: Bool
+    let resolved: String?
+    let error: String?
+}
+
+let resolvedNote = "index drifted; re-resolved by role/title"
+
 
 struct MenuOutput: Codable {
     let ok: Bool
@@ -309,6 +365,38 @@ func pressMenuPath(app: AXUIElement, path: [String]) -> MenuOutput {
     return MenuOutput(ok: true, path: path, error: nil)
 }
 
+// MARK: - 滚动回退：CGEvent scroll wheel 投递到目标进程
+
+func cgScrollFallback(element: AXUIElement, app: AXUIElement, pid: Int32, direction: String, page: Bool, target: Int, role: String) -> ScrollOutput? {
+    guard let frame = frameAttribute(element) else { return nil }
+    let horizontal = direction == "left" || direction == "right"
+    let step: Int32 = page ? 10 : 3
+    let positive = direction == "up" || direction == "left"
+    let delta = positive ? step : -step
+    guard let event = CGEvent(
+        scrollWheelEvent2Source: nil,
+        units: .line,
+        wheelCount: 1,
+        wheel1: horizontal ? 0 : delta,
+        wheel2: horizontal ? delta : 0,
+        wheel3: 0
+    ) else { return nil }
+    let center = CGPoint(x: frame.x + frame.width / 2, y: frame.y + frame.height / 2)
+    event.location = center
+    // 滚轮事件多数 App 只认前台：需要先把目标 App/窗口提到前台（工具描述需写明）。
+    if let windowValue = attribute(app, kAXFocusedWindowAttribute) {
+        let window = windowValue as! AXUIElement
+        _ = AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+    }
+    if let running = NSRunningApplication(processIdentifier: pid) {
+        running.activate(options: [.activateIgnoringOtherApps])
+    }
+    usleep(200_000)
+    event.post(tap: .cghidEventTap)
+    usleep(60_000)
+    return ScrollOutput(ok: true, index: target, role: role, direction: direction, page: page, resolved: nil, error: nil)
+}
+
 // MARK: - 主入口
 
 func main() -> Int32 {
@@ -319,6 +407,9 @@ func main() -> Int32 {
     var maxDepth = 12
     var listWindowsMode = false
     var pressIndex: Int? = nil
+    var scrollIndex: Int? = nil
+    var scrollDirection = "down"
+    var scrollPage = false
     var setValueIndex: Int? = nil
     var setValueText: String? = nil
     var menuPath: [String]? = nil
@@ -343,6 +434,14 @@ func main() -> Int32 {
         case "--press":
             index += 1
             pressIndex = Int(arguments[index])
+        case "--scroll":
+            index += 1
+            scrollIndex = Int(arguments[index])
+        case "--direction":
+            index += 1
+            scrollDirection = arguments[index].lowercased()
+        case "--page":
+            scrollPage = true
         case "--set-value":
             index += 1
             setValueIndex = Int(arguments[index])
@@ -400,23 +499,65 @@ func main() -> Int32 {
             FileHandle.standardError.write(Data("ax-snapshot: --value is required with --set-value\n".utf8))
             return 2
         }
-        guard let found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth) else {
-            return emit(encoder, SetValueOutput(ok: false, index: target, role: "", title: "", error: "element not found (index out of range)"))
+        var found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth)
+        var resolved = false
+        if found == nil || (expectRole != nil && found!.role != expectRole!) || (expectTitle != nil && found!.title.contains(expectTitle!) == false) {
+            if expectRole != nil || expectTitle != nil, let redo = findNodeByIdentity(app: app, role: expectRole, title: expectTitle, maxDepth: maxDepth, target: target) {
+                found = redo
+                resolved = true
+            }
         }
-        if let role = expectRole, found.role != role {
-            return emit(encoder, SetValueOutput(ok: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "role mismatch: expected \(role), got \(found.role)"))
+        guard let foundNode = found else {
+            return emit(encoder, SetValueOutput(ok: false, index: target, role: "", title: "", resolved: nil, error: "element not found (index out of range)"))
         }
-        if textRoles.contains(found.role) == false {
-            return emit(encoder, SetValueOutput(ok: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "role \(found.role) is not a text field"))
+        if let role = expectRole, foundNode.role != role {
+            return emit(encoder, SetValueOutput(ok: false, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), resolved: nil, error: "role mismatch: expected \(role), got \(foundNode.role)"))
         }
-        let result = AXUIElementSetAttributeValue(found.element, kAXValueAttribute as CFString, text as CFString)
+        if textRoles.contains(foundNode.role) == false {
+            return emit(encoder, SetValueOutput(ok: false, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), resolved: nil, error: "role \(foundNode.role) is not a text field"))
+        }
+        let result = AXUIElementSetAttributeValue(foundNode.element, kAXValueAttribute as CFString, text as CFString)
         let output: SetValueOutput
         if result == .success {
-            output = SetValueOutput(ok: true, index: target, role: found.role, title: String(found.title.prefix(100)), error: nil)
+            output = SetValueOutput(ok: true, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), resolved: resolved ? resolvedNote : nil, error: nil)
         } else {
-            output = SetValueOutput(ok: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "AXSetValue failed (AXError \(result.rawValue))")
+            output = SetValueOutput(ok: false, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), resolved: nil, error: "AXSetValue failed (AXError \(result.rawValue))")
         }
         return emit(encoder, output)
+    }
+
+
+    // AX 原生滚动：对 AXScrollArea（或支持滚动动作的元素）发 page/line 滚动动作
+    if let target = scrollIndex {
+        var found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth)
+        if found == nil || (expectRole != nil && found!.role != expectRole!) {
+            if expectRole != nil || expectTitle != nil, let redo = findNodeByIdentity(app: app, role: expectRole, title: expectTitle, maxDepth: maxDepth, target: target) {
+                found = redo
+            }
+        }
+        guard let foundNode = found else {
+            return emit(encoder, ScrollOutput(ok: false, index: target, role: "", direction: scrollDirection, page: scrollPage, resolved: nil, error: "element not found (index out of range)"))
+        }
+        let actions: [String: (page: String, line: String)] = [
+            "down": ("AXScrollDownByPage", "AXScrollDown"),
+            "up": ("AXScrollUpByPage", "AXScrollUp"),
+            "left": ("AXScrollLeftByPage", "AXScrollLeft"),
+            "right": ("AXScrollRightByPage", "AXScrollRight")
+        ]
+        guard let pair = actions[scrollDirection] else {
+            return emit(encoder, ScrollOutput(ok: false, index: target, role: foundNode.role, direction: scrollDirection, page: scrollPage, resolved: nil, error: "direction must be up/down/left/right"))
+        }
+        let actionName = scrollPage ? pair.page : pair.line
+        let result = AXUIElementPerformAction(foundNode.element, actionName as CFString)
+        if result == .success {
+            return emit(encoder, ScrollOutput(ok: true, index: target, role: foundNode.role, direction: scrollDirection, page: scrollPage, resolved: nil, error: nil))
+        }
+        // AXScrollArea 在部分 App（如 Finder 图标视图）不支持 AX 滚动动作，
+        // 回退为把 scroll wheel 事件直接投递到目标进程（仍不移动光标/不抢焦点）。
+        if let fallback = cgScrollFallback(element: foundNode.element, app: app, pid: pid, direction: scrollDirection, page: scrollPage, target: target, role: foundNode.role) {
+            return emit(encoder, fallback)
+        }
+        return emit(encoder, ScrollOutput(ok: false, index: target, role: foundNode.role, direction: scrollDirection, page: scrollPage, resolved: nil, error: "AXScroll failed (AXError \(result.rawValue)) and no scrollable frame for fallback"))
     }
 
     // 后台按路径点菜单
@@ -427,19 +568,25 @@ func main() -> Int32 {
     // AXPress 后台投递：按快照里的节点 index 重新遍历（索引语义与快照一致），
     // 命中后先校验 role/title 期望，再对元素直接发 AXPress（不动光标、不抢焦点）。
     if let target = pressIndex {
-        guard let found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth) else {
+        var found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth)
+        if found == nil || (expectRole != nil && found!.role != expectRole!) || (expectTitle != nil && found!.title.contains(expectTitle!) == false) {
+            if expectRole != nil || expectTitle != nil, let redo = findNodeByIdentity(app: app, role: expectRole, title: expectTitle, maxDepth: maxDepth, target: target) {
+                found = redo
+            }
+        }
+        guard let foundNode = found else {
             return emit(encoder, PressOutput(pressed: false, index: target, role: "", title: "", error: "element not found (index out of range)"))
         }
-        if let role = expectRole, found.role != role {
-            return emit(encoder, PressOutput(pressed: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "role mismatch: expected \(role), got \(found.role)"))
+        if let role = expectRole, foundNode.role != role {
+            return emit(encoder, PressOutput(pressed: false, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), error: "role mismatch: expected \(role), got \(foundNode.role)"))
         }
-        if let needle = expectTitle, found.title.contains(needle) == false {
-            return emit(encoder, PressOutput(pressed: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "title mismatch: expected to contain \"\(needle)\""))
+        if let needle = expectTitle, foundNode.title.contains(needle) == false {
+            return emit(encoder, PressOutput(pressed: false, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), error: "title mismatch: expected to contain \"\(needle)\""))
         }
-        let result = AXUIElementPerformAction(found.element, kAXPressAction as CFString)
+        let result = AXUIElementPerformAction(foundNode.element, kAXPressAction as CFString)
         let output = result == .success
-            ? PressOutput(pressed: true, index: target, role: found.role, title: String(found.title.prefix(100)), error: nil)
-            : PressOutput(pressed: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "AXPress failed (AXError \(result.rawValue))")
+            ? PressOutput(pressed: true, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), error: nil)
+            : PressOutput(pressed: false, index: target, role: foundNode.role, title: String(foundNode.title.prefix(100)), error: "AXPress failed (AXError \(result.rawValue))")
         return emit(encoder, output)
     }
 

@@ -374,3 +374,27 @@ test("ax_menu：成功、危险路径需 confirm", async (t) => {
 	const allowed = await tools.ax_menu.execute({ path: "文件/删除", confirm: true }, exec);
 	assert.equal(allowed.ok, true);
 });
+
+test("ax_scroll：成功路径透传参数，失败原样报错", async (t) => {
+	if (!darwin) return t.skip("darwin only");
+	const calls = [];
+	const { tools } = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			scrollAx: async (args) => {
+				calls.push(args);
+				if (args.direction === "left") return { ok: false, index: args.index, error: "scroll failed" };
+				return { ok: true, index: args.index, role: "AXScrollArea", direction: args.direction, page: args.page === true, resolved: "index drifted" };
+			}
+		}
+	});
+	const value = await tools.ax_scroll.execute({ index: 2, direction: "down", page: true, expect_role: "AXScrollArea" }, exec);
+	assert.equal(value.ok, true);
+	assert.equal(value.direction, "down");
+	assert.equal(value.page, true);
+	assert.deepEqual(calls[0], { pid: 12, index: 2, direction: "down", page: true, expectRole: "AXScrollArea", expectTitle: undefined });
+
+	const failed = await tools.ax_scroll.execute({ index: 3, direction: "left" }, exec);
+	assert.equal(failed.ok, false);
+	assert.match(failed.error, /scroll failed/);
+});

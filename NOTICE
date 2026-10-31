@@ -139,6 +139,18 @@ dsh-operator
   覆盖范围与 v2 计划（视觉点击的 AX hit-test）见 README 已知限制。
 - 新增 `test/guard.test.mjs`、`test/observe-gate.test.mjs`（node:test）。
 
+0.10.1（P1 批次第二版）
+- `ax_press` / `ax_set_value`：快照索引与实时树不一致时，按 expect_role/expect_title 在当前树里
+  重新定位最近节点（|索引差| ≤16），成功时输出 `resolved: "index drifted; re-resolved by role/title"`；
+  漂移超过阈值仍拒绝，避免写错目标。
+- 新增 `ax_scroll`：优先用原生 AX scroll action（后台、不抢焦点）；App 不支持时回退为
+  「kAXRaiseAction 提窗 + 激活目标 App + 元素中心全局滚轮」，该回退会把目标 App 提到前台
+  （工具描述与 README 已注明）。
+- AX 快照：匿名容器节点（有 frame、role 在身份集合内、无 title/value）最多保留 40 个，超出裁剪并
+  在 header 标记 truncated；正文预算保持 24000 字符。
+- helper（`scripts/ax-helper.swift`）新增 --scroll / 重定位逻辑；正式二进制仍由 build-ax-helper.sh
+  出 arm64 + x86_64 通用二进制。
+
 0.10.0（2026-11-01，P1 批次首版）
 - `ax_set_value`：按 `<ax_snapshot>` 节点 index 直接设置原生文本框的值
   （AXUIElementSetAttributeValue，后台投递）；只接受 AXTextField / AXTextArea /

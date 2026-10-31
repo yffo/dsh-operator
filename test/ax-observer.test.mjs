@@ -7,8 +7,10 @@ import {
 	observeAxSnapshot,
 	pressAx,
 	pressAxMenu,
+	scrollAx,
 	setAxValue,
 	snapshotAx,
+	MAX_ANONYMOUS_NODES,
 	MAX_TEXT_CHARS
 } from "../lib/ax-observer.js";
 
@@ -136,4 +138,31 @@ test("setAxValue/pressAxMenu：参数不合法时安全返回", async () => {
 	assert.deepEqual(await setAxValue({ pid: 10, index: 0, value: 3 }), { ok: false, index: 0, error: "value must be a string" });
 	assert.deepEqual(await pressAxMenu({ pid: 0, path: ["文件"] }), { ok: false, path: ["文件"], error: "invalid pid" });
 	assert.deepEqual(await pressAxMenu({ pid: 10, path: [] }), { ok: false, path: [], error: "empty menu path" });
+});
+
+test("formatAxSnapshot：匿名节点超过上限时裁剪并标 truncated", () => {
+	const anonymous = {
+		pid: 1,
+		appName: "测试",
+		windowTitle: "窗口",
+		windowFrame: { x: 0, y: 0, width: 1000, height: 800 },
+		nodes: Array.from({ length: MAX_ANONYMOUS_NODES + 20 }, (_, i) => ({
+			index: i,
+			depth: 1,
+			role: "AXImage",
+			frame: { x: 10, y: 10, width: 20, height: 20 }
+		})),
+		truncated: false
+	};
+	const text = formatAxSnapshot(anonymous, {}, { x: 0, y: 0, width: 1000, height: 800 });
+	assert.ok(typeof text === "string");
+	assert.match(text, /truncated="true"/);
+	const shown = (text.match(/\[\d+\] AXImage/g) ?? []).length;
+	assert.equal(shown, MAX_ANONYMOUS_NODES);
+});
+
+test("scrollAx：参数不合法时安全返回", async () => {
+	assert.equal((await scrollAx({ pid: 0, index: 1, direction: "down" })).error, "invalid pid");
+	assert.equal((await scrollAx({ pid: 10, index: -1, direction: "down" })).error, "invalid index");
+	assert.equal((await scrollAx({ pid: 10, index: 0, direction: "diagonal" })).error, "direction must be up/down/left/right");
 });

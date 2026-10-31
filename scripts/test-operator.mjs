@@ -3,7 +3,7 @@
  * 0.8.0 扩展工具自检：
  * - verify_state 的谓词评估（纯参数校验分支 + 未知 kind）
  * - audit-log 的脱敏/截断/开关/写盘格式
- * - registerOperatorTools 注册面（list_windows / screenshot_window / verify_state / ax_press / ax_set_value / ax_menu / zoom_region）
+ * - registerOperatorTools 注册面（list_windows / screenshot_window / verify_state / ax_press / ax_set_value / ax_scroll / ax_menu / zoom_region）
  * - 依赖窗口助手的分支在无 helper 时优雅降级
  *
  * 用法：node scripts/test-operator.mjs
@@ -79,12 +79,13 @@ const fakeCtx = {
 };
 registerOperatorTools(fakeCtx, { axMaxNodes: 120 }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
-check(registered.length === 7, "注册七个扩展工具");
+check(registered.length === 8, "注册八个扩展工具");
 check(
 	names.includes("list_windows") &&
 		names.includes("screenshot_window") &&
 		names.includes("verify_state") &&
 		names.includes("ax_press") &&
+		names.includes("ax_scroll") &&
 		names.includes("ax_set_value") &&
 		names.includes("ax_menu") &&
 		names.includes("zoom_region"),

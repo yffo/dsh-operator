@@ -4,7 +4,7 @@
  * - 精简策略体积 < 5KB，且 0–1000 坐标段仍是上游原文（backgroundPolicyFor 依赖）
  * - 图片准入降级、裁切元数据、结构化 actionEffect、工具名冲突检测都在
  * - fork 状态（docs/FORK.md 存在、修改点注释在、无补丁机制残留）
- * - 0.9.0 懒观察/guard/actionEffect、0.10.0 ax_set_value/ax_menu/文本预算
+ * - 0.9.0 懒观察/guard/actionEffect、0.10.0 ax_set_value/ax_menu/文本预算、0.10.1 ax_scroll/重定位/匿名裁剪
  *
  * 用法：node scripts/check-p0.mjs
  */
@@ -64,6 +64,10 @@ check(!existsSync(join(root, "scripts", "vendor-patches")), "vendor-patches 目�
 
 check(operatorTools.includes('name: "ax_set_value"'), "ax_set_value 工具在");
 check(operatorTools.includes('name: "ax_menu"'), "ax_menu 工具在");
+check(operatorTools.includes('name: "ax_scroll"'), "ax_scroll 工具在");
+check(operatorTools.includes("scrollAx"), "operator-tools 接 scrollAx");
+check(axObserver.includes("export async function scrollAx"), "ax-observer 导出 scrollAx");
+check(axObserver.includes("MAX_ANONYMOUS_NODES"), "匿名节点裁剪上限在");
 check(axObserver.includes("export async function setAxValue"), "setAxValue 包装在");
 check(axObserver.includes("export async function pressAxMenu"), "pressAxMenu 包装在");
 check(axObserver.includes("MAX_TEXT_CHARS"), "AX 文本字符预算在");
