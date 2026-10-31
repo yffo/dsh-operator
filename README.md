@@ -137,6 +137,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.3.2** — 修复 `open_app` 激活已运行 App：JXA 没有 `activateWithOptions_` 桥接、中文显示名 `open -a` 也找不到，改走 `open -b <bundleId>`。
 - **0.3.1** — 修复 `list_apps` 恒为空 / `open_app` 无法激活已运行 App（JXA 的 `activationPolicy` 是字符串，上游用 `!== 0` 比较）。
 - **0.3.0** — 更名 `dsh-operator`（原 `dsh-orb-computer-use`），对外发布。
 - **0.2.2** — 截图缩放/重编码 + 动作校验提示 + 提示词纪律。

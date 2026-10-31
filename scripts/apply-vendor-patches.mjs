@@ -108,6 +108,27 @@ const patches = [
 		occurrences: 2,
 		find: `if (app.activationPolicy !== 0) continue`,
 		replace: `if (Number(app.activationPolicy) !== 0) continue`
+	},
+	{
+		file: "lib/computer-use/backend-xLwiz83E.js",
+		name: "open_app：单匹配返回 bundle id（JXA 缺 activateWithOptions 桥接）",
+		marker: `JSON.stringify({ kind: 'launch', name: matches[0].name, bundle:`,
+		find: `} else if (matches.length === 1) {\n  matches[0].app.activateWithOptions_(2)\n  JSON.stringify({ kind: 'activated', name: matches[0].name })\n`,
+		replace: `} else if (matches.length === 1) {\n  // ${MARK}: open_app bundle\n  var bundleId = ObjC.unwrap(matches[0].app.bundleIdentifier)\n  JSON.stringify({ kind: 'launch', name: matches[0].name, bundle: typeof bundleId === 'string' ? bundleId : '' })\n`
+	},
+	{
+		file: "lib/computer-use/backend-xLwiz83E.js",
+		name: "open_app：决策结果透传 bundle",
+		marker: `...typeof row.bundle === "string"`,
+		find: `\tif ((row.kind === "activated" || row.kind === "launch") && typeof row.name === "string" && row.name.trim() !== "") return {\n\t\tkind: row.kind,\n\t\tname: row.name.trim()\n\t};\n`,
+		replace: `\tif ((row.kind === "activated" || row.kind === "launch") && typeof row.name === "string" && row.name.trim() !== "") return {\n\t\tkind: row.kind,\n\t\tname: row.name.trim(),\n\t\t...typeof row.bundle === "string" && row.bundle.trim() !== "" ? { bundle: row.bundle.trim() } : {}\n\t};\n`
+	},
+	{
+		file: "lib/computer-use/backend-xLwiz83E.js",
+		name: "open_app：用 open -b 激活已运行 App",
+		marker: `${MARK}: open -b activate`,
+		find: `\t\t\t\tawait run(OPEN, looksLikeBundleId(name) ? ["-b", name] : ["-a", name], { signal });\n`,
+		replace: `\t\t\t\t// ${MARK}: open -b activate\n\t\t\t\tconst bundle = decision.kind === "launch" && typeof decision.bundle === "string" && decision.bundle !== "" ? decision.bundle : void 0;\n\t\t\t\tawait run(OPEN, bundle !== void 0 ? ["-b", bundle] : looksLikeBundleId(name) ? ["-b", name] : ["-a", name], { signal });\n`
 	}
 ];
 

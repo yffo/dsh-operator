@@ -38,4 +38,10 @@ dsh-operator
   `open_app` 无法激活已运行的 App）。补丁改为 `Number(app.activationPolicy) !== 0`，
   共两处（LIST_APPS_SCRIPT 与 openAppScript）。
 
+- 0.3.2 起修复上游 `open_app` 激活已运行 App 的第二个桥接问题：JXA 里
+  `NSRunningApplication` 没有 `activateWithOptions_` 方法（调用即 TypeError），
+  上游也只拿显示名去 `open -a`（中文显示名如「系统设置」会失败）。补丁改为：
+  JXA 单匹配时返回 bundle id（`openAppScript`），`parseOpenAppDecision` 透传
+  `bundle`，JS 侧用 `open -b <bundleId>` 激活；未运行时仍走 `open -a/ -b` 启动。
+
 除上述补丁外，上游代码逻辑未改。上游更新时用 `scripts/sync-from-orb.sh <版本>` 重新同步，脚本会自动重打补丁。
