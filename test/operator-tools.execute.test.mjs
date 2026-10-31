@@ -111,6 +111,39 @@ test("evaluatePredicate 正向路径：五种谓词都能从注入数据里命�
 	assert.equal((await evaluatePredicate({ kind: "ax_element", role: "AXButton", title: "不存在", pid: 4242 })).ok, false);
 });
 
+test("evaluatePredicate 失败时给出可读现场提示（窗口标题 / 可见 App / AX 标题）", async (t) => {
+	if (!darwin) {
+		t.skip("darwin only");
+		return;
+	}
+	configureOperatorToolsInternals({
+		listWindows: async (filters = {}) => {
+			if (filters.titleContains !== undefined || filters.appContains !== undefined) {
+				return { ...fixtureWindows, windows: [] };
+			}
+			return fixtureWindows;
+		},
+		snapshotAx: async () => ({
+			nodes: [
+				{ index: 1, role: "AXButton", title: "显示器", value: "", frame: { x: 0, y: 0, width: 10, height: 10 } },
+				{ index: 2, role: "AXStaticText", title: "", value: "内建显示器", frame: { x: 0, y: 0, width: 10, height: 10 } }
+			]
+		})
+	});
+	const titleMiss = await evaluatePredicate({ kind: "window_title", contains: "不存在的标题" });
+	assert.equal(titleMiss.ok, false);
+	assert.match(titleMiss.observed, /visible: 自研 Computer Use/);
+	const appMiss = await evaluatePredicate({ kind: "app_running", contains: "Safari" });
+	assert.equal(appMiss.ok, false);
+	assert.match(appMiss.observed, /visible apps: DeepSeek Harness/);
+	const axMiss = await evaluatePredicate({ kind: "ax_text", contains: "不存在的文本", pid: 4242 });
+	assert.equal(axMiss.ok, false);
+	assert.match(axMiss.observed, /sample titles: 显示器/);
+	const elementMiss = await evaluatePredicate({ kind: "ax_element", role: "AXButton", title: "不存在", pid: 4242 });
+	assert.equal(elementMiss.ok, false);
+	assert.match(elementMiss.observed, /sample titles: 显示器/);
+});
+
 test("list_windows：输出文本结构与降级", async (t) => {
 	if (!darwin) {
 		t.skip("darwin only");

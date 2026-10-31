@@ -317,6 +317,10 @@ node scripts/test-shrink.mjs
 
 - **0.21.0** — 新增 `window_move`：AXPosition/AXSize 后台移动/缩放原生窗口（按 `pid` 或 `window_title` 定位，不抢前台、不动光标；先 size 后 position，适配 Finder 的位置夹取）。用途：把两个窗口摆成并排后再做跨窗拖拽/对照操作（L2-05 的前置能力）。`npm test` 164 项。
 
+- **0.21.1** — 修 `window_move` 的 render 契约：返回值必须是内容块数组（`[{type:"text",...}]`），而不是 `{card,...}` 对象；补「render 返回文本块数组」回归断言。`npm test` 164 项。
+
+- **0.21.2** — `verify_state` 失败现场可读化：`window_title` 未命中时回显当前可见窗口标题、`app_running` 回显可见 App 列表、`ax_text`/`ax_element` 未命中时回显 AX 快照里的样例标题（各取前 3 个），把「假超时」从盲猜变成可判断。`npm test` 165 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图
