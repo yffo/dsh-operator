@@ -3,12 +3,12 @@
  * 0.4.0 P0 冒烟检查：
  * - 精简策略体积 < 5KB，且 0–1000 坐标段仍是上游原文（backgroundPolicyFor 依赖）
  * - 图片准入降级、裁切元数据、结构化 actionEffect、工具名冲突检测都在
- * - 补丁器 --check 幂等
+ * - fork 状态（docs/FORK.md 存在、修改点注释在、无补丁机制残留）
  *
  * 用法：node scripts/check-p0.mjs
  */
 
-import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,13 +54,10 @@ check(src.includes('screens: effect.actionEffect === "suspected_noop" ? [] : [..
 check(src.includes("assertHotkeyGuarded(args.keys, args.confirm === true, config.guard !== false);"), "hotkey guard 调用在");
 check(!/required:\s*false/.test(src), "schema 不用 required: false（DSH 只允许 true 或省略）");
 
-try {
-	execFileSync(process.execPath, [join(root, "scripts/apply-vendor-patches.mjs"), "--check"], { stdio: "pipe" });
-	check(true, "补丁器 --check 通过（幂等）");
-} catch (error) {
-	const detail = String(error.stdout ?? "").trim() || error.message;
-	check(false, `补丁器 --check 失败：${detail}`);
-}
+check(existsSync(join(root, "docs", "FORK.md")), "docs/FORK.md 记录上游与差异");
+check(src.includes("PATCH(computer-use)"), "fork 修改点注释（PATCH(computer-use)）在");
+check(!existsSync(join(root, "scripts", "apply-vendor-patches.mjs")), "补丁器已移除（fork 化）");
+check(!existsSync(join(root, "scripts", "vendor-patches")), "vendor-patches 目录已移除");
 
 if (failures.length > 0) {
 	console.error(`\n✗ P0 检查失败 ${failures.length} 项`);

@@ -22,8 +22,9 @@ dsh-operator
   `z.object` / `z.enum` / `.strict()`，与 zod 3 行为一致，且复用 profile 里
   已经存在的 zod 3，避免同一 profile 出现两份 zod。
 - 新增入口 `index.js`（执行位自愈 + 转发插件导出）与本说明文件。
-- 0.2.2 起对 vendored 代码打了本包的优化补丁（由 `scripts/apply-vendor-patches.mjs`
-  幂等应用，每个补丁带 `PATCH(computer-use)` 标记）：
+- 0.2.2 起修改了 vendored 代码。0.4.0–0.9.0 期间这些修改以「锚点补丁」维护；
+  0.9.1 起 `lib/computer-use/` 直接 fork 为 first-party 代码（见 `docs/FORK.md`），
+  修改点保留 `PATCH(computer-use)` 注释作为索引：
   - 观察截图在交给模型前用 `sips` 缩到长边 ≤ `captureMaxEdge`（默认 1280）并按
     `jpegQuality`（默认 80）重编码；失败自动回退原图。实现位于本包
     `lib/capture-downscale.js`，不在 vendored 目录内。
@@ -35,16 +36,16 @@ dsh-operator
 - 0.3.1 起修复上游 `list_apps` / `open_app` 的 JXA 判断 bug：JXA 里
   `NSRunningApplication.activationPolicy` 返回的是字符串（"0"/"1"/"2"），上游用
   `!== 0` 比较，导致所有 App 都被当成非 regular 过滤掉（`list_apps` 恒为空、
-  `open_app` 无法激活已运行的 App）。补丁改为 `Number(app.activationPolicy) !== 0`，
+  `open_app` 无法激活已运行的 App）。已改为 `Number(app.activationPolicy) !== 0`，
   共两处（LIST_APPS_SCRIPT 与 openAppScript）。
 
 - 0.3.2 起修复上游 `open_app` 激活已运行 App 的第二个桥接问题：JXA 里
   `NSRunningApplication` 没有 `activateWithOptions_` 方法（调用即 TypeError），
-  上游也只拿显示名去 `open -a`（中文显示名如「系统设置」会失败）。补丁改为：
+  上游也只拿显示名去 `open -a`（中文显示名如「系统设置」会失败）。已改为：
   JXA 单匹配时返回 bundle id（`openAppScript`），`parseOpenAppDecision` 透传
   `bundle`，JS 侧用 `open -b <bundleId>` 激活；未运行时仍走 `open -a/ -b` 启动。
 
-除上述补丁外，上游代码逻辑未改。上游更新时用 `scripts/sync-from-orb.sh <版本>` 重新同步，脚本会自动重打补丁。
+除上述改动外，上游代码逻辑未改。0.9.1 起不再自动同步上游：用 `scripts/fetch-upstream.sh <版本>` 拉到临时目录人工对照，然后按 `docs/FORK.md` 的流程合并。
 
 - 0.4.1 修复 0.4.0 的 schema 回归：观察输出里 `screens[].image` 曾写成
   `required: false`，DSH 的 schema 编译器只允许 `required: true` 或省略该键，
@@ -59,7 +60,7 @@ dsh-operator
   - 动作结果新增结构化 `actionEffect`：`confirmed` / `suspected_noop` /
     `unverifiable`，`suspected_noop` 时附 note 要求换路而不是盲目重试。
   - 注册工具前检查 `ctx.tools` 是否已有同名工具，冲突时 fail fast。
-  以上均为 vendored 代码补丁（`scripts/vendor-patches/p0.json`），由补丁器幂等应用。
+  以上改动均已并入 `lib/computer-use/` 源码（fork）。
 
 - 0.5.0 起补充 AX 文本观察（P1-6）：
   - 新增 `scripts/ax-helper.swift`：读取前台 App 的 Accessibility 树（DFS 前序、
@@ -71,7 +72,7 @@ dsh-operator
   - `observeDesktop` 在截图之后插入 `<ax_snapshot>` 文本块；`Config` 新增
     `axObservation`（默认 true）与 `axMaxNodes`（默认 120）。
   - backend 的前台窗口元数据补 `pid`（AX 助手用它定位进程）。
-  以上补丁在 `scripts/vendor-patches/p1.json`，由补丁器幂等应用；AX 助手为纯只读，
+  以上改动已并入 `lib/computer-use/` 源码；AX 助手为纯只读，
   不调用 AXPress，不做任何动作。
 
 - 0.5.1 修复 0.5.0 的 AX 文本没有出现在工具输出里：工具结果内容由
@@ -81,13 +82,12 @@ dsh-operator
 
 - 0.5.2 修复 AX 观察拿不到 pid：`inspectForeground` 把解析结果交给
   `foregroundFromFrontmost` 时只保留了 appName / windowTitle，pid 被丢掉，
-  AX 助手因此从不运行。补丁在 `foregroundFromFrontmost` 里透传 `pid`
-  （`scripts/vendor-patches/p3.json`）。
+  AX 助手因此从不运行。修复方式是在 `foregroundFromFrontmost` 里透传 `pid`。
 
 - 0.5.3 修复 AX 坐标空间：观测截图可能合并同一 App 的多个窗口，而 AX 快照
   之前按前台窗口 frame 归一化，多窗口时坐标与截图坐标空间不一致（模型会点
   偏）。现在观察结果会带上本次截图区域 `screen.bounds`，AX 坐标按截图区域
-  归一化（`scripts/vendor-patches/p4.json`）。
+  归一化。
 
 - 0.6.0 补齐审计剩余项（本仓库代码，vendored 仅接线）：
   - `lib/operator-tools.js` 注册三个扩展工具：`list_windows`（CGWindowList 窗口 +
@@ -101,7 +101,7 @@ dsh-operator
     （默认 16；Electron/Web 浅树不再附带）。
   - `Config` 新增 `axMinNodes`、`auditLog`；`apply()` 接线
     `configureAuditLog` / `registerOperatorTools`，`recapture` 记
-    `audit("action", ...)`。以上补丁在 `scripts/vendor-patches/p5.json`。
+    `audit("action", ...)`。以上改动已并入 `lib/computer-use/` 源码。
   - 扩展工具与 AX 只在 macOS 注册；Windows 仅保留 vendored 基础工具。
 
 - 0.6.1 修复 0.6.0 加载失败：`screenshot_window` 输出 schema 里的嵌套 `image`
@@ -123,7 +123,7 @@ dsh-operator
     AXPress（不动光标、不抢焦点，先校验 role/title 再按，拒绝过期/错位节点）；
     Swift 助手新增 `--press/--expect-role/--expect-title` 模式。
   - P1-9 合并一次观察里的两次 JXA：`listScreens` 与 `inspectForeground` 共用
-    250ms 前台缓存（backend 补丁 p6.json），每步省 100–200ms。
+    250ms 前台缓存，每步约省 100–200ms。
   - 工具面：list_windows / screenshot_window / verify_state / ax_press 四个扩展工具。
 
 - 0.8.0 新增 `zoom_region` 工具：对当前前台窗口的局部区域按 0–1000 坐标做原生分辨率

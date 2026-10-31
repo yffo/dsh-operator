@@ -20,7 +20,7 @@
 
 | 方案 | 挂载方式 | 外部依赖 | 观察成本 | 备注 |
 | --- | --- | --- | --- | --- |
-| **dsh-operator**（本插件） | 全局（host 层） | 无：纯 JS + macOS 自带 `screencapture` / `osascript` / 编译一次的本机 AX 助手 | 截图先降 token 再入上下文，原生 App 附 AX 文本 | vendored 代码可审计，可随上游 `sync-from-orb.sh` 更新 |
+| **dsh-operator**（本插件） | 全局（host 层） | 无：纯 JS + macOS 自带 `screencapture` / `osascript` / 编译一次的本机 AX 助手 | 截图先降 token 再入上下文，原生 App 附 AX 文本 | 代码全可审计；上游能力层已 fork（见 `docs/FORK.md`），无外部引擎 |
 | 官方实验包 `dsh-computer-use` + `cua-driver-native` | 全局 | Cua Driver 原生 SDK / 二进制 | 原图 | 官方 seam，native 崩溃会带走宿主进程 |
 | 社区 `dsh-computer-use@0.3.x` 等 | 全局 | 多数需要外部 `cua-driver` 或仅 macOS AX | 原图 | 工具数、平台覆盖不一 |
 | preset 形态（本插件 0.2.0） | 会话级 | 无 | 原图 | 必须新建会话并选「Computer Use 模式」 |
@@ -103,7 +103,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 - **安装即授权**：GUI 工具在工具内部不做逐次确认，所有会话都拥有桌面操作能力。敏感任务请在会话里明确约束（例如「只读、不要点确认/支付」）。
 - **截图会上传**：观察截图作为附件进入模型上下文，会发到当前模型服务商（DeepSeek 账户）。敏感窗口请先关闭或遮挡。
-- **权限继承 App**：插件以 DeepSeek Harness 的桌面权限运行（屏幕录制、辅助功能、控制其他 App）。代码在本仓库可审计，vendored 目录与补丁脚本都在。
+- **权限继承 App**：插件以 DeepSeek Harness 的桌面权限运行（屏幕录制、辅助功能、控制其他 App）。代码在本仓库可审计（含 fork 的 `lib/computer-use/`）。
 - **剪贴板**：`input_text` 走「快照剪贴板 → 写入 → 粘贴 → 恢复」链路，结束后尽量恢复原剪贴板（恢复失败会清空，避免残留测试文本）；剪贴板内容不会进审计日志、不会额外上传，但粘贴目标 App 可能读取。
 - **无网络上报**：只用本机文件与系统命令，插件自身不发送遥测。
 
@@ -116,7 +116,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - **纯视觉定位**：UI 变化、遮挡、动画过渡会导致定位失败；校验提示只能减少浪费，不能保证成功。适合可重复、可验收的操作。
 - **AX 只覆盖原生 App**：AX 树在 AppKit 原生应用里好用（系统设置、访达、备忘录、预览等），Electron / Web 应用（Chrome、Harness、微信）树很浅或不可见，少于 `axMinNodes`（默认 16）时自动不附、退回纯视觉。AX 助手是预编译的 macOS 二进制；换架构/平台需要 `pnpm run build:ax` 重新编译（需要 Xcode Command Line Tools）。
 - **首次授权**：屏幕录制 / 辅助功能需要用户手动在系统设置里允许；未授权时截图与输入都会失败。
-- 上游代码按「照搬 + 幂等补丁」维护，上游大改时 `sync-from-orb.sh` 可能需要跟着调锚点。
+- `lib/computer-use/` 是上游 dsh-orb 的 fork（0.9.1 起），上游更新用 `scripts/fetch-upstream.sh` 人工对照合并；不再有自动补丁。
 
 ## 工作原理：token 花在哪
 
@@ -146,19 +146,10 @@ dsh-operator/
 │   ├── bin/ax-snapshot         # 预编译 AX 助手（macOS arm64）
 │   └── computer-use/           # vendored：上游 dsh-orb dist/computer-use
 ├── scripts/
-    ├── apply-vendor-patches.mjs # 幂等补丁器（--check 只检查；补丁在 vendor-patches/*.json）
-    ├── vendor-patches/p0.json   # 0.4.0 P0 补丁集
-    ├── vendor-patches/p1.json   # 0.5.0 AX 观察补丁集
-    ├── vendor-patches/p2.json   # 0.5.1 axText 透传
-    ├── vendor-patches/p3.json   # 0.5.2 pid 透传
-    ├── vendor-patches/p4.json   # 0.5.3 截图区域归一化
-    ├── vendor-patches/p5.json   # 0.6.0 扩展工具 / 审计 / 浅 AX 阈值接线
-    ├── vendor-patches/p6.json   # 0.7.0 ax_press / P1-9 前台缓存
-    ├── vendor-patches/p7.json   # 0.9.0 懒观察 / noop 不附图 / guard
-    ├── sync-from-orb.sh         # 从 npm 同步上游 dist/computer-use 并重打补丁
+    ├── fetch-upstream.sh        # 拉取上游 tarball 供人工 diff（不覆盖 lib/computer-use）
     ├── ax-helper.swift          # AX 助手源码（build-ax-helper.sh 编译）
     ├── build-ax-helper.sh       # 编译 AX 助手到 lib/bin/ax-snapshot
-    ├── check-p0.mjs             # P0 冒烟检查（策略体积、字段、补丁幂等）
+    ├── check-p0.mjs             # P0 冒烟检查（策略体积、字段、fork 状态）
     ├── test-shrink.mjs          # 截图缩放冒烟测试
     ├── test-ax.mjs              # AX 快照格式化 / 降级测试
     └── test-operator.mjs        # 扩展工具 / 审计日志测试
@@ -181,7 +172,6 @@ dsh-operator/
 
 ```bash
 node --check index.js
-node scripts/apply-vendor-patches.mjs --check   # 幂等性
 node scripts/test-shrink.mjs                    # 13 项断言
 node scripts/check-p0.mjs                       # P0 冒烟检查
 node scripts/test-ax.mjs                        # AX 快照 / 降级测试
@@ -192,13 +182,13 @@ npm test                                        # 旧四套 + bench check + node
 npm run test:coverage                           # 覆盖率（Node 内建，不需要 c8）
 npm run bench -- report                         # 基准对比表（A / A2 / B）
 ./scripts/build-ax-helper.sh                    # 重新编译 AX 助手（macOS）
-bash -n scripts/sync-from-orb.sh
+bash -n scripts/fetch-upstream.sh
 ```
 
-上游发布新版本时：
+上游发布新版本时（fork 手动对照，见 docs/FORK.md）：
 
 ```bash
-./scripts/sync-from-orb.sh 0.2.1   # 换掉 lib/computer-use 与 LICENSE，自动重打补丁
+./scripts/fetch-upstream.sh 0.2.1   # 拉到 /tmp 后人工 diff，不会改动仓库
 node scripts/test-shrink.mjs
 ```
 
@@ -233,4 +223,4 @@ node scripts/test-shrink.mjs
 
 ## 上游与许可
 
-MIT。`lib/computer-use/` 与工具提示词来自 [dsh-orb](https://github.com/mini-yifan/dsh-orb-cordis) v0.2.0（Copyright (c) 2026 mini-yifan，MIT）；本仓库相对上游的裁剪与补丁见 [NOTICE](NOTICE) 和 `scripts/apply-vendor-patches.mjs`。
+MIT。`lib/computer-use/` 与工具提示词 fork 自 [dsh-orb](https://github.com/mini-yifan/dsh-orb-cordis) v0.2.0（Copyright (c) 2026 mini-yifan，MIT）；相对上游的改动见 [NOTICE](NOTICE) 与 [docs/FORK.md](docs/FORK.md)。
