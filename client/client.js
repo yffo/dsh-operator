@@ -32,7 +32,9 @@ window.__ModuleLoader__.load({
 			browser_dom_probe: "Browser channels",
 			browser_dom_snapshot: "DOM snapshot",
 			browser_dom_click: "DOM click",
-			browser_dom_fill: "DOM fill"
+			browser_dom_fill: "DOM fill",
+			cu_observe: "cu observe",
+			cu_act: "cu act"
 		};
 		const KEYS = Object.keys(ROWS);
 

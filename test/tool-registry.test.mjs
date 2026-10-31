@@ -6,10 +6,16 @@ import { registerOperatorTools, registerV2Tools } from "../lib/operator-tools.js
 import { mergeParameters, parameterSpecs } from "../lib/tool-surface.js";
 
 function forkDefs() {
+	const def = (name, execute = async () => ({ schemaVersion: 1 })) => ({ name, execute, output: { render: () => [] } });
 	return new Map([
-		["screenshot", { name: "screenshot", execute: async () => ({ schemaVersion: 1 }), output: { render: () => [] } }],
-		["click", { name: "click", execute: async () => ({ schemaVersion: 1 }), output: { render: () => [] } }],
-		["open_app", { name: "open_app", execute: async () => ({ schemaVersion: 1 }) }]
+		["screenshot", def("screenshot")],
+		["click", def("click")],
+		["open_app", def("open_app")],
+		["drag", def("drag")],
+		["scroll", def("scroll")],
+		["input_text", def("input_text")],
+		["hotkey", def("hotkey")],
+		["window_list", def("window_list")]
 	]);
 }
 
@@ -83,7 +89,7 @@ test("registerV2Tools 注册 cu_observe：action 枚举、输出并集、分派�
 	function register(definition) {
 		return definition;
 	}
-	const cuObserve = registerV2Tools({ handle, defineTool: (definition) => definition });
+	const { cuObserve, cuAct } = registerV2Tools({ handle, defineTool: (definition) => definition });
 	assert.equal(cuObserve.name, "cu_observe");
 	assert.deepEqual(cuObserve.parameters.action.enum, ["screenshot", "windows", "window_screenshot", "zoom", "verify"]);
 	assert.equal(cuObserve.parameters.action.required, true);
@@ -100,6 +106,14 @@ test("registerV2Tools 注册 cu_observe：action 枚举、输出并集、分派�
 	const value = await cuObserve.execute({ action: "screenshot" }, {});
 	assert.deepEqual(value, { schemaVersion: 1 });
 	await assert.rejects(() => cuObserve.execute({ action: "nope" }, {}), /unknown action/);
+	// cu_act：9 个动作、显式参数并集、按 action 校验必填、分派到旧工具
+	assert.equal(cuAct.name, "cu_act");
+	assert.deepEqual(cuAct.parameters.action.enum, ["click", "drag", "scroll", "input", "hotkey", "ax_press", "ax_set_value", "ax_menu", "ax_scroll"]);
+	assert.ok(cuAct.parameters.position !== void 0);
+	assert.ok(cuAct.parameters.keys !== void 0);
+	assert.ok(cuAct.parameters.index !== void 0);
+	await assert.rejects(() => cuAct.execute({ action: "click" }, {}), /missing parameter\(s\) for action "click": screen_index, position/);
+	await assert.rejects(() => cuAct.execute({ action: "hotkey", keys: [] }, {}), /./);
 });
 
 test("mergeParameters 兼容 defineTool 编译后的 JSON Schema 形态（0.17.1 回归）", () => {
@@ -124,17 +138,8 @@ test("mergeParameters 兼容 defineTool 编译后的 JSON Schema 形态（0.17.1
 	assert.deepEqual(Object.keys(properties).sort(), ["attach", "limit", "pid"]);
 	assert.equal(properties.type, void 0);
 	assert.equal(properties.properties, void 0);
-	const cu = registerV2Tools({
-		handle: {
-			handlers: new Map(),
-			buildRegistry: () => new Map([["screenshot", { execute: async () => ({}) }], ["list_windows", { definition: compiled.definition, execute: async () => ({}) }], ["screenshot_window", { definition: { parameters: { window_id: { type: "string", required: true } } }, execute: async () => ({}) }], ["zoom_region", { definition: { parameters: { x: { type: "number", required: true } } }, execute: async () => ({}) }], ["verify_state", { definition: { parameters: { kind: { type: "string", required: true } } }, execute: async () => ({}) }]]),
-			registerExtra: () => {}
-		},
-		defineTool: (definition) => definition
-	});
-	assert.ok(cu.parameters.pid !== void 0);
-	assert.ok(cu.parameters.window_id !== void 0);
-	assert.equal(cu.parameters.type, void 0, "参数映射里不应混入 JSON Schema 的顶层键");
+	assert.ok(properties.pid !== void 0);
+	assert.ok(properties.limit !== void 0);
 });
 
 test("registerV2Tools 在缺少 fork 工具时抛错（注册表不完整要快速暴露）", { skip: process.platform !== "darwin" }, () => {

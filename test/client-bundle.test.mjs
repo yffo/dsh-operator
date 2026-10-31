@@ -23,7 +23,9 @@ const ROW_TOOLS = [
 	"browser_dom_probe",
 	"browser_dom_snapshot",
 	"browser_dom_click",
-	"browser_dom_fill"
+	"browser_dom_fill",
+	"cu_observe",
+	"cu_act"
 ];
 
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
