@@ -296,11 +296,15 @@ node scripts/test-shrink.mjs
 
 - **0.15.2** — 修卡片标题总是 `operator`：工具名应取 `props.toolName`（`block` 上没有 `toolName`），现在会显示 `Task profile` / `Operator status` / `Run plan` 等标签；`npm test` 148 项。
 
+- **0.16.0** — 发布工程：`npm run release -- <version>` 一条命令完成「校验 → 改版本 → 全量测试 → commit → tag → push（可选同步安装副本 + doctor）」；新增 `docs/RELEASE.md` 发布清单与 `docs/COMPATIBILITY.md` 兼容矩阵。`npm test` 154 项。
+
 - **0.15.3** — 卡片覆盖扩到浏览器 DOM 工具（`DOM snapshot` / `DOM click` / `DOM fill`，连同 probe 共 14 个工具）；摘要去掉重复的 `tool: ` 前缀（如 `Task profile` 不再显示 `task_profile:` 开头）。`npm test` 149 项。
 
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
+- 兼容性矩阵：[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)（DSH 版本 / 平台 / 运行时）
+- 发布流程：[docs/RELEASE.md](docs/RELEASE.md)（一条命令发版）
 - v1 路线图与已完成项：[docs/PLAN-2026-11.md](docs/PLAN-2026-11.md)
 
 完整计划（0.9 / 0.10 / 0.11、架构评审、借鉴 vs 自研、测试矩阵）见 [docs/PLAN-2026-11.md](docs/PLAN-2026-11.md)。

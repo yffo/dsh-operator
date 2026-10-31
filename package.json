@@ -36,7 +36,8 @@
 		"doctor": "node scripts/doctor.mjs",
 		"failures": "node scripts/failures.mjs",
 		"browser:spike": "node scripts/browser-spike.mjs",
-		"scenarios": "node scripts/scenarios.mjs"
+		"scenarios": "node scripts/scenarios.mjs",
+		"release": "node scripts/release.mjs"
 	},
 	"keywords": [
 		"dsh",

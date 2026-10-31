@@ -380,6 +380,14 @@ v2 做两件事：
 - 生效条件：客户端 bundle 声明在 App 启动时组合，安装后需重启 App 一次；之后改 `client/client.js` 刷新页面即可（HMR rebuilt 通道）。渲染异常时卡片退化为工具名 + 状态，不影响其他工具卡。
 - 已知取舍：暂不做自定义 toolview 的完整视觉（图标/折叠动画/耗时条），先验证「键位注册 + 数据读取 + 无构建链」这条通路；扩展卡片（失败样本、浏览器通道、技能进度）排在 0.15.1。
 
+## 8.18 0.16.0：发布工程（2026-11-01）
+
+- 问题：发版依赖手打序列（改版本、跑测试、commit、tag、push、安装、doctor），易漏步骤、易把未提交改动混进 release commit。
+- 方案：`scripts/release.mjs` 固化流程。默认 dry-run 只打印计划；`--yes` 才执行；`--install` 同步本机安装副本并跑 doctor；显式拒绝 force/reset/tag -d 等危险操作。
+- 安全边界：工作区不干净、tag 已存在、版本格式非法、测试失败都会中止；只提交 `package.json`（功能/文档应先单独提交）。
+- 文档：`docs/RELEASE.md`（清单与善后）、`docs/COMPATIBILITY.md`（DSH/平台/运行时矩阵、已知限制）。
+- 测试：`test/release-script.test.mjs`（版本校验、参数解析、计划步骤、安全边界、仓库探测）。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972
