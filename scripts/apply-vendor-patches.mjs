@@ -11,7 +11,7 @@
  *   --check  只检查能否打上/是否已打上，不写文件
  */
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -69,7 +69,7 @@ const patches = [
 	{
 		file: "lib/computer-use/index.js",
 		name: "recapture 检测「画面无变化」",
-		marker: `${MARK}: unchanged detection`,
+		marker: `${MARK}: action effect`,
 		find: `async function recapture(ctx, backend, exec, settleMs = 0) {\n\tconst session = sessionOf(exec);\n\tconst mode = coordinateModeOf(session);\n\tconst observation = await observeDesktop(ctx, backend, exec.signal, {\n\t\tsettleMs,\n\t\tcoordinateMode: mode\n\t});\n\trememberObservation(session, observation.screens);\n\treturn {\n\t\tscreens: [...observation.screens],\n\t\tforeground: compactForeground(observation.foreground),\n\t\tcaptures: [...observation.captures]\n\t};\n}`,
 		replace: `// ${MARK}: unchanged detection\n// 动作后截图与上一次逐字节相同 → 提示模型别盲目重试（省 token、也避免连环失败）。\nconst lastCaptureDigest = new WeakMap();\nfunction unchangedActionNote(session, observation, settleMs) {\n\tconst data = observation.captures[0]?.data;\n\tif (session === void 0 || data === void 0) return;\n\tconst digest = createHash("sha1").update(data).digest("hex");\n\tconst previous = lastCaptureDigest.get(session);\n\tlastCaptureDigest.set(session, digest);\n\tif (settleMs <= 0 || previous === void 0 || previous !== digest) return;\n\treturn "No visible change was detected after this action. It may not have taken effect (target covered, off-screen, or slow). Re-examine the screenshot, change approach (keyboard shortcut, menu, open_app), or stop and report; do not repeat the same action more than twice.";\n}\nasync function recapture(ctx, backend, exec, settleMs = 0) {\n\tconst session = sessionOf(exec);\n\tconst mode = coordinateModeOf(session);\n\tconst observation = await observeDesktop(ctx, backend, exec.signal, {\n\t\tsettleMs,\n\t\tcoordinateMode: mode\n\t});\n\trememberObservation(session, observation.screens);\n\tconst note = unchangedActionNote(session, observation, settleMs);\n\treturn {\n\t\tscreens: [...observation.screens],\n\t\tforeground: compactForeground(observation.foreground),\n\t\tcaptures: [...observation.captures],\n\t\t...note === void 0 ? {} : { note }\n\t};\n}`
 	},
@@ -137,6 +137,28 @@ async function read(file) {
 	if (!files.has(file)) files.set(file, await readFile(join(root, file), "utf8"));
 	return files.get(file);
 }
+
+/**
+ * 额外补丁放在 scripts/vendor-patches/*.json：大段 find/replace 用 JSON 更好维护。
+ * @returns {Promise<object[]>} 按文件名排序合并的补丁条目。
+ */
+async function loadVendorPatches() {
+	const dir = join(root, "scripts/vendor-patches");
+	let names;
+	try {
+		names = await readdir(dir);
+	} catch {
+		return [];
+	}
+	const extra = [];
+	for (const name of names.filter((file) => file.endsWith(".json")).sort()) {
+		const parsed = JSON.parse(await readFile(join(dir, name), "utf8"));
+		if (!Array.isArray(parsed)) throw new Error(`scripts/vendor-patches/${name} 必须是数组`);
+		extra.push(...parsed);
+	}
+	return extra;
+}
+for (const patch of await loadVendorPatches()) patches.push(patch);
 
 let applied = 0;
 let skipped = 0;

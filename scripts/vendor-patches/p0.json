@@ -1,0 +1,107 @@
+[
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-5 引入 slimPolicy",
+  "marker": "PATCH(computer-use): import policy-slim",
+  "find": "// PATCH(computer-use): import capture-downscale\n// 本包补丁层：观察截图缩放/重编码（见 lib/capture-downscale.js）。\nimport { createHash } from \"node:crypto\";\nimport { withCaptureDownscale } from \"../capture-downscale.js\";",
+  "replace": "// PATCH(computer-use): import capture-downscale\n// 本包补丁层：观察截图缩放/重编码（见 lib/capture-downscale.js）。\nimport { createHash } from \"node:crypto\";\nimport { withCaptureDownscale } from \"../capture-downscale.js\";\n// PATCH(computer-use): import policy-slim\nimport { slimPolicy } from \"../policy-slim.js\";"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-5 policyFor 使用精简版",
+  "marker": "PATCH(computer-use): slim policy",
+  "find": "function policyFor(mode) {\n\treturn `${POLICY_BEFORE_COORDINATES}${mode === \"pixel\" ? PIXEL_COORDINATES : MILLIFRACTION_COORDINATES}${POLICY_AFTER_COORDINATES}`;\n}\n",
+  "replace": "function policyFor(mode) {\n\t// PATCH(computer-use): slim policy\n\treturn slimPolicy(mode, MILLIFRACTION_COORDINATES, PIXEL_COORDINATES);\n}\n"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-1 图片准入失败降级为文本",
+  "marker": "PATCH(computer-use): admission degrade",
+  "find": "\t\tconst saved = await ctx.attachments.saveImage({\n\t\t\tdata: captured.data,\n\t\t\tmediaType: captured.mediaType,\n\t\t\tname: `${IMAGE_NAME_PREFIX}-${String(screen.index)}`\n\t\t});\n\t\tscreens.push({\n\t\t\tscreenIndex: screen.index,\n\t\t\tlogicalWidth: screen.bounds.width,\n\t\t\tlogicalHeight: screen.bounds.height,\n\t\t\tscale: screen.scale,\n\t\t\t...screen.windowId === void 0 ? {} : { windowId: screen.windowId },\n\t\t\t...screen.transientWindowIds === void 0 ? {} : { transientWindowIds: [...screen.transientWindowIds] },\n\t\t\t...screen.appName === void 0 ? {} : { appName: screen.appName },\n\t\t\timage: {\n\t\t\t\tattachmentId: saved.attachmentId,\n\t\t\t\tmediaType: saved.mediaType,\n\t\t\t\tbytes: saved.bytes,\n\t\t\t\twidth: saved.width,\n\t\t\t\theight: saved.height,\n\t\t\t\t...optionalImageFields(saved)\n\t\t\t}\n\t\t});",
+  "replace": "\t\t// PATCH(computer-use): admission degrade\n\t\t// 图片存储失败不再让整个工具报错：降级为纯文本观察（imageError），动作结果照常返回。\n\t\tlet saved;\n\t\tlet imageError;\n\t\ttry {\n\t\t\tsaved = await ctx.attachments.saveImage({\n\t\t\t\tdata: captured.data,\n\t\t\t\tmediaType: captured.mediaType,\n\t\t\t\tname: `${IMAGE_NAME_PREFIX}-${String(screen.index)}`\n\t\t\t});\n\t\t} catch (error) {\n\t\t\timageError = error instanceof Error ? error.message : String(error);\n\t\t}\n\t\tscreens.push({\n\t\t\tscreenIndex: screen.index,\n\t\t\tlogicalWidth: screen.bounds.width,\n\t\t\tlogicalHeight: screen.bounds.height,\n\t\t\tscale: screen.scale,\n\t\t\t...screen.windowId === void 0 ? {} : { windowId: screen.windowId },\n\t\t\t...screen.transientWindowIds === void 0 ? {} : { transientWindowIds: [...screen.transientWindowIds] },\n\t\t\t...screen.appName === void 0 ? {} : { appName: screen.appName },\n\t\t\t...screen.clipped === void 0 ? {} : { clipped: screen.clipped },\n\t\t\t...screen.sourceBounds === void 0 ? {} : { sourceBounds: screen.sourceBounds },\n\t\t\t...screen.visibleBounds === void 0 ? {} : { visibleBounds: screen.visibleBounds },\n\t\t\t...saved === void 0 ? { imageError: imageError ?? \"screenshot could not be stored\" } : { image: {\n\t\t\t\tattachmentId: saved.attachmentId,\n\t\t\t\tmediaType: saved.mediaType,\n\t\t\t\tbytes: saved.bytes,\n\t\t\t\twidth: saved.width,\n\t\t\t\theight: saved.height,\n\t\t\t\t...optionalImageFields(saved)\n\t\t\t} }\n\t\t});"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-1 观察缓存允许缺少图片",
+  "marker": "PATCH(computer-use): raster optional",
+  "find": "\tconst image = first.image;\n\tobservationCache.set(session, {\n\t\twidth: image.width,\n\t\theight: image.height,",
+  "replace": "\tconst image = first.image;\n\tobservationCache.set(session, {\n\t\t// PATCH(computer-use): raster optional\n\t\t...image === void 0 ? {} : { width: image.width, height: image.height },"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-1 像素模式缺图时拒绝",
+  "marker": "PATCH(computer-use): raster guard",
+  "find": "\tif (cached !== void 0) return cached;",
+  "replace": "\t// PATCH(computer-use): raster guard\n\tif (cached !== void 0) return cached.width === void 0 || cached.height === void 0 ? void 0 : cached;"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-1 没有图片时跳过 image block",
+  "marker": "PATCH(computer-use): blocks without image",
+  "find": "function observationBlocks(screens, mode = \"millifraction\") {\n\tconst blocks = [];\n\tfor (const screen of screens) {\n\t\tblocks.push({\n\t\t\ttype: \"text\",\n\t\t\ttext: formatScreenEnvelope(screen, mode)\n\t\t});\n\t\tblocks.push({\n\t\t\ttype: \"image\",\n\t\t\tattachment: imageRefFromObserved(screen.image)\n\t\t});\n\t}\n\treturn blocks;\n}\n",
+  "replace": "function observationBlocks(screens, mode = \"millifraction\") {\n\t// PATCH(computer-use): blocks without image\n\tconst blocks = [];\n\tfor (const screen of screens) {\n\t\tblocks.push({\n\t\t\ttype: \"text\",\n\t\t\ttext: formatScreenEnvelope(screen, mode)\n\t\t});\n\t\tif (screen.image === void 0) continue;\n\t\tblocks.push({\n\t\t\ttype: \"image\",\n\t\t\tattachment: imageRefFromObserved(screen.image)\n\t\t});\n\t}\n\treturn blocks;\n}\n"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-2 观察信封带裁切与降级信息",
+  "marker": "PATCH(computer-use): clipped envelope",
+  "find": "function formatScreenEnvelope(screen, mode = \"millifraction\") {\n\tif (mode === \"pixel\") return `<screen_index>${String(screen.screenIndex)}</screen_index>\n<coordinate_space>pixels</coordinate_space>\n<attached_size>${String(screen.image.width)}x${String(screen.image.height)}</attached_size>`;\n\treturn `<screen_index>${String(screen.screenIndex)}</screen_index>\n<coordinate_space>0-1000</coordinate_space>`;\n}\n",
+  "replace": "function boundsText(bounds) {\n\t// PATCH(computer-use): clipped envelope\n\treturn bounds === void 0 ? \"\" : `${String(bounds.x)},${String(bounds.y)} ${String(bounds.width)}x${String(bounds.height)}`;\n}\nfunction formatScreenEnvelope(screen, mode = \"millifraction\") {\n\tif (mode === \"pixel\") return `<screen_index>${String(screen.screenIndex)}</screen_index>\n<coordinate_space>pixels</coordinate_space>\n<attached_size>${String(screen.image?.width)}x${String(screen.image?.height)}</attached_size>`;\n\tconst clipped = screen.clipped === true ? `\n<clipped>true</clipped>\n<source_bounds>${boundsText(screen.sourceBounds)}</source_bounds>\n<visible_bounds>${boundsText(screen.visibleBounds)}</visible_bounds>` : \"\";\n\tconst degraded = screen.imageError === void 0 ? \"\" : `\n<image_unavailable>${screen.imageError}</image_unavailable>`;\n\treturn `<screen_index>${String(screen.screenIndex)}</screen_index>\n<coordinate_space>0-1000</coordinate_space>${clipped}${degraded}`;\n}\n"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-3 动作结果带 actionEffect",
+  "marker": "PATCH(computer-use): action effect",
+  "find": "\trememberObservation(session, observation.screens);\n\tconst note = unchangedActionNote(session, observation, settleMs);\n\treturn {\n\t\tscreens: [...observation.screens],\n\t\tforeground: compactForeground(observation.foreground),\n\t\tcaptures: [...observation.captures],\n\t\t...note === void 0 ? {} : { note }\n\t};",
+  "replace": "\trememberObservation(session, observation.screens);\n\t// PATCH(computer-use): action effect\n\tconst effect = actionEffectFor(session, observation, settleMs);\n\treturn {\n\t\tscreens: [...observation.screens],\n\t\tforeground: compactForeground(observation.foreground),\n\t\tcaptures: [...observation.captures],\n\t\tactionEffect: effect.actionEffect,\n\t\t...effect.note === void 0 ? {} : { note: effect.note }\n\t};"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-3 actionEffectFor 替换命令式 note",
+  "marker": "actionEffect: \"suspected_noop\"",
+  "find": "// PATCH(computer-use): unchanged detection\n// 动作后截图与上一次逐字节相同 → 提示模型别盲目重试（省 token、也避免连环失败）。\nconst lastCaptureDigest = new WeakMap();\nfunction unchangedActionNote(session, observation, settleMs) {\n\tconst data = observation.captures[0]?.data;\n\tif (session === void 0 || data === void 0) return;\n\tconst digest = createHash(\"sha1\").update(data).digest(\"hex\");\n\tconst previous = lastCaptureDigest.get(session);\n\tlastCaptureDigest.set(session, digest);\n\tif (settleMs <= 0 || previous === void 0 || previous !== digest) return;\n\treturn \"No visible change was detected after this action. It may not have taken effect (target covered, off-screen, or slow). Re-examine the screenshot, change approach (keyboard shortcut, menu, open_app), or stop and report; do not repeat the same action more than twice.\";\n}",
+  "replace": "// PATCH(computer-use): action effect\n// 动作后截图与上一次逐字节比较：只报事实（confirmed / suspected_noop / unverifiable），不训模型。\nconst lastCaptureDigest = new WeakMap();\nfunction actionEffectFor(session, observation, settleMs) {\n\tconst data = observation.captures[0]?.data;\n\tif (session === void 0 || data === void 0) return { actionEffect: \"unverifiable\" };\n\tconst digest = createHash(\"sha1\").update(data).digest(\"hex\");\n\tconst previous = lastCaptureDigest.get(session);\n\tlastCaptureDigest.set(session, digest);\n\tif (settleMs <= 0 || previous === void 0) return { actionEffect: \"unverifiable\" };\n\tif (previous === digest) return {\n\t\tactionEffect: \"suspected_noop\",\n\t\tnote: \"Screen unchanged after this action; the intended effect was not observed in the captured window.\"\n\t};\n\treturn { actionEffect: \"confirmed\" };\n}\n"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-3 工具结果透传 actionEffect",
+  "marker": "...observation.actionEffect === void 0 ? {} : { actionEffect: observation.actionEffect },",
+  "find": "function observedFields(session, observation) {\n\t// PATCH(computer-use): observed note\n\treturn {\n\t\tscreens: observation.screens,\n\t\tforeground: observation.foreground,\n\t\t...observation.note === void 0 ? {} : { note: observation.note },\n\t\t...coordinateOutcome(session, observation.screens)\n\t};\n}\n",
+  "replace": "function observedFields(session, observation) {\n\t// PATCH(computer-use): observed note\n\treturn {\n\t\tscreens: observation.screens,\n\t\tforeground: observation.foreground,\n\t\t...observation.actionEffect === void 0 ? {} : { actionEffect: observation.actionEffect },\n\t\t...observation.note === void 0 ? {} : { note: observation.note },\n\t\t...coordinateOutcome(session, observation.screens)\n\t};\n}\n"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-3 输出 schema 增加 actionEffect",
+  "marker": "actionEffect: {\n\t\ttype: \"string\",",
+  "find": "\tnote: { type: \"string\" }\n};",
+  "replace": "\tnote: { type: \"string\" },\n\t// PATCH(computer-use): action effect field\n\tactionEffect: {\n\t\ttype: \"string\",\n\t\tenum: [\"confirmed\", \"suspected_noop\", \"unverifiable\"]\n\t}\n};"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-4 工具名冲突注册前 fail fast",
+  "marker": "PATCH(computer-use): tool name guard",
+  "find": "function applyComputerUse(ctx, backend, config) {\n\tinstallCoordinateMode(ctx);",
+  "replace": "// PATCH(computer-use): tool name guard\n// 全局挂载最容易撞名：注册前发现同名工具就 fail fast，而不是静默半挂。\nconst COMPUTER_USE_TOOL_NAMES = [\n\t\"click\", \"input_text\", \"scroll\", \"hotkey\", \"wait\", \"long_wait\", \"screenshot\",\n\t\"long_press\", \"drag\", \"open_in_browser\", \"open_in_finder\", \"list_apps\", \"open_app\"\n];\nfunction existingToolNamed(tools, name) {\n\ttry {\n\t\tconst found = tools.get(name);\n\t\treturn found !== void 0 && found !== null;\n\t} catch {\n\t\treturn false;\n\t}\n}\nfunction applyComputerUse(ctx, backend, config) {\n\t// PATCH(computer-use): tool name guard\n\tif (ctx.tools !== void 0 && typeof ctx.tools.get === \"function\") {\n\t\tconst conflicts = COMPUTER_USE_TOOL_NAMES.filter((name) => existingToolNamed(ctx.tools, name));\n\t\tif (conflicts.length > 0) throw new Error(`computer-use: tool name conflict (${conflicts.join(\", \")}); another plugin already registered the same names`);\n\t}\n\tinstallCoordinateMode(ctx);"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-2 输出 schema 增加裁切与降级字段",
+  "marker": "PATCH(computer-use): clipped / degraded fields",
+  "find": "\t\t\tappName: { type: \"string\" },\n\t\t\timage: {\n\t\t\t\ttype: \"object\",\n\t\t\t\tadditionalProperties: false,\n\t\t\t\trequired: true,",
+  "replace": "\t\t\tappName: { type: \"string\" },\n\t\t\t// PATCH(computer-use): clipped / degraded fields\n\t\t\tclipped: { type: \"boolean\" },\n\t\t\timageError: { type: \"string\" },\n\t\t\tsourceBounds: BOUNDS_SCHEMA,\n\t\t\tvisibleBounds: BOUNDS_SCHEMA,\n\t\t\timage: {\n\t\t\t\ttype: \"object\",\n\t\t\t\tadditionalProperties: false,\n\t\t\t\trequired: false,"
+ },
+ {
+  "file": "lib/computer-use/index.js",
+  "name": "P0-2 bounds schema 常量",
+  "marker": "PATCH(computer-use): bounds schema",
+  "find": "const SCREENS_FIELD = {",
+  "replace": "// PATCH(computer-use): bounds schema\nconst BOUNDS_SCHEMA = {\n\ttype: \"object\",\n\tadditionalProperties: false,\n\tproperties: {\n\t\tx: { type: \"number\", required: true },\n\t\ty: { type: \"number\", required: true },\n\t\twidth: { type: \"number\", required: true },\n\t\theight: { type: \"number\", required: true }\n\t}\n};\nconst SCREENS_FIELD = {"
+ },
+ {
+  "file": "lib/computer-use/backend-xLwiz83E.js",
+  "name": "P0-2 跨屏窗口记录裁切信息",
+  "marker": "PATCH(computer-use): clipped metadata",
+  "find": "\tconst clipped = clipToDisplay(parsed.bounds, parsed.displayBounds);\n\tif (clipped === void 0) return void 0;\n\treturn {\n\t\tindex: 0,\n\t\tbounds: roundedRegion(clipped),\n\t\tscale: parsed.scale,",
+  "replace": "\tconst clipped = clipToDisplay(parsed.bounds, parsed.displayBounds);\n\tif (clipped === void 0) return void 0;\n\t// PATCH(computer-use): clipped metadata\n\tconst clippedByDisplay = clipped.x !== parsed.bounds.x || clipped.y !== parsed.bounds.y || clipped.width !== parsed.bounds.width || clipped.height !== parsed.bounds.height;\n\treturn {\n\t\tindex: 0,\n\t\tbounds: roundedRegion(clipped),\n\t\tscale: parsed.scale,\n\t\t...(clippedByDisplay ? { clipped: true, sourceBounds: roundedRegion(parsed.bounds), visibleBounds: roundedRegion(clipped) } : {}),"
+ }
+]

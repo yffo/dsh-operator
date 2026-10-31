@@ -45,3 +45,14 @@ dsh-operator
   `bundle`，JS 侧用 `open -b <bundleId>` 激活；未运行时仍走 `open -a/ -b` 启动。
 
 除上述补丁外，上游代码逻辑未改。上游更新时用 `scripts/sync-from-orb.sh <版本>` 重新同步，脚本会自动重打补丁。
+
+- 0.4.0 起按源码审计（docs/ai/2026-10-31-cu-audit-official.md）落地 P0：
+  - 策略提示词从上游约 8.4KB 精简到约 3.9KB（`lib/policy-slim.js`，仍保留上游
+    0–1000 坐标段原文，`backgroundPolicyFor()` 行为不变）。
+  - 观察截图存储失败时不再让整个工具报错：降级为纯文本观察，screens 里带
+    `imageError`，动作结果照常返回（`PATCH(computer-use): admission degrade`）。
+  - 跨屏/超出所属显示器的窗口观察带 `clipped`、`sourceBounds`、`visibleBounds` 元数据。
+  - 动作结果新增结构化 `actionEffect`：`confirmed` / `suspected_noop` /
+    `unverifiable`，`suspected_noop` 时附 note 要求换路而不是盲目重试。
+  - 注册工具前检查 `ctx.tools` 是否已有同名工具，冲突时 fail fast。
+  以上均为 vendored 代码补丁（`scripts/vendor-patches/p0.json`），由补丁器幂等应用。

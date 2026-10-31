@@ -102,7 +102,9 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - 13 个工具的 schema 是固定前缀，命中缓存后边际成本很低；**真正的大头是每次观察的截图**。
 - 本插件的截图链路：`screencapture -x -C -R <union> -t jpg`（Retina 2x）→ `sips -Z 1280` 只缩长边 + q80 重编码 → 作为附件入上下文。实测 2558×1639 → 1280×820，图片 token 约降到 1/4。
 - 坐标始终按原图归一化，缩放不改变点击精度。
-- 动作校验：动作后截图 sha1 与上一张相同（且动作有等待）时追加 `note`，提示词里同步要求「先验证目标、无变化换路、同一失败动作最多重试两次」。
+- 动作校验：动作后截图 sha1 与上一张相同（且动作有等待）时标 `suspected_noop` 并追加 `note`，提示词里同步要求「先验证目标、无变化换路、同一失败动作最多重试两次」。
+- 策略提示词：从上游约 8.4KB 精简到约 3.9KB（`lib/policy-slim.js`），每请求少约 1.3K token；坐标段仍是上游原文。
+- 稳定性：截图存储失败降级为纯文本观察（`screens[].imageError`），跨屏窗口带 `screens[].clipped` / `visibleBounds` / `sourceBounds`，工具结果带 `actionEffect`。
 
 ## 目录结构
 
@@ -112,10 +114,13 @@ dsh-operator/
 ├── cordis.patch.yml            # 三行全局挂载 + config
 ├── lib/
 │   ├── capture-downscale.js    # 截图缩放 / 重编码（本仓库代码）
+│   ├── policy-slim.js          # 精简策略提示词（本仓库代码）
 │   └── computer-use/           # vendored：上游 dsh-orb dist/computer-use
 └── scripts/
-    ├── apply-vendor-patches.mjs # 幂等补丁器（--check 只检查）
+    ├── apply-vendor-patches.mjs # 幂等补丁器（--check 只检查；补丁在 vendor-patches/*.json）
+    ├── vendor-patches/p0.json   # 0.4.0 P0 补丁集
     ├── sync-from-orb.sh         # 从 npm 同步上游 dist/computer-use 并重打补丁
+    ├── check-p0.mjs             # P0 冒烟检查（策略体积、字段、补丁幂等）
     └── test-shrink.mjs          # 截图缩放冒烟测试
 ```
 
@@ -125,6 +130,7 @@ dsh-operator/
 node --check index.js
 node scripts/apply-vendor-patches.mjs --check   # 幂等性
 node scripts/test-shrink.mjs                    # 13 项断言
+node scripts/check-p0.mjs                       # P0 冒烟检查
 bash -n scripts/sync-from-orb.sh
 ```
 
@@ -137,6 +143,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.4.0** — 按源码审计落地 P0：策略提示词 8.4KB → 3.9KB、截图存储失败降级为纯文本观察、跨屏窗口 `clipped` 元数据、结构化 `actionEffect`、工具名冲突检测。
 - **0.3.2** — 修复 `open_app` 激活已运行 App：JXA 没有 `activateWithOptions_` 桥接、中文显示名 `open -a` 也找不到，改走 `open -b <bundleId>`。
 - **0.3.1** — 修复 `list_apps` 恒为空 / `open_app` 无法激活已运行 App（JXA 的 `activationPolicy` 是字符串，上游用 `!== 0` 比较）。
 - **0.3.0** — 更名 `dsh-operator`（原 `dsh-orb-computer-use`），对外发布。
