@@ -156,6 +156,12 @@ lib/
 
 兼容策略：v2 工具先以**新名字**并行注册（`cu_observe`/`cu_act`…），旧名保留一个版本过渡，README 标注 deprecation；`capabilities` 配置可选 `{ browser: true, skills: true, planner: true }`。
 
+> **0.17 落地设计（2026-11-01 调研结论）**：直接做「薄别名」行不通——工具实现分散在两处：
+> - 本插件扩展工具（24 个）已统一注册进 `handlers` Map（`lib/operator-tools.js:240`），并按白名单供 `skill_run`/`plan_run` 回放；
+> - `screenshot`/`click`/`input_text`/`hotkey`/`scroll`/`drag`/`open_app`/`code_agent` 等 14 个来自 fork 的 `lib/computer-use/` 注册，不在 `handlers` 里。
+>
+> 因此 v2 收敛要先做「注册表统一」：给 fork 侧补一个 `toolHandlers` 映射并经 internals 暴露，再把两边合成一个 `registry`；`cu_observe`/`cu_act` 等 dispatcher 通过 registry 调用，输出 schema 取被合并工具字段的并集（`additionalProperties: false` 不能破）。顺序：① registry 统一（纯重构、行为不变）→ ② `cu_observe` pilot（合并 screenshot/list_windows/window_screenshot/zoom/verify）→ ③ `cu_act`（合 9 个动作类）→ ④ 旧名 deprecation 一版。每步都要重启验收，避免一次性大改。
+
 ### 4.4 技能沉淀（browser-use 思路）
 
 技能结构（`~/.dsh/dsh-operator/skills/<name>.json`）：
