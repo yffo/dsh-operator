@@ -110,6 +110,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 ## 已知限制
 
 - **guard 是 v1**：覆盖危险快捷键、`ax_press` / `ax_set_value` / `ax_menu` 的危险标题与路径；视觉点击的语义目标还没接 AX hit-test（v2 计划），别把它当完整的安全沙箱。
+- **`ax_menu` 需要目标 App 在前台**：后台 App 的菜单栏 AXPress 不会真正展开（实测后台调用返回成功但无效果）；需要菜单操作时先 `open_app` 再调用。
 
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 系列工具只在 macOS 注册；Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
 - **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
