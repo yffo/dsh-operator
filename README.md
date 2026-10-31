@@ -47,6 +47,14 @@ DSH 的 agent preset 是会话模板：会话创建时钉死工具集和提示�
 
 本插件在 profile 层挂三行（主插件 + `code_agent` 注册表 + `code_agent`），所以任何会话直接可用；想收紧时用 `ctx.tools.restrict(...)` 在会话侧做白名单，而不是拆插件。
 
+## 与官方 `computer-use` seam 的关系
+
+官方 `@deepseek-ai/dsh-computer-use` 是一个「单槽位 provider 注册表」：提供方（Cua Driver 等）在组合层挂载一次，工具由提供方自带。`dsh-operator` **不走 seam**，而是把工具直接注册在 host 层（全局工具），所以：
+
+- 单独用本插件时，不需要安装 seam 或任何 provider；
+- 如果同一份组合里已经挂了官方 seam + provider，两边都会有 GUI 工具，会出现工具重名/抢桌面，**二选一**（用本插件就禁用 seam/provider，反之亦然）；
+- 本插件的 `schema_version`、`<ax_snapshot>` 文本协议、`actionEffect` 字段都是自己的契约，不依赖官方 seam。
+
 ## 安装
 
 前置：DSH desktop `>=0.2.1-rc.2 <0.3.0`；Node `>=22.18`；macOS 需要给 DeepSeek Harness 授权**屏幕录制**和**辅助功能**。
@@ -93,6 +101,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - **安装即授权**：GUI 工具在工具内部不做逐次确认，所有会话都拥有桌面操作能力。敏感任务请在会话里明确约束（例如「只读、不要点确认/支付」）。
 - **截图会上传**：观察截图作为附件进入模型上下文，会发到当前模型服务商（DeepSeek 账户）。敏感窗口请先关闭或遮挡。
 - **权限继承 App**：插件以 DeepSeek Harness 的桌面权限运行（屏幕录制、辅助功能、控制其他 App）。代码在本仓库可审计，vendored 目录与补丁脚本都在。
+- **剪贴板**：`input_text` 走「快照剪贴板 → 写入 → 粘贴 → 恢复」链路，结束后尽量恢复原剪贴板（恢复失败会清空，避免残留测试文本）；剪贴板内容不会进审计日志、不会额外上传，但粘贴目标 App 可能读取。
 - **无网络上报**：只用本机文件与系统命令，插件自身不发送遥测。
 
 ## 已知限制
@@ -195,8 +204,8 @@ node scripts/test-shrink.mjs
 
 - 用 5 类真实任务（Finder、系统设置、浏览器、办公 App、多步跨应用）记录成功率 / token / 耗时的基线。
 - zoom 局部放大、历史截图轮转、多屏 DPI 修正（`list_windows` 已给出显示器 bounds/scale，剩下是截图侧）。
-- P1-10：AXPress 后台投递（只读 AX 已可用，动作仍走 HID）。
-- Windows 侧验证与做厚（当前仅 vendored 基础工具）。
+- Windows 侧验证与做厚（当前仅 vendored 基础工具；`list_windows` / `screenshot_window` / `verify_state` / `ax_press` 只在 macOS 注册）。
+- 可选：官方 seam provider 适配层（把本插件的能力包成 provider，供只用官方 seam 的组合选择）。
 
 ## 上游与许可
 
