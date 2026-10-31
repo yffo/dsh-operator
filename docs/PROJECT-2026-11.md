@@ -360,6 +360,12 @@ v2 做两件事：
 - 新增 `plan_delete` 工具（计划文件是用户数据，但冒烟/过期计划需要工具内清理；删除前先 `plan_list` 拿 id），扩展工具 23→24；输出字段纳入 schema 回归测试。
 - 清理：删掉 04:27 遗留的 `plan_run` 失败样本（归档 `archive/2026-11/scratch/`），失败目录归零。
 
+## 8.15 0.14.0：自适应策略提示（2026-11-01）
+
+- 把「复杂度自适应」从工具能力变成默认行为：`lib/policy-slim.js` 的策略段新增 Operator protocol——跨应用/登录/长任务先 `task_profile`（complex → `plan_create` + `plan_run` 逐阶段验证；simple → 直接执行，不加流程仪式）、优先复用 `skill_*`、浏览器优先 `browser_dom_*`（`browser_dom_probe` 先探通道）、`operator_status` 作自诊断入口。
+- 策略体积仍在 5KB 审计线内（新增约 0.6KB）；`test/policy-slim.test.mjs` 新增协议关键词断言；`npm test` 140 项全绿。
+- 说明：这是 system prompt 级引导，不改工具语义，回滚只需删这段文本。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972

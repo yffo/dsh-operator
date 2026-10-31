@@ -39,3 +39,9 @@ test("slimPolicy：不含未替换的占位符", () => {
 	assert.equal(policy.includes("${"), false);
 	assert.equal(policy.includes("undefined"), false);
 });
+test("slimPolicy：包含自适应 operator 协议（task_profile/plan/skill/browser_dom 指引）", () => {
+	const policy = slimPolicy("millifraction", MILLI, PIXEL);
+	for (const needle of ["task_profile", "plan_create", "plan_run", "skill_list", "skill_run", "skill_save", "browser_dom_probe", "browser_dom_snapshot", "operator_status"]) {
+		assert.ok(policy.includes(needle), `策略缺少 ${needle}`);
+	}
+});

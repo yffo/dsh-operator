@@ -285,6 +285,8 @@ node scripts/test-shrink.mjs
 
 - **0.13.3** — `operator_status` 显示真实版本（从 package.json 注入）；新增 `plan_delete` 工具（24 项扩展工具）。
 
+- **0.14.0** — 策略段加入「Operator protocol」：多应用/登录/长任务先 `task_profile`（complex → `plan_create`+`plan_run` 逐阶段验证，simple 直接做）；优先复用 `skill_*`；浏览器优先 `browser_dom_*`（先 `browser_dom_probe` 探通道）；`operator_status` 作自诊断入口。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
