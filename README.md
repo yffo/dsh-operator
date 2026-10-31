@@ -292,6 +292,8 @@ node scripts/test-shrink.mjs
 
 - **0.15.0** — Web 客户端卡片：`client/client.js`（手写、无构建链）给本插件的 11 个自定义工具注册紧凑行视图（工具名 / 状态点 / 一行摘要，点击展开参数与结果全文）；`package.json` 增加 `dsh.client = { platform: "web" }` 与 `exports["./client"]`；只依赖外壳的 `react` 基座，不引入 UI primitives，渲染失败降级为工具名+状态。
 
+- **0.15.1** — 客户端卡片改为**无 hooks**实现（原生 `<details>` 展开）：测试断言禁止 `useState/useEffect/...`。原因：宿主可能以普通函数方式调用 view，hooks 会触发 `Invalid hook call` 导致卡片空白；同时保留 try/catch 兜底（异常时显示 `card error: …` 而不是整卡消失）。`npm test` 147 项。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）

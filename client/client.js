@@ -108,7 +108,28 @@ window.__ModuleLoader__.load({
 			});
 		}
 
-		function OperatorRow({ block }) {
+		function OperatorRow(props) {
+			try {
+				return renderRow(props);
+			} catch (error) {
+				const message = error && error.message ? String(error.message) : String(error);
+				const tool = props && typeof props.toolName === "string" ? props.toolName : "operator";
+				return h(
+					"div",
+					{ "data-tool": tool, "data-state": "error", style: { padding: "5px 8px", fontSize: "0.92em", opacity: 0.8 } },
+					h(Dot, { state: "error" }),
+					" ",
+					tool,
+					" · card error: ",
+					message.slice(0, 160)
+				);
+			}
+		}
+
+		/** 无 hooks 版本：用原生 <details> 做展开，避免宿主以普通函数方式调用视图时 hook 报错。 */
+		function renderRow(props) {
+			const block = props && props.block;
+			if (block === null || typeof block !== "object") throw new Error(`unexpected block: ${typeof block}`);
 			const state = stateOf(block);
 			const settled = "kind" in block;
 			const argsRaw = (settled ? block.call?.argsRaw : block.argsRaw) ?? "";
@@ -116,102 +137,75 @@ window.__ModuleLoader__.load({
 			const output = resultText(block);
 			const tool = String(block.toolName ?? "operator");
 			const label = ROWS[tool] ?? tool;
-			const summary =
-				tool !== "operator" || output !== null ? summaryOf(tool, block, args, output) : "";
-			const [open, setOpen] = React.useState(false);
+			const summary = summaryOf(tool, block, args, output);
 			const expandable = args !== null || output !== null;
-			const toggle = () => {
-				if (expandable) setOpen((value) => !value);
-			};
-			const row = h(
-				"div",
+			const head = h(
+				"summary",
 				{
-					role: expandable ? "button" : void 0,
-					tabIndex: expandable ? 0 : void 0,
-					"aria-expanded": expandable ? open : void 0,
-					onClick: toggle,
-					onKeyDown: (event) => {
-						if (!expandable) return;
-						if (event.key === "Enter" || event.key === " ") {
-							event.preventDefault();
-							toggle();
-						}
-					},
 					style: {
 						display: "flex",
 						alignItems: "baseline",
 						gap: 8,
 						cursor: expandable ? "pointer" : "default",
+						listStyle: "none",
 						minWidth: 0
 					}
 				},
 				h(Dot, { state }),
+				h("span", { style: { fontWeight: 600, flex: "0 0 auto" } }, label),
 				h(
 					"span",
-					{ style: { fontWeight: 600, flex: "0 0 auto" } },
-					label
-				),
-				h(
-					"span",
-					{
-						style: {
-							opacity: 0.72,
-							overflow: "hidden",
-							textOverflow: "ellipsis",
-							whiteSpace: "nowrap",
-							minWidth: 0
-						}
-					},
+					{ style: { opacity: 0.72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 } },
 					summary
 				),
-				expandable ? h("span", { style: { opacity: 0.5, flex: "0 0 auto" } }, open ? "▴" : "▾") : null
+				expandable ? h("span", { style: { opacity: 0.5, flex: "0 0 auto", marginLeft: "auto" } }, "▾") : null
 			);
-			const details = open
+			const body = expandable
 				? h(
-						"div",
-						{ style: { marginTop: 6, display: "grid", gap: 6 } },
-						args !== null
-							? h(
-									"pre",
-									{
-										style: {
-											margin: 0,
-											padding: "6px 8px",
-											borderRadius: 6,
-											background: "color-mix(in srgb, currentColor 7%, transparent)",
-											overflow: "auto",
-											maxHeight: 200,
-											fontSize: "0.9em",
-											whiteSpace: "pre-wrap",
-											wordBreak: "break-word"
-										}
-									},
-									JSON.stringify(args, null, 2)
-								)
-							: null,
-						output !== null
-							? h(
-									"pre",
-									{
-										style: {
-											margin: 0,
-											padding: "6px 8px",
-											borderRadius: 6,
-											background: "color-mix(in srgb, currentColor 5%, transparent)",
-											overflow: "auto",
-											maxHeight: 260,
-											fontSize: "0.9em",
-											whiteSpace: "pre-wrap",
-											wordBreak: "break-word"
-										}
-									},
-									output
-								)
-							: null
-					)
+					"div",
+					{ style: { marginTop: 6, display: "grid", gap: 6 } },
+					args !== null
+						? h(
+							"pre",
+							{
+								style: {
+									margin: 0,
+									padding: "6px 8px",
+									borderRadius: 6,
+									background: "color-mix(in srgb, currentColor 7%, transparent)",
+									overflow: "auto",
+									maxHeight: 200,
+									fontSize: "0.9em",
+									whiteSpace: "pre-wrap",
+									wordBreak: "break-word"
+								}
+							},
+							JSON.stringify(args, null, 2)
+						)
+						: null,
+					output !== null
+						? h(
+							"pre",
+							{
+								style: {
+									margin: 0,
+									padding: "6px 8px",
+									borderRadius: 6,
+									background: "color-mix(in srgb, currentColor 5%, transparent)",
+									overflow: "auto",
+									maxHeight: 260,
+									fontSize: "0.9em",
+									whiteSpace: "pre-wrap",
+									wordBreak: "break-word"
+								}
+							},
+							output
+						)
+						: null
+				)
 				: null;
 			return h(
-				"div",
+				"details",
 				{
 					"data-tool": tool,
 					"data-state": state,
@@ -222,8 +216,8 @@ window.__ModuleLoader__.load({
 						fontSize: "0.92em"
 					}
 				},
-				row,
-				details
+				head,
+				body
 			);
 		}
 

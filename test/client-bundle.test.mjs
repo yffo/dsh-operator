@@ -46,6 +46,12 @@ test("client/client.js 为每个 operator 工具注册 keyed toolview 行", () =
 	}
 });
 
+test("client/client.js 不使用 React hooks（视图可能被宿主直接调用）", () => {
+	for (const hook of ["useState", "useEffect", "useMemo", "useRef", "useReducer"]) {
+		assert.ok(!source.includes(`${hook}(`), `客户端卡片不应使用 hooks：${hook}`);
+	}
+});
+
 test("client/client.js 只依赖 react 基座，不引入其他包", () => {
 	const requires = [...new Set([...source.matchAll(/require\((["'])([^"']+)\1\)/g)].map((match) => match[2]))];
 	assert.deepEqual(requires, ["react"], `客户端只允许 require('react')，实际：${requires.join(", ")}`);
