@@ -294,6 +294,8 @@ node scripts/test-shrink.mjs
 
 - **0.15.1** — 客户端卡片改为**无 hooks**实现（原生 `<details>` 展开）：测试断言禁止 `useState/useEffect/...`。原因：宿主可能以普通函数方式调用 view，hooks 会触发 `Invalid hook call` 导致卡片空白；同时保留 try/catch 兜底（异常时显示 `card error: …` 而不是整卡消失）。`npm test` 147 项。
 
+- **0.15.2** — 修卡片标题总是 `operator`：工具名应取 `props.toolName`（`block` 上没有 `toolName`），现在会显示 `Task profile` / `Operator status` / `Run plan` 等标签；`npm test` 148 项。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）

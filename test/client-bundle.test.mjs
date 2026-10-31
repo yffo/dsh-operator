@@ -52,6 +52,11 @@ test("client/client.js 不使用 React hooks（视图可能被宿主直接调用
 	}
 });
 
+test("client/client.js 从 props.toolName 取工具名（block 上没有该字段）", () => {
+	assert.ok(source.includes("props.toolName"), "应优先读取 props.toolName");
+	assert.ok(!source.includes("block.toolName ?? "), "block.toolName 只应作为兜底");
+});
+
 test("client/client.js 只依赖 react 基座，不引入其他包", () => {
 	const requires = [...new Set([...source.matchAll(/require\((["'])([^"']+)\1\)/g)].map((match) => match[2]))];
 	assert.deepEqual(requires, ["react"], `客户端只允许 require('react')，实际：${requires.join(", ")}`);

@@ -135,7 +135,7 @@ window.__ModuleLoader__.load({
 			const argsRaw = (settled ? block.call?.argsRaw : block.argsRaw) ?? "";
 			const args = parseArgs(argsRaw);
 			const output = resultText(block);
-			const tool = String(block.toolName ?? "operator");
+			const tool = String((props && props.toolName) || block.toolName || "operator");
 			const label = ROWS[tool] ?? tool;
 			const summary = summaryOf(tool, block, args, output);
 			const expandable = args !== null || output !== null;
