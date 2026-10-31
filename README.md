@@ -112,6 +112,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - **guard 是 v1**：覆盖危险快捷键、`ax_press` / `ax_set_value` / `ax_menu` 的危险标题与路径；视觉点击的语义目标还没接 AX hit-test（v2 计划），别把它当完整的安全沙箱。
 - **`ax_menu` 需要目标 App 在前台**：后台 App 的菜单栏 AXPress 不会真正展开（实测后台调用返回成功但无效果）；需要菜单操作时先 `open_app` 再调用。
 - **`ax_scroll` 的回退会把目标 App 提到前台**：原生支持 AX scroll action 的 App 走后台动作；不支持的 App（如 Finder 图标视图）会先提窗 + 激活再发全局滚轮，副作用是前台切换。
+- **`ax_scroll` 自动选容器时返回的 index 是 helper 原始索引**：可能与快照里格式化后的索引不同（匿名节点被过滤），只用于本次调用的回执，别拿去 `ax_press` 复用。
 - **`ax_scroll` 可以不给 index**：滚动容器常被匿名节点过滤或排在 120 节点之外；此时传 `expect_role`（可选 `expect_title`），工具会在新鲜树里自动选面积最大的匹配滚动容器（输出带 `resolved` 标记）。给 index 时仍以快照为准，必要时把 `axMaxNodes` 调大（如 400）。
 
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 系列工具只在 macOS 注册；Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
@@ -197,6 +198,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.10.3** — 修 `ax_press`/`ax_set_value` 带 `expect_role` 时被「自动选滚动容器」分支抢走的问题；滚动没找到容器时改为明确报错（不再静默退回整棵快照）；自动选容器输出带 `resolved` 标记。
 - **0.10.2** — `ax_scroll` 支持省略 index：按 `expect_role`/`expect_title` 在新鲜树里自动选面积最大的滚动容器（输出 `resolved` 标记），解决滚动容器被匿名过滤/排在 120 节点外时找不到索引的问题。
 - **0.10.1** — `ax_press` / `ax_set_value` 支持「索引漂移按 role/title 自动重定位」（带 `resolved` 标记，漂移超过 16 个节点仍拒绝）；新增 `ax_scroll`（AX 滚动动作，不支持时提窗 + 全局滚轮回退）；AX 快照匿名容器节点上限 40（超限裁剪并标 `truncated`）。daemon 常驻推迟到 0.10.2。
 - **0.10.0** — 新增 `ax_set_value`（后台 AX 写原生文本框，secure 字段拒绝）、`ax_menu`（按菜单路径后台触发，危险路径需 `confirm: true`）；AX 助手改为通用二进制（arm64 + x86_64）；AX 快照加 24000 字符正文预算（异常大树截断并标 `truncated`）。

@@ -571,16 +571,24 @@ func main() -> Int32 {
     // 有 index 时按索引（含 role/title 漂移重定位）；没有 index 但给了 expect-role/title 时
     // 自动选同角色里 frame 面积最大的容器，模型不必先做原始扫描。
     var scrollFound: FoundNode? = nil
+    var scrollResolved: String? = nil
+    // 只有「明确要滚动」才走自动选容器：press/set-value 也会带 expect-role/title，
+    // 不能让它们误入滚动分支（否则 ax_press 带 expect 时会被滚动抢走）。
+    let scrollAutoRequested = scrollIndex == nil && pressIndex == nil && setValueIndex == nil && (expectRole != nil || expectTitle != nil)
     if let target = scrollIndex {
         var found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth)
+        var resolved = false
         if found == nil || (expectRole != nil && found!.role != expectRole!) {
             if expectRole != nil || expectTitle != nil, let redo = findNodeByIdentity(app: app, role: expectRole, title: expectTitle, maxDepth: maxDepth, target: target) {
                 found = redo
+                resolved = true
             }
         }
         scrollFound = found
-    } else if expectRole != nil || expectTitle != nil {
+        if resolved { scrollResolved = resolvedNote }
+    } else if scrollAutoRequested {
         scrollFound = findLargestScrollable(app: app, role: expectRole ?? "AXScrollArea", title: expectTitle, maxDepth: maxDepth)
+        if scrollFound != nil { scrollResolved = "auto-picked largest scroll area" }
     }
     if let foundNode = scrollFound {
         let target = foundNode.index
@@ -596,7 +604,7 @@ func main() -> Int32 {
         let actionName = scrollPage ? pair.page : pair.line
         let result = AXUIElementPerformAction(foundNode.element, actionName as CFString)
         if result == .success {
-            return emit(encoder, ScrollOutput(ok: true, index: target, role: foundNode.role, direction: scrollDirection, page: scrollPage, resolved: nil, error: nil))
+            return emit(encoder, ScrollOutput(ok: true, index: target, role: foundNode.role, direction: scrollDirection, page: scrollPage, resolved: scrollResolved, error: nil))
         }
         // AXScrollArea 在部分 App（如 Finder 图标视图）不支持 AX 滚动动作，
         // 回退为把 scroll wheel 事件直接投递到目标进程（仍不移动光标/不抢焦点）。
@@ -604,6 +612,9 @@ func main() -> Int32 {
             return emit(encoder, fallback)
         }
         return emit(encoder, ScrollOutput(ok: false, index: target, role: foundNode.role, direction: scrollDirection, page: scrollPage, resolved: nil, error: "AXScroll failed (AXError \(result.rawValue)) and no scrollable frame for fallback"))
+    } else if scrollIndex != nil || scrollAutoRequested {
+        // 明确要滚动但没找到目标：必须报错，不能静默落回「快照模式」把整棵树当结果返回。
+        return emit(encoder, ScrollOutput(ok: false, index: scrollIndex ?? -1, role: "", direction: scrollDirection, page: scrollPage, resolved: nil, error: "no matching scroll area found"))
     }
 
     // 后台按路径点菜单
