@@ -29,7 +29,10 @@ window.__ModuleLoader__.load({
 			skill_run: "Run skill",
 			skill_list: "List skills",
 			operator_status: "Operator status",
-			browser_dom_probe: "Browser channels"
+			browser_dom_probe: "Browser channels",
+			browser_dom_snapshot: "DOM snapshot",
+			browser_dom_click: "DOM click",
+			browser_dom_fill: "DOM fill"
 		};
 		const KEYS = Object.keys(ROWS);
 
@@ -67,6 +70,12 @@ window.__ModuleLoader__.load({
 			return line.length > 160 ? `${line.slice(0, 157)}…` : line;
 		}
 
+		/** 结果文本首行常带 "tool: " 前缀，展示时去掉，避免和左侧标签重复。 */
+		function stripToolPrefix(line, tool) {
+			const prefix = `${tool}: `;
+			return line.startsWith(prefix) ? line.slice(prefix.length) : line;
+		}
+
 		/** 摘要：优先从结果里挑信息量最高的一行；运行中则用参数里最有辨识度的字段。 */
 		function summaryOf(tool, block, args, output) {
 			if (output !== null) {
@@ -74,9 +83,7 @@ window.__ModuleLoader__.load({
 					const versionLine = output.split("\n").find((line) => line.startsWith("dsh-operator")) ?? firstLine(output);
 					return firstLine(versionLine);
 				}
-				if (tool === "task_profile") return firstLine(output);
-				if (tool === "plan_list" || tool === "skill_list") return firstLine(output);
-				return firstLine(output);
+				return stripToolPrefix(firstLine(output), tool);
 			}
 			if (args !== null) {
 				for (const key of ["goal", "id", "name", "kind", "expect_title"]) {

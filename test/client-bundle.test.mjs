@@ -20,7 +20,10 @@ const ROW_TOOLS = [
 	"skill_run",
 	"skill_list",
 	"operator_status",
-	"browser_dom_probe"
+	"browser_dom_probe",
+	"browser_dom_snapshot",
+	"browser_dom_click",
+	"browser_dom_fill"
 ];
 
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
@@ -50,6 +53,10 @@ test("client/client.js 不使用 React hooks（视图可能被宿主直接调用
 	for (const hook of ["useState", "useEffect", "useMemo", "useRef", "useReducer"]) {
 		assert.ok(!source.includes(`${hook}(`), `客户端卡片不应使用 hooks：${hook}`);
 	}
+});
+
+test("client/client.js 结果摘要会去掉重复的工具名前缀", () => {
+	assert.ok(source.includes("stripToolPrefix"), "应有 stripToolPrefix 辅助函数");
 });
 
 test("client/client.js 从 props.toolName 取工具名（block 上没有该字段）", () => {

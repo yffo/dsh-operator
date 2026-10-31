@@ -296,6 +296,8 @@ node scripts/test-shrink.mjs
 
 - **0.15.2** — 修卡片标题总是 `operator`：工具名应取 `props.toolName`（`block` 上没有 `toolName`），现在会显示 `Task profile` / `Operator status` / `Run plan` 等标签；`npm test` 148 项。
 
+- **0.15.3** — 卡片覆盖扩到浏览器 DOM 工具（`DOM snapshot` / `DOM click` / `DOM fill`，连同 probe 共 14 个工具）；摘要去掉重复的 `tool: ` 前缀（如 `Task profile` 不再显示 `task_profile:` 开头）。`npm test` 149 项。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
