@@ -205,6 +205,8 @@ node scripts/test-shrink.mjs
 
 ## 路线图
 
+完整计划（0.9 / 0.10 / 0.11、架构评审、借鉴 vs 自研、测试矩阵）见 [docs/PLAN-2026-11.md](docs/PLAN-2026-11.md)。
+
 - 用 5 类真实任务（Finder、系统设置、浏览器、办公 App、多步跨应用）记录成功率 / token / 耗时的基线。
 - zoom 局部放大、历史截图轮转、多屏 DPI 修正（`list_windows` 已给出显示器 bounds/scale，剩下是截图侧）。
 - Windows 侧验证与做厚（当前仅 vendored 基础工具；`list_windows` / `screenshot_window` / `verify_state` / `ax_press` 只在 macOS 注册）。
