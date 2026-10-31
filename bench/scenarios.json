@@ -13,7 +13,10 @@
 			"layer": "L0",
 			"title": "打开系统设置并截图",
 			"goal": "前台切到系统设置，截一张图存到桌面",
-			"success": ["前台窗口是系统设置", "截图文件存在且非空"],
+			"success": [
+				"前台窗口是系统设置",
+				"截图文件存在且非空"
+			],
 			"stepsHint": "open_app → screenshot",
 			"timeoutSec": 60
 		},
@@ -22,7 +25,9 @@
 			"layer": "L0",
 			"title": "按 AX 快照索引点击原生按钮",
 			"goal": "用 ax_press 在系统设置里从「显示器」切到「通用」并确认面板变化",
-			"success": ["面板标题变成「通用」"],
+			"success": [
+				"面板标题变成「通用」"
+			],
 			"stepsHint": "ax_press",
 			"timeoutSec": 60
 		},
@@ -31,7 +36,10 @@
 			"layer": "L0",
 			"title": "页面内滚动",
 			"goal": "在墙纸设置页向下滚动一页并确认内容位移",
-			"success": ["滚动前后的可见区块不同", "滚动工具返回成功"],
+			"success": [
+				"滚动前后的可见区块不同",
+				"滚动工具返回成功"
+			],
 			"stepsHint": "ax_scroll",
 			"timeoutSec": 60
 		},
@@ -40,7 +48,9 @@
 			"layer": "L0",
 			"title": "输入框键入中文",
 			"goal": "在备忘录新建一条笔记并输入中文",
-			"success": ["笔记列表出现该文本"],
+			"success": [
+				"笔记列表出现该文本"
+			],
 			"stepsHint": "ax_press → input_text",
 			"timeoutSec": 60
 		},
@@ -49,7 +59,10 @@
 			"layer": "L1",
 			"title": "Finder 拖拽文件",
 			"goal": "把 hello.txt 拖进 dest 文件夹",
-			"success": ["dest/hello.txt 存在", "原位置不再有 hello.txt"],
+			"success": [
+				"dest/hello.txt 存在",
+				"原位置不再有 hello.txt"
+			],
 			"stepsHint": "open_in_finder → drag",
 			"timeoutSec": 90
 		},
@@ -58,7 +71,10 @@
 			"layer": "L1",
 			"title": "浏览器搜索并截图",
 			"goal": "在 Chrome 地址栏搜索指定关键词，等结果出现后截图",
-			"success": ["地址栏是搜索结果页", "截图文件存在"],
+			"success": [
+				"地址栏是搜索结果页",
+				"截图文件存在"
+			],
 			"stepsHint": "input_text → wait/screenshot",
 			"timeoutSec": 90
 		},
@@ -67,7 +83,10 @@
 			"layer": "L1",
 			"title": "日历新建并删除日程",
 			"goal": "在日历新建一条带标题的日程，再删掉",
-			"success": ["日程出现且标题正确", "删除后该日程不再出现"],
+			"success": [
+				"日程出现且标题正确",
+				"删除后该日程不再出现"
+			],
 			"stepsHint": "click(双击) → input_text → ax_press(confirm)",
 			"timeoutSec": 120
 		},
@@ -76,7 +95,10 @@
 			"layer": "L1",
 			"title": "用菜单项创建 Finder 窗口",
 			"goal": "通过 ax_menu 走「文件/新建访达窗口」创建窗口",
-			"success": ["Finder 窗口数 +1", "菜单调用返回成功"],
+			"success": [
+				"Finder 窗口数 +1",
+				"菜单调用返回成功"
+			],
 			"stepsHint": "ax_menu → list_windows",
 			"timeoutSec": 90
 		},
@@ -85,7 +107,9 @@
 			"layer": "L2",
 			"title": "两个 Finder 窗口间按 AX 坐标操作",
 			"goal": "多窗口并集截图下，用 AX 给的坐标点中指定文件夹",
-			"success": ["目标文件夹被选中/打开"],
+			"success": [
+				"目标文件夹被选中/打开"
+			],
 			"stepsHint": "open_in_finder ×2 → click",
 			"timeoutSec": 120
 		},
@@ -94,7 +118,10 @@
 			"layer": "L2",
 			"title": "窗口截图与整屏截图切换",
 			"goal": "先用 list_windows 找到目标窗口，再截该窗口（不是整屏）",
-			"success": ["截图只包含目标窗口", "返回的 window_id 一致"],
+			"success": [
+				"截图只包含目标窗口",
+				"返回的 window_id 一致"
+			],
 			"stepsHint": "list_windows → screenshot_window",
 			"timeoutSec": 90
 		},
@@ -103,7 +130,10 @@
 			"layer": "L2",
 			"title": "浏览器搜到信息后写进备忘录",
 			"goal": "从搜索结果页面读取标题，切到备忘录写入该标题",
-			"success": ["备忘录里有该标题文本", "浏览器前台状态被恢复"],
+			"success": [
+				"备忘录里有该标题文本",
+				"浏览器前台状态被恢复"
+			],
 			"stepsHint": "input_text → observe → open_app → input_text",
 			"timeoutSec": 150
 		},
@@ -112,7 +142,9 @@
 			"layer": "L2",
 			"title": "跨应用验证：系统设置值读回",
 			"goal": "打开系统设置显示器面板，用 verify_state 断言「内建显示器」存在",
-			"success": ["verify_state 返回 verified，且事实与截图一致"],
+			"success": [
+				"verify_state 返回 verified，且事实与截图一致"
+			],
 			"stepsHint": "open_app → verify_state",
 			"timeoutSec": 90
 		},
@@ -121,7 +153,10 @@
 			"layer": "exception",
 			"title": "守卫拦截危险快捷键",
 			"goal": "尝试发送 cmd+q，必须被 guard 拒绝而不是真的退出",
-			"success": ["返回 guard 拒绝错误", "应用仍在运行"],
+			"success": [
+				"返回 guard 拒绝错误",
+				"应用仍在运行"
+			],
 			"stepsHint": "hotkey",
 			"timeoutSec": 60
 		},
@@ -130,7 +165,10 @@
 			"layer": "exception",
 			"title": "过期索引显式失败",
 			"goal": "用一个不可能的 AX 索引 + 错误 expect_title 调 ax_press，必须报错且不误点",
-			"success": ["返回 pressed:false 或错误说明", "界面无变化"],
+			"success": [
+				"返回 pressed:false 或错误说明",
+				"界面无变化"
+			],
 			"stepsHint": "ax_press",
 			"timeoutSec": 60
 		},
@@ -139,9 +177,196 @@
 			"layer": "exception",
 			"title": "失败样本被记录且脱敏",
 			"goal": "触发一次失败动作后检查 ~/.dsh/dsh-operator/failures 的记录",
-			"success": ["失败行含 tool/kind/message", "不含输入文本原文", "可通过 scripts/failures.mjs --json 读出"],
+			"success": [
+				"失败行含 tool/kind/message",
+				"不含输入文本原文",
+				"可通过 scripts/failures.mjs --json 读出"
+			],
 			"stepsHint": "ax_press(失败) → bash: node scripts/failures.mjs --json",
 			"timeoutSec": 90
+		},
+		{
+			"id": "L0-05",
+			"layer": "L0",
+			"title": "读一个窗口的标题并据此判断前台 App",
+			"goal": "open_app 访达 后用 verify_state frontmost_app 确认前台是访达",
+			"success": [
+				"前台 App 变成访达",
+				"verify_state 返回 verified"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L0-06",
+			"layer": "L0",
+			"title": "按 AX 快照节点后台按一个按钮",
+			"goal": "在系统设置侧边栏用 ax_press 按「外观」，并用截图确认面板切换",
+			"success": [
+				"面板切到外观",
+				"动作结果 pressed:true"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L0-07",
+			"layer": "L0",
+			"title": "把当前窗口局部放大看小字",
+			"goal": "对系统设置侧边栏用 zoom_region 截一小块，确认文字可读",
+			"success": [
+				"zoom_region 返回图片",
+				"文字可辨"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L0-08",
+			"layer": "L0",
+			"title": "查询所有可见窗口并列出窗口 id",
+			"goal": "list_windows 输出至少 1 个窗口 + 显示器信息",
+			"success": [
+				"返回 windows>=1",
+				"每行有 window_id"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L1-05",
+			"layer": "L1",
+			"title": "在备忘录里新建一条并删除",
+			"goal": "打开备忘录 → 新建 → 输入标题 → 删除该条",
+			"success": [
+				"新建的备忘录出现",
+				"随后被删除，列表恢复"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L1-06",
+			"layer": "L1",
+			"title": "在日历里建一个测试日程再删除",
+			"goal": "打开日历 → 双击今天 → 输入标题 → 删除按钮",
+			"success": [
+				"日程出现",
+				"删除后消失"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L1-07",
+			"layer": "L1",
+			"title": "在系统设置里切换三个面板",
+			"goal": "依次 ax_press 通用/外观/显示器并每次截图确认",
+			"success": [
+				"三个面板标题依次正确"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L1-08",
+			"layer": "L1",
+			"title": "用 skill_save 存一个两步技能再删除",
+			"goal": "保存 smoke 技能 → list 显示 → delete",
+			"success": [
+				"skill_list 有该技能",
+				"delete 后消失"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L2-05",
+			"layer": "L2",
+			"title": "两个 Finder 窗口间拖文件",
+			"goal": "打开两个目录窗口 → 用 AX 坐标拖一个文件到另一窗口的文件夹",
+			"success": [
+				"文件出现在目标目录"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L2-06",
+			"layer": "L2",
+			"title": "浏览器 + 备忘录跨应用搬运文本",
+			"goal": "在浏览器读一段文本 → 在备忘录里输入等长文本",
+			"success": [
+				"备忘录内容与浏览器一致"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L2-07",
+			"layer": "L2",
+			"title": "跨应用建计划并推进状态",
+			"goal": "task_profile 判档 → plan_create → plan_update done",
+			"success": [
+				"计划 status 变 done",
+				"文件保存于 plans 目录"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "L2-08",
+			"layer": "L2",
+			"title": "先读 DOM 再截屏核对",
+			"goal": "Chrome 前台时 browser_dom_snapshot（或 CDP）与 screenshot 对照标题",
+			"success": [
+				"DOM title 与截图标题一致"
+			],
+			"timeoutSec": 120
+		},
+		{
+			"id": "EX-04",
+			"layer": "exception",
+			"title": "拒绝未确认的危险快捷键",
+			"goal": "hotkey cmd+q 必须被 guard 拒绝",
+			"success": [
+				"返回 guarded 错误",
+				"App 未退出"
+			],
+			"timeoutSec": 180
+		},
+		{
+			"id": "EX-05",
+			"layer": "exception",
+			"title": "不存在元素上的 ax_press 要显式失败",
+			"goal": "给一个不存在的 index / 标题调用 ax_press",
+			"success": [
+				"返回 pressed:false",
+				"失败样本分类 not_found"
+			],
+			"timeoutSec": 180
+		},
+		{
+			"id": "EX-06",
+			"layer": "exception",
+			"title": "浏览器通道关闭时给出菜单提示",
+			"goal": "AppleScript JS 关闭 + 无 CDP 端口时调用 browser_dom_snapshot",
+			"success": [
+				"available:false",
+				"包含菜单路径提示"
+			],
+			"timeoutSec": 180
+		},
+		{
+			"id": "EX-07",
+			"layer": "exception",
+			"title": "越界 plan_update 报错但不崩",
+			"goal": "给不存在的 stepId 调 plan_update",
+			"success": [
+				"返回 ok:false",
+				"错误信息含 step not found"
+			],
+			"timeoutSec": 180
+		},
+		{
+			"id": "EX-08",
+			"layer": "exception",
+			"title": "滚动到不存在的容器要报错而非静默",
+			"goal": "ax_scroll 指定不匹配的 expect_title",
+			"success": [
+				"返回 no matching scroll area found",
+				"无整棵快照输出"
+			],
+			"timeoutSec": 180
 		}
 	]
 }

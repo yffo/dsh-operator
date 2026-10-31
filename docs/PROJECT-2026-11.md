@@ -321,6 +321,14 @@ v2 做两件事：
 - 限制：CDP 需用户自己以调试端口启动 Chrome（插件不接管进程/不碰日常 profile）；AppleScript 通道仍默认关闭需菜单开关；技能回放执行器推迟到 0.12。
 - 下一步（0.12）：复杂度分层与规划器、技能回放、自定义 toolview 卡片、30+ 场景矩阵；之后多屏 DPI、Windows、seam 适配层。
 
+## 8.7 0.12.0 交付状态（2026-11-01）
+
+- 复杂度分层：`lib/task-profile.js`（`classifyTask`：信号词 + 文本长度 + 步数估计打分，输出 simple/standard/complex 与 maxSteps/requirePlan/verifyAfterEach/allowBatch），工具 `task_profile`。
+- 计划器：`lib/planner.js`（`createPlan/validatePlan/listPlans/readPlan/updatePlan/deletePlan/configurePlanStore`，计划落盘 `~/.dsh/dsh-operator/plans/<id>.json`，敏感键拒收、原子写、30 天清理留给 0.12.1），工具 `plan_create`/`plan_update`（步骤状态 pending|running|done|failed|skipped，failed 使整计划 failed）。
+- 场景矩阵：`bench/scenarios.json` 15→32 条（L0/L1/L2/exception 各 8），校验测试改为要求≥30 且每层≥8。
+- 测试：`test/task-profile.test.mjs` 6 项、`test/planner.test.mjs` 4 项；`npm test` **126 项全绿**；扩展工具 16→19。
+- 未做（后续）：计划执行器（按步调用工具 + 中断恢复）、技能回放执行器、自定义 toolview 卡片、30+ 场景跑分脚本——归 0.12.1/0.12.2。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972

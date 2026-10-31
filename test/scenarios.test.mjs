@@ -13,10 +13,10 @@ test("scenarios.json：分层与数量", () => {
 	assert.ok(data.layers && typeof data.layers === "object");
 	for (const layer of LAYERS) assert.ok(typeof data.layers[layer] === "string" && data.layers[layer].length > 0, `缺 layer 说明：${layer}`);
 	assert.ok(Array.isArray(data.scenarios));
-	assert.ok(data.scenarios.length >= 15, "场景骨架至少 15 条");
+	assert.ok(data.scenarios.length >= 30, "场景矩阵至少 30 条");
 	for (const layer of LAYERS) {
 		const count = data.scenarios.filter((item) => item.layer === layer).length;
-		assert.ok(count >= 3, `layer ${layer} 至少 3 条，实际 ${count}`);
+		assert.ok(count >= 8, `layer ${layer} 至少 8 条，实际 ${count}`);
 	}
 });
 

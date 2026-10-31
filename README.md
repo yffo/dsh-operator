@@ -269,6 +269,8 @@ node scripts/test-shrink.mjs
 - **0.2.1** — 改为 host 层全局挂载（不再依赖 agent preset）。
 - **0.2.0** — 从 dsh-orb 抽出 computer-use 能力层，preset 形态首发。
 
+- **0.12.0** — 复杂度分层与计划器：新增 `task_profile`（simple/standard/complex 三档，给出步数预算/是否先规划/校验节奏）、`plan_create`/`plan_update`（计划落盘 `~/.dsh/dsh-operator/plans/<id>.json`，步骤状态可跨轮次推进）；`bench/scenarios.json` 扩到 32 条（L0/L1/L2/异常各 8）；扩展工具 19 个；测试 126 项。JS 改动，需重启 App 后生效。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
