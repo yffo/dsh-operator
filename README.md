@@ -198,6 +198,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.10.5** — 观察链路并行化：AX 快照与屏幕截图并行启动（AX spawn 实测 60–80ms，原本串在截图之后），一次观察省一次串行等待；daemon 常驻据此继续暂缓（收益 <100ms/次，不值子进程生命周期风险）。
 - **0.10.4** — Windows/Linux 守卫：扩展工具跳过时打印明确警告；`sips` 降采样只在 darwin 执行，非 macOS 原样返回截图（未在 Windows 真机验证）。
 - **0.10.3** — 修 `ax_press`/`ax_set_value` 带 `expect_role` 时被「自动选滚动容器」分支抢走的问题；滚动没找到容器时改为明确报错（不再静默退回整棵快照）；自动选容器输出带 `resolved` 标记。
 - **0.10.2** — `ax_scroll` 支持省略 index：按 `expect_role`/`expect_title` 在新鲜树里自动选面积最大的滚动容器（输出 `resolved` 标记），解决滚动容器被匿名过滤/排在 120 节点外时找不到索引的问题。
