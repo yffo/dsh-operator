@@ -82,6 +82,15 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 > pnpm 用硬链接把插件装进 profile。改完源码后如果行为没变，最稳的做法是 `remove` 再 `add` 一次；只改 `lib/` 里的 JS 通常下次加载就生效。
 
+## 浏览器 DOM 通道（0.11.1，实验）
+
+`lib/browser-dom.js` 是 0.11.2 技能库/0.12 规划器要用的浏览器底座，两条后端：
+
+1. **AppleScript**（零重启、保留登录态）：需要 Chrome 菜单「查看 → 开发者 → 允许 Apple 事件中的 JavaScript」打开一次；该开关关闭时 `probeAppleScriptDom` 会返回 `disabled` 并给出 `APPLESCRIPT_DISABLED_HINT`。
+2. **CDP**（自动化友好）：`spawn Chrome --headless=new --remote-debugging-port=0 --user-data-dir=<临时/独立 profile>`，读 `DevToolsActivePort` → `cdpConnect`（Node ≥22 自带 WebSocket）→ `Target.createTarget/attachToTarget(flatten)` → `Runtime.evaluate`。`npm run browser:spike` 可一键验证这条链路（临时 profile、跑完清理，不碰日常 Chrome）。
+
+安全边界：只读取页面可见文本/链接/控件，不读 Cookie/密码、不伪造指纹、遇到风控挑战停手并转人工（见 `docs/PROJECT-2026-11.md` §8.1）。
+
 ## 配置
 
 `cordis.patch.yml` 里给主插件传 config：
