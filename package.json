@@ -37,7 +37,8 @@
 		"failures": "node scripts/failures.mjs",
 		"browser:spike": "node scripts/browser-spike.mjs",
 		"scenarios": "node scripts/scenarios.mjs",
-		"release": "node scripts/release.mjs"
+		"release": "node scripts/release.mjs",
+		"preflight": "node scripts/preflight.mjs"
 	},
 	"keywords": [
 		"dsh",

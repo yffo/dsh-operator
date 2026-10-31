@@ -217,6 +217,8 @@ v2 做两件事：
 - 保留 DSH 契约测试（schema/additionalProperties/defineTool 注册/apply 注入），DSH 升级先跑。
 - 官方 seam：保持「全局挂载」为默认；`seam provider` 作为可选独立包（需契约稳定后）。
 
+**0.20.0 发布工程补强**：`npm run preflight` 固化 headless 引导预检（隔离 DSH_HOME），release 自动执行——把「重启后才发现插件加载失败」的成本前移。
+
 ## 5. 测试与验收（要能立得住）
 
 ### 5.1 指标

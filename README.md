@@ -134,6 +134,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 ```bash
 npm run doctor              # 一条命令自检：版本/挂载/helper/权限/目录（--json 可贴 issue）
+npm run preflight           # 隔离 DSH_HOME 的 headless 引导预检（插件加载错误在重启前暴露）
 npm run failures            # 失败样本汇总（--json / --files / --dir / --top N）
 ```
 
@@ -309,6 +310,8 @@ node scripts/test-shrink.mjs
 - **0.18.1** — 修 `cu_act` 参数里的 `minimum/maximum`（参数 DSL 不支持）；发布流程固定为「先 headless 引导预验，再让用户重启」。
 
 - **0.18.2** — 修 `cu_observe` 入参必填串味：合并成员工具的 `required` 被带进并集，导致 `windows/screenshot` 也强制要 `window_id/kind`；改为合并后全部可选，必填按 action 在 `requiredByAction` 校验。
+
+- **0.20.0** — 加载预检固化：新增 `scripts/preflight.mjs`（`npm run preflight`）——在**隔离的临时 DSH_HOME** 里用 headless profile 真实引导插件，`JsonSchemaError`/`plugin apply failed` 等加载错误直接判失败；`release` 流程在测试后自动跑预检（`--skip-preflight` 可跳过，dsh 缺失时自动 skip）。起因：0.10.5 / 0.17.0 / 0.18.0 三次加载问题都是重启后才暴露。`npm test` 164 项。
 
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 

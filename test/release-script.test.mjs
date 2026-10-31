@@ -25,7 +25,7 @@ test("validateVersion 只接受 semver-ish 版本号", () => {
 
 test("parseReleaseArgs 解析版本与开关，未知/多余参数报错", () => {
 	const args = parseReleaseArgs(["0.16.0", "--yes", "--install", "--skip-tests"]);
-	assert.deepEqual(args, { version: "0.16.0", yes: true, dryRun: false, install: true, skipTests: true });
+	assert.deepEqual(args, { version: "0.16.0", yes: true, dryRun: false, install: true, skipTests: true, skipPreflight: false });
 	assert.equal(parseReleaseArgs(["0.16.0", "--dry-run"]).dryRun, true);
 	assert.throws(() => parseReleaseArgs(["--nope", "0.16.0"]), /unknown flag/);
 	assert.throws(() => parseReleaseArgs(["0.16.0", "0.17.0"]), /unexpected argument/);
@@ -35,12 +35,14 @@ test("planRelease 生成预检/改版本/测试/提交/打 tag/推送步骤，--
 	const plain = planRelease({ version: "9.9.9", skipTests: false, install: false });
 	assert.deepEqual(
 		plain.map((step) => step.id),
-		["preflight", "bump", "test", "commit", "tag", "push"]
+		["preflight", "bump", "test", "boot", "commit", "tag", "push"]
 	);
 	assert.match(plain.find((step) => step.id === "commit").detail, /v9\.9\.9/);
 	const full = planRelease({ version: "9.9.9", skipTests: true, install: true });
 	assert.ok(full.some((step) => step.id === "install"));
 	assert.match(full.find((step) => step.id === "test").detail, /skip-tests/);
+	assert.match(planRelease({ version: "9.9.9", skipTests: false, skipPreflight: true }).find((step) => step.id === "boot").detail, /skip-preflight/);
+	assert.equal(parseReleaseArgs(["0.16.0", "--skip-preflight"]).skipPreflight, true);
 });
 
 test("脚本安全边界：默认 dry-run、--yes 才执行、工作区不干净拒绝、tag 已存在拒绝", () => {

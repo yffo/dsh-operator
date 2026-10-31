@@ -16,9 +16,11 @@
  *   npm run release -- 0.16.0 --yes      # 真发：改版本 + 测试 + commit + tag + push
  *   npm run release -- 0.16.0 --yes --install   # 再同步安装副本并跑 doctor
  *   npm run release -- 0.16.0 --yes --skip-tests --install
+ *   npm run release -- 0.16.0 --yes --skip-preflight   # 跳过 headless 引导预验
  */
 
 import { execFileSync } from "node:child_process";
+import { runPreflight } from "./preflight.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -37,13 +39,14 @@ export function validateVersion(version) {
 
 /** 解析 CLI 参数；未知 flag / 多余位置参数直接抛错，避免静默误操作。 */
 export function parseReleaseArgs(argv) {
-	const args = { version: void 0, yes: false, dryRun: false, install: false, skipTests: false };
+	const args = { version: void 0, yes: false, dryRun: false, install: false, skipTests: false, skipPreflight: false };
 	for (const raw of argv) {
 		const arg = String(raw);
 		if (arg === "--yes") args.yes = true;
 		else if (arg === "--dry-run") args.dryRun = true;
 		else if (arg === "--install") args.install = true;
 		else if (arg === "--skip-tests") args.skipTests = true;
+		else if (arg === "--skip-preflight") args.skipPreflight = true;
 		else if (arg.startsWith("--")) throw new Error(`unknown flag: ${arg}`);
 		else if (args.version === void 0) args.version = arg;
 		else throw new Error(`unexpected argument: ${arg}`);
@@ -94,6 +97,7 @@ export function planRelease(args) {
 		{ id: "preflight", detail: "工作区干净（git status --porcelain 为空）" },
 		{ id: "bump", detail: `package.json ${currentVersion()} → ${args.version}` },
 		{ id: "test", detail: args.skipTests ? "跳过 npm test（--skip-tests）" : "npm test 全量" },
+		{ id: "boot", detail: args.skipPreflight ? "跳过 headless 引导预验（--skip-preflight）" : "headless 引导预验（隔离 DSH_HOME，dsh 缺失时自动跳过）" },
 		{ id: "commit", detail: `git add package.json && git commit -m "release: v${args.version}"` },
 		{ id: "tag", detail: `git tag -a v${args.version}` },
 		{ id: "push", detail: "git push origin main --tags" }
@@ -129,6 +133,17 @@ function main() {
 	}
 	setVersion(args.version);
 	if (!args.skipTests) run("npm", ["test"]);
+	if (!args.skipPreflight) {
+		const result = runPreflight({ repo: root });
+		if (result.skipped) console.log(`preflight skipped: ${result.reason}`);
+		else if (!result.ok) {
+			console.error("preflight FAILED（headless 引导发现插件加载错误），中止发布：");
+			for (const line of result.hardErrors ?? []) console.error(`  ${line}`);
+			process.exit(1);
+		} else {
+			console.log("preflight ok");
+		}
+	}
 	run("git", ["add", "package.json"]);
 	run("git", ["commit", "-m", `release: v${args.version}`]);
 	run("git", ["tag", "-a", `v${args.version}`, "-m", `dsh-operator ${args.version}`]);
