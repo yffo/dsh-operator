@@ -1,0 +1,55 @@
+{
+  "name": "dsh-operator",
+  "version": "0.3.0",
+  "description": "给每个 DSH 会话一双手：全局 Computer Use——13 个桌面 GUI 工具 + 后台 code_agent，观察截图自动降 token，动作失败有校验提示",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./code-agent": "./lib/computer-use/code-agent.js",
+    "./code-agent-registry": "./lib/computer-use/code-agent-registry.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "scripts"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "computer-use",
+    "desktop",
+    "gui",
+    "agent",
+    "plugin"
+  ],
+  "homepage": "https://github.com/yffo/dsh-operator#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yffo/dsh-operator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yffo/dsh-operator/issues"
+  },
+  "license": "MIT",
+  "author": "yffto (https://github.com/yffo)；上游 dsh-orb 作者 mini-yifan",
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=22.18.0",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

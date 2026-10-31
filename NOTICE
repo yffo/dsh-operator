@@ -1,0 +1,35 @@
+dsh-operator
+============
+
+原名 dsh-orb-computer-use（0.2.x）。本插件的计算机操作能力层
+（`lib/computer-use/` 与工具提示词）来自：
+
+  dsh-orb v0.2.0
+  https://github.com/mini-yifan/dsh-orb-cordis
+  Copyright (c) 2026 mini-yifan
+  MIT License（见同目录 LICENSE）
+
+具体改动：
+
+- 只抽取 `dist/computer-use/`（13 个 GUI 工具、coordinate mode、code_agent、
+  code_agent 注册表与上游工具提示词），没有 ball host、Electron helper、
+  语音、native-selection、主窗口设置页，也没有 `client.js` 前端注入。
+- `cordis.patch.yml` 由上游同名文件裁剪而来：删掉 `orb-host`、`ui-settings-orb`
+  与 `preset-computer-use` 三行，改成本包的三行全局挂载（主插件 + code_agent
+  注册表 + code_agent），插件名改为本包名。
+- 给 `macos-sck-capture` 补执行位（上游 tarball 解出是 0644，dsh-orb issue #40）。
+- 依赖 `zod` 从上游声明的 `^4.4.3` 改为 `^3.25.76`：vendored 代码只用
+  `z.object` / `z.enum` / `.strict()`，与 zod 3 行为一致，且复用 profile 里
+  已经存在的 zod 3，避免同一 profile 出现两份 zod。
+- 新增入口 `index.js`（执行位自愈 + 转发插件导出）与本说明文件。
+- 0.2.2 起对 vendored 代码打了本包的优化补丁（由 `scripts/apply-vendor-patches.mjs`
+  幂等应用，每个补丁带 `PATCH(computer-use)` 标记）：
+  - 观察截图在交给模型前用 `sips` 缩到长边 ≤ `captureMaxEdge`（默认 1280）并按
+    `jpegQuality`（默认 80）重编码；失败自动回退原图。实现位于本包
+    `lib/capture-downscale.js`，不在 vendored 目录内。
+  - 动作后截图与上一次逐字节相同（且动作有等待）时，工具结果附加 `note` 提示，
+    要求模型复核而不是盲目重试；策略提示词同步加入「先验证目标、无变化换路、
+    同一失败动作最多重试两次」的纪律。
+  - 新增 `Config` / `ResolvedComputerUseConfig` 的 `captureMaxEdge`、`jpegQuality` 字段。
+
+除上述补丁外，上游代码逻辑未改。上游更新时用 `scripts/sync-from-orb.sh <版本>` 重新同步，脚本会自动重打补丁。
