@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14]
+        os: [macos-15]
         node: [20, 22]
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +45,6 @@ jobs:
         if: matrix.node == 22
         uses: actions/upload-artifact@v4
         with:
-          name: ax-snapshot-${{ matrix.os }}
+          name: ax-snapshot-${{ matrix.os }}-node${{ matrix.node }}
           path: lib/bin/ax-snapshot
           retention-days: 7
