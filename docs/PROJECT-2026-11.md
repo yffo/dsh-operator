@@ -329,6 +329,13 @@ v2 做两件事：
 - 测试：`test/task-profile.test.mjs` 6 项、`test/planner.test.mjs` 4 项；`npm test` **126 项全绿**；扩展工具 16→19。
 - 未做（后续）：计划执行器（按步调用工具 + 中断恢复）、技能回放执行器、自定义 toolview 卡片、30+ 场景跑分脚本——归 0.12.1/0.12.2。
 
+## 8.8 0.12.1 交付状态（2026-11-01）
+
+- 步骤执行器 `lib/executor.js`：`executeSteps` 顺序执行 {tool,args} 列表；只允许本插件扩展工具（拒绝 click/input_text 等基础工具与递归 skill_run/plan_run）；`stopOnError` 默认 true、失败后续步标 skipped；`dryRun` 只预览；结果只留状态 + ≤200 字符摘要（不回显图片/base64）。
+- 工具：`skill_run`（回放技能库序列，支持 dryRun/stopOnError）、`plan_run`（执行计划 pending 步骤，逐 step 写回 pending→running→done/failed，失败即停）；扩展工具 19→21。
+- 测试：`test/executor.test.mjs` 6 项（顺序执行/失败即停/继续执行/未授权工具与递归拒绝/dryRun/摘要裁剪）；`npm test` **132 项全绿**。
+- 已知限制：基础 GUI 工具（click/input_text/drag 等）不在本执行器白名单，含这些步骤的计划/技能会显式失败，需要模型手动执行；自定义 toolview 卡片仍未开始。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972
