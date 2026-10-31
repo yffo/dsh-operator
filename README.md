@@ -324,6 +324,7 @@ node scripts/test-shrink.mjs
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
 - 兼容性矩阵：[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)（DSH 版本 / 平台 / 运行时）
 - 发布流程：[docs/RELEASE.md](docs/RELEASE.md)（一条命令发版）
+- 场景矩阵真跑记录：[docs/SCENARIOS-2026-11.md](docs/SCENARIOS-2026-11.md)（32/32 全过，含 window_move/ax_menu 双窗口拖拽）
 - v1 路线图与已完成项：[docs/PLAN-2026-11.md](docs/PLAN-2026-11.md)
 
 完整计划（0.9 / 0.10 / 0.11、架构评审、借鉴 vs 自研、测试矩阵）见 [docs/PLAN-2026-11.md](docs/PLAN-2026-11.md)。
