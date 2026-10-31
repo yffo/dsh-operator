@@ -1,0 +1,58 @@
+[
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "导入 AX 观察模块",
+		"marker": "PATCH(computer-use): ax observer import",
+		"find": "import { withCaptureDownscale } from \"../capture-downscale.js\";",
+		"replace": "import { withCaptureDownscale } from \"../capture-downscale.js\";\n// PATCH(computer-use): ax observer import\nimport { observeAxSnapshot, configureAxObservation } from \"../ax-observer.js\";"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "Config 增加 AX 观察开关与节点上限",
+		"marker": "PATCH(computer-use): config ax",
+		"find": "// PATCH(computer-use): config schema\n// captureMaxEdge: 观察截图长边上限（0 = 不缩放）；jpegQuality: 重编码质量（100 = 不重编码）。\nconst Config = z.object({\n\tpostActionWaitMs: z.number().default(600),\n\tcaptureMaxEdge: z.number().default(1280),\n\tjpegQuality: z.number().default(80)\n});",
+		"replace": "// PATCH(computer-use): config schema\n// captureMaxEdge: 观察截图长边上限（0 = 不缩放）；jpegQuality: 重编码质量（100 = 不重编码）。\n// PATCH(computer-use): config ax\n// axObservation：原生 App 观察时附一份 AX 文本快照（只读）；axMaxNodes：节点上限。\nconst Config = z.object({\n\tpostActionWaitMs: z.number().default(600),\n\tcaptureMaxEdge: z.number().default(1280),\n\tjpegQuality: z.number().default(80),\n\taxObservation: z.boolean().default(true),\n\taxMaxNodes: z.number().default(120)\n});"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "resolve 解析 AX 观察参数",
+		"marker": "PATCH(computer-use): resolve ax",
+		"find": "\treturn {\n\t\tpostActionWaitMs: requireFiniteNonNegative(config.postActionWaitMs ?? 600, \"postActionWaitMs\"),\n\t\tcaptureMaxEdge: requireFiniteNonNegative(config.captureMaxEdge ?? 1280, \"captureMaxEdge\"),\n\t\tjpegQuality: Math.min(100, requireFiniteNonNegative(config.jpegQuality ?? 80, \"jpegQuality\"))\n\t};",
+		"replace": "// PATCH(computer-use): resolve ax\n\treturn {\n\t\tpostActionWaitMs: requireFiniteNonNegative(config.postActionWaitMs ?? 600, \"postActionWaitMs\"),\n\t\tcaptureMaxEdge: requireFiniteNonNegative(config.captureMaxEdge ?? 1280, \"captureMaxEdge\"),\n\t\tjpegQuality: Math.min(100, requireFiniteNonNegative(config.jpegQuality ?? 80, \"jpegQuality\")),\n\t\taxObservation: config.axObservation !== false,\n\t\taxMaxNodes: Math.min(400, requireFiniteNonNegative(config.axMaxNodes ?? 120, \"axMaxNodes\"))\n\t};"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "观察结果附 AX 文本快照",
+		"marker": "PATCH(computer-use): ax snapshot block",
+		"find": "\treturn {\n\t\tscreens,\n\t\tforeground,\n\t\tblocks: observationContent(screens, foreground, options.coordinateMode ?? \"millifraction\"),\n\t\tcaptures\n\t};",
+		"replace": "\t// PATCH(computer-use): ax snapshot block\n\tconst blocks = observationContent(screens, foreground, options.coordinateMode ?? \"millifraction\");\n\tconst axSnapshot = await observeAxSnapshot(foreground);\n\tif (axSnapshot !== void 0) blocks.splice(1, 0, {\n\t\ttype: \"text\",\n\t\ttext: axSnapshot\n\t});\n\treturn {\n\t\tscreens,\n\t\tforeground,\n\t\tblocks,\n\t\tcaptures\n\t};"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "apply 时配置 AX 观察",
+		"marker": "PATCH(computer-use): apply ax",
+		"find": "\t// PATCH(computer-use): apply wrap\n\tconst resolvedConfig = resolveComputerUseConfig(config);",
+		"replace": "\t// PATCH(computer-use): apply wrap\n\tconst resolvedConfig = resolveComputerUseConfig(config);\n\t// PATCH(computer-use): apply ax\n\tconfigureAxObservation({\n\t\tenabled: resolvedConfig.axObservation,\n\t\tmaxNodes: resolvedConfig.axMaxNodes\n\t});"
+	},
+	{
+		"file": "lib/computer-use/backend-xLwiz83E.js",
+		"name": "前台窗口返回 pid",
+		"marker": "    pid: ownerPid,",
+		"find": "  found = {\n    appName: name,\n    windowId: id,",
+		"replace": "  found = {\n    appName: name,\n    pid: ownerPid,\n    windowId: id,"
+	},
+	{
+		"file": "lib/computer-use/backend-xLwiz83E.js",
+		"name": "parseFrontmost 解析 pid",
+		"marker": "PATCH(computer-use): parse pid",
+		"find": "\t\tconst scale = Number(row.scale);\n\t\tconst transientWindowIds = parseTransientIds(row.transients);",
+		"replace": "\t\tconst scale = Number(row.scale);\n\t\t// PATCH(computer-use): parse pid\n\t\tconst pid = Number(row.pid);\n\t\tconst transientWindowIds = parseTransientIds(row.transients);"
+	},
+	{
+		"file": "lib/computer-use/backend-xLwiz83E.js",
+		"name": "前台元数据带 pid",
+		"marker": "...Number.isInteger(pid) && pid > 0 ? { pid } : {},",
+		"find": "\t\treturn {\n\t\t\tappName,\n\t\t\t...windowTitle === \"\" ? {} : { windowTitle },",
+		"replace": "\t\treturn {\n\t\t\tappName,\n\t\t\t...Number.isInteger(pid) && pid > 0 ? { pid } : {},\n\t\t\t...windowTitle === \"\" ? {} : { windowTitle },"
+	}
+]

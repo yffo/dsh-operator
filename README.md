@@ -8,10 +8,11 @@
 
 **全局 Computer Use 插件**：装进 desktop profile 后，任何会话（标准 / PTC / 极简 / 创造）都直接拥有 13 个桌面 GUI 工具和后台 `code_agent`——不用新建会话，也不用切换模式。
 
-能力层裁剪自 [dsh-orb](https://github.com/mini-yifan/dsh-orb-cordis) v0.2.0 的 `dist/computer-use`（MIT）：去掉悬浮球、Electron helper、语音和设置页，只留计算机操作，并补了两处工程化改进：
+能力层裁剪自 [dsh-orb](https://github.com/mini-yifan/dsh-orb-cordis) v0.2.0 的 `dist/computer-use`（MIT）：去掉悬浮球、Electron helper、语音和设置页，只留计算机操作，并补了三处工程化改进：
 
 - **观察截图自动降 token**：Retina 2x 截图交给模型前先缩到长边 ≤ 1280、重编码 JPEG q80（`sips`，失败回退原图）；
-- **动作失败有校验提示**：动作后截图与上一张逐字节相同且动作有等待时，工具结果追加 `note`，配合提示词纪律减少「瞎重试」。
+- **动作失败有校验提示**：动作后截图与上一张逐字节相同且动作有等待时，工具结果追加 `note`，配合提示词纪律减少「瞎重试」；
+- **原生 App 附 AX 文本快照**：侧栏、菜单、按钮这类 AX 树里有名字和位置的东西直接给文本，视觉截图仍是兜底（Web/Electron 自动退回纯视觉）。
 
 定位：与现有同类 DSH 插件 / 产品**齐平或领先**。三项硬指标（任务成功率 / 单任务 token / 单任务耗时）会以可复现的基线持续补测。
 
@@ -19,7 +20,7 @@
 
 | 方案 | 挂载方式 | 外部依赖 | 观察成本 | 备注 |
 | --- | --- | --- | --- | --- |
-| **dsh-operator**（本插件） | 全局（host 层） | 无：纯 JS + macOS 自带 `screencapture` / `osascript` | 截图先降 token 再入上下文 | vendored 代码可审计，可随上游 `sync-from-orb.sh` 更新 |
+| **dsh-operator**（本插件） | 全局（host 层） | 无：纯 JS + macOS 自带 `screencapture` / `osascript` / 编译一次的本机 AX 助手 | 截图先降 token 再入上下文，原生 App 附 AX 文本 | vendored 代码可审计，可随上游 `sync-from-orb.sh` 更新 |
 | 官方实验包 `dsh-computer-use` + `cua-driver-native` | 全局 | Cua Driver 原生 SDK / 二进制 | 原图 | 官方 seam，native 崩溃会带走宿主进程 |
 | 社区 `dsh-computer-use@0.3.x` 等 | 全局 | 多数需要外部 `cua-driver` 或仅 macOS AX | 原图 | 工具数、平台覆盖不一 |
 | preset 形态（本插件 0.2.0） | 会话级 | 无 | 原图 | 必须新建会话并选「Computer Use 模式」 |
@@ -28,7 +29,7 @@
 
 | 类别 | 工具 |
 | --- | --- |
-| 观察 | `screenshot` |
+| 观察 | `screenshot`；原生 App 每次观察还会附一份 `<ax_snapshot>` 文本（角色 / 标题 / 值 / 0–1000 位置） |
 | 鼠标 | `click`（左/右、双击、修饰键）、`drag`、`scroll`、`long_press` |
 | 键盘 | `input_text`（可替换原内容、回车提交）、`hotkey` |
 | 等待 | `wait`、`long_wait` |
@@ -81,6 +82,8 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 | `postActionWaitMs` | `500` | 动作后等多久再截图（毫秒）。调低更快，但可能截到过渡帧；调高更稳、更慢 |
 | `captureMaxEdge` | `1280` | 截图入上下文前的长边上限（px）。`0` 关闭缩放；Retina 2x 下 1280 约等于逻辑 640 宽 |
 | `jpegQuality` | `80` | 缩放后 JPEG 质量。`100` 表示不重编码（仍会缩放） |
+| `axObservation` | `true` | 原生 App 观察时是否附 AX 文本快照；设 `false` 退回纯视觉 |
+| `axMaxNodes` | `120` | AX 快照节点上限（20–400）。越大信息越全，token 越多 |
 
 ## 安全
 
@@ -94,6 +97,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证；Linux 不提供 GUI 操作。
 - **多屏 / 混合 DPI**：截图取「前台 App 窗口 union」，跨屏或缩放不一致时可能裁错（上游 dsh-orb issue #38），本插件未修。
 - **纯视觉定位**：UI 变化、遮挡、动画过渡会导致定位失败；校验提示只能减少浪费，不能保证成功。适合可重复、可验收的操作。
+- **AX 只覆盖原生 App**：AX 树在 AppKit 原生应用里好用（系统设置、访达、备忘录、预览等），Electron / Web 应用（Chrome、Harness、微信）树很浅或不可见，会自动退回纯视觉。AX 助手是预编译的 macOS 二进制；换架构/平台需要 `pnpm run build:ax` 重新编译（需要 Xcode Command Line Tools）。
 - **首次授权**：屏幕录制 / 辅助功能需要用户手动在系统设置里允许；未授权时截图与输入都会失败。
 - 上游代码按「照搬 + 幂等补丁」维护，上游大改时 `sync-from-orb.sh` 可能需要跟着调锚点。
 
@@ -105,6 +109,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - 动作校验：动作后截图 sha1 与上一张相同（且动作有等待）时标 `suspected_noop` 并追加 `note`，提示词里同步要求「先验证目标、无变化换路、同一失败动作最多重试两次」。
 - 策略提示词：从上游约 8.4KB 精简到约 3.9KB（`lib/policy-slim.js`），每请求少约 1.3K token；坐标段仍是上游原文。
 - 稳定性：截图存储失败降级为纯文本观察（`screens[].imageError`），跨屏窗口带 `screens[].clipped` / `visibleBounds` / `sourceBounds`，工具结果带 `actionEffect`。
+- AX 快照：原生 App 的侧栏/按钮/菜单直接以文本给出（约 1KB/窗口、几十个节点），比同样的截图便宜，也避免「按钮名字靠视觉猜」；只在 AX 助手可用且树足够深时附加，否则静默跳过。
 
 ## 目录结构
 
@@ -115,13 +120,19 @@ dsh-operator/
 ├── lib/
 │   ├── capture-downscale.js    # 截图缩放 / 重编码（本仓库代码）
 │   ├── policy-slim.js          # 精简策略提示词（本仓库代码）
+│   ├── ax-observer.js          # AX 文本快照格式化 / 降级（本仓库代码）
+│   ├── bin/ax-snapshot         # 预编译 AX 助手（macOS arm64）
 │   └── computer-use/           # vendored：上游 dsh-orb dist/computer-use
 └── scripts/
     ├── apply-vendor-patches.mjs # 幂等补丁器（--check 只检查；补丁在 vendor-patches/*.json）
     ├── vendor-patches/p0.json   # 0.4.0 P0 补丁集
+    ├── vendor-patches/p1.json   # 0.5.0 AX 观察补丁集
     ├── sync-from-orb.sh         # 从 npm 同步上游 dist/computer-use 并重打补丁
+    ├── ax-helper.swift          # AX 助手源码（build-ax-helper.sh 编译）
+    ├── build-ax-helper.sh       # 编译 AX 助手到 lib/bin/ax-snapshot
     ├── check-p0.mjs             # P0 冒烟检查（策略体积、字段、补丁幂等）
-    └── test-shrink.mjs          # 截图缩放冒烟测试
+    ├── test-shrink.mjs          # 截图缩放冒烟测试
+    └── test-ax.mjs              # AX 快照格式化 / 降级测试
 ```
 
 ## 开发
@@ -131,6 +142,8 @@ node --check index.js
 node scripts/apply-vendor-patches.mjs --check   # 幂等性
 node scripts/test-shrink.mjs                    # 13 项断言
 node scripts/check-p0.mjs                       # P0 冒烟检查
+node scripts/test-ax.mjs                        # AX 快照 / 降级测试
+./scripts/build-ax-helper.sh                    # 重新编译 AX 助手（macOS）
 bash -n scripts/sync-from-orb.sh
 ```
 
@@ -143,6 +156,10 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.5.2** — 修复 AX 观察拿不到 pid（`foregroundFromFrontmost` 把 pid 丢了，AX 助手从不运行）。
+- **0.5.1** — 修复 0.5.0 的 AX 文本未进入工具输出：工具结果是 `resultBlocks` 从 screens 重建的，AX 改为挂在观察结果的 `axText` 字段并全链路透传。
+- **0.5.0** — 原生 App 观察附 AX 文本快照（`lib/ax-observer.js` + `lib/bin/ax-snapshot`）：侧栏/按钮/菜单直接给角色、标题、值与 0–1000 位置，Web/Electron 自动退回纯视觉；`Config` 新增 `axObservation` / `axMaxNodes`。
+- **0.4.1** — 修复 0.4.0 的 schema 回归（`screens[].image.required: false` 在 DSH schema 里非法，导致插件加载即失败、GUI 工具全部消失）；`check-p0.mjs` 增加回归断言。
 - **0.4.1** — 修复 0.4.0 的 schema 回归（`screens[].image.required: false` 在 DSH schema 里非法，导致插件加载即失败、GUI 工具全部消失）；`check-p0.mjs` 增加回归断言。
 - **0.4.0** — 按源码审计落地 P0：策略提示词 8.4KB → 3.9KB、截图存储失败降级为纯文本观察、跨屏窗口 `clipped` 元数据、结构化 `actionEffect`、工具名冲突检测。
 - **0.3.2** — 修复 `open_app` 激活已运行 App：JXA 没有 `activateWithOptions_` 桥接、中文显示名 `open -a` 也找不到，改走 `open -b <bundleId>`。

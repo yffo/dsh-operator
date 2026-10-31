@@ -1,0 +1,9 @@
+[
+	{
+		"file": "lib/computer-use/backend-xLwiz83E.js",
+		"name": "前台元数据透传 pid（AX 观察依赖）",
+		"marker": "PATCH(computer-use): foreground pid",
+		"find": "function foregroundFromFrontmost(parsed) {\n\treturn {\n\t\tappName: parsed.appName,\n\t\t...parsed.windowTitle === void 0 ? {} : { windowTitle: parsed.windowTitle }\n\t};\n}",
+		"replace": "function foregroundFromFrontmost(parsed) {\n\t// PATCH(computer-use): foreground pid\n\treturn {\n\t\tappName: parsed.appName,\n\t\t...parsed.pid === void 0 ? {} : { pid: parsed.pid },\n\t\t...parsed.windowTitle === void 0 ? {} : { windowTitle: parsed.windowTitle }\n\t};\n}"
+	}
+]

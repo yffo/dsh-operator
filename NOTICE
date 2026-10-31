@@ -60,3 +60,26 @@ dsh-operator
     `unverifiable`，`suspected_noop` 时附 note 要求换路而不是盲目重试。
   - 注册工具前检查 `ctx.tools` 是否已有同名工具，冲突时 fail fast。
   以上均为 vendored 代码补丁（`scripts/vendor-patches/p0.json`），由补丁器幂等应用。
+
+- 0.5.0 起补充 AX 文本观察（P1-6）：
+  - 新增 `scripts/ax-helper.swift`：读取前台 App 的 Accessibility 树（DFS 前序、
+    节点/深度受限、值截断、安全输入框打码），编译为 `lib/bin/ax-snapshot`
+    （`scripts/build-ax-helper.sh`，xcrun swiftc -O）。
+  - 新增 `lib/ax-observer.js`：格式化 AX 快照（只保留有身份的节点、与窗口求交、
+    坐标换算成窗口内 0–1000 的 `@(x,y)`、上限 32KB），失败/未授权/树太浅时静默
+    降级为纯视觉观察。
+  - `observeDesktop` 在截图之后插入 `<ax_snapshot>` 文本块；`Config` 新增
+    `axObservation`（默认 true）与 `axMaxNodes`（默认 120）。
+  - backend 的前台窗口元数据补 `pid`（AX 助手用它定位进程）。
+  以上补丁在 `scripts/vendor-patches/p1.json`，由补丁器幂等应用；AX 助手为纯只读，
+  不调用 AXPress，不做任何动作。
+
+- 0.5.1 修复 0.5.0 的 AX 文本没有出现在工具输出里：工具结果内容由
+  `resultBlocks` 从 screens 重建（`observeDesktop` 里的 `blocks` 只用于首帧路径），
+  所以把 AX 文本改为挂在观察结果的 `axText` 字段上，并在 `recapture` /
+  `observedFields` / `resultBlocks` / 输出 schema 里透传。
+
+- 0.5.2 修复 AX 观察拿不到 pid：`inspectForeground` 把解析结果交给
+  `foregroundFromFrontmost` 时只保留了 appName / windowTitle，pid 被丢掉，
+  AX 助手因此从不运行。补丁在 `foregroundFromFrontmost` 里透传 `pid`
+  （`scripts/vendor-patches/p3.json`）。

@@ -14,8 +14,12 @@ const here = dirname(fileURLToPath(import.meta.url))
 // 上游发布的 tarball 里 ScreenCaptureKit helper 是 0644（dsh-orb issue #40）。
 // 无球版没有 overlay guard，正常截图走 /usr/sbin/screencapture，不依赖这个二进制；
 // 但装完后它要是被解出可执行位丢失，overlay-exclude 路径会 EACCES，这里顺手自愈。
-for (const name of ['macos-sck-capture']) {
-  const path = join(here, 'lib', 'computer-use', name)
+const nativeHelpers = [
+  ['lib', 'computer-use', 'macos-sck-capture'],
+  ['lib', 'bin', 'ax-snapshot'],
+]
+for (const segments of nativeHelpers) {
+  const path = join(here, ...segments)
   if (!existsSync(path)) continue
   try {
     chmodSync(path, 0o755)
