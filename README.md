@@ -283,6 +283,8 @@ node scripts/test-shrink.mjs
 
 - **0.13.2** — 过程反馈（host 侧）：`plan_run` 返回 `totalSteps/doneSteps/nextStep` 并在文本里显示 `n/N done`；`operator_status` 追加「active plans」提示（下一次该跑哪个计划）。
 
+- **0.13.3** — `operator_status` 显示真实版本（从 package.json 注入）；新增 `plan_delete` 工具（24 项扩展工具）。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）

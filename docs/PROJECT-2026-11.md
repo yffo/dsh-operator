@@ -354,6 +354,12 @@ v2 做两件事：
 - 在 client 卡片（需 Web bundle）之前，先做 host 侧可见的进度：`plan_run` 输出 `totalSteps/doneSteps/nextStep`，文本变成 `n/N done, status …, next <step>`；`operator_status` 追加 `active plans: N (next <plan> → <step>)`，让模型/用户不用翻计划文件也知道下一步。
 - 测试：既有 schema 回归覆盖 `operator_status`；`plan_run` 新字段走同一 additionalProperties:false 校验。`npm test` 139 项。
 
+## 8.14 0.13.3：版本显示与计划删除（2026-11-01）
+
+- 运行态发现 `operator_status` 版本显示 `unknown`：`registerOperatorTools` 的 `deps.version` 一直没传 → 在 `lib/computer-use/index.js` 用 `createRequire(import.meta.url)` 读 `../../package.json` 注入版本。
+- 新增 `plan_delete` 工具（计划文件是用户数据，但冒烟/过期计划需要工具内清理；删除前先 `plan_list` 拿 id），扩展工具 23→24；输出字段纳入 schema 回归测试。
+- 清理：删掉 04:27 遗留的 `plan_run` 失败样本（归档 `archive/2026-11/scratch/`），失败目录归零。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972
