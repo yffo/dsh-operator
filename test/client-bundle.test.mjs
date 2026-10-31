@@ -70,3 +70,13 @@ test("client/client.js 只依赖 react 基座，不引入其他包", () => {
 	const requires = [...new Set([...source.matchAll(/require\((["'])([^"']+)\1\)/g)].map((match) => match[2]))];
 	assert.deepEqual(requires, ["react"], `客户端只允许 require('react')，实际：${requires.join(", ")}`);
 });
+
+test("client/client.js 为失败样本/浏览器通道/技能列表提供富卡片摘要", () => {
+	assert.ok(source.includes("function richSummary("), "应有 richSummary 解析器");
+	assert.ok(source.includes("channels · AppleScript"), "browser_dom_probe 应显示通道状态");
+	assert.ok(source.includes("links / "), "browser_dom_snapshot 应显示 links/controls 计数");
+	assert.ok(source.includes("skill(s)"), "skill_list 应汇总技能名与步数");
+	assert.ok(source.includes("/failures?[^\\n]*/i"), "operator_status 应抽取失败样本计数");
+	assert.ok(source.includes("data-tone"), "富卡片应带 data-tone 供样式区分");
+	assert.ok(source.includes("extra-"), "富卡片应有 extra 明细行");
+});

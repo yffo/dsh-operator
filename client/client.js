@@ -96,6 +96,53 @@ window.__ModuleLoader__.load({
 			return block.callId ?? "";
 		}
 
+		/**
+		 * 三类富卡片：失败样本/浏览器通道/技能列表。
+		 * 只解析工具已经返回的文本（不额外拉宿主状态），解析失败时回退到通用首行摘要。
+		 */
+		function richSummary(tool, output) {
+			if (output === null) return null;
+			if (tool === "browser_dom_probe") {
+				const applescript = /AppleScript: ([^;]+)/.exec(output)?.[1] ?? "unknown";
+				const cdp = /CDP: ([^;]+?); config browserCdpPort/.exec(output)?.[1] ?? "unknown";
+				const ready = applescript.startsWith("ready") || cdp.startsWith("ready");
+				return {
+					summary: `channels · AppleScript ${applescript} · CDP ${cdp}`,
+					tone: ready ? "ok" : "warn"
+				};
+			}
+			if (tool === "browser_dom_snapshot") {
+				const match = /^DOM snapshot: (.*) \((.*)\) — (\d+) links, (\d+) controls$/.exec(output);
+				if (match === null) return { summary: firstLine(output), tone: "ok" };
+				return {
+					summary: `${match[1]} — ${match[3]} links / ${match[4]} controls`,
+					extra: [`url: ${match[2]}`],
+					tone: "ok"
+				};
+			}
+			if (tool === "skill_list") {
+				if (/^No saved skills yet/.test(output)) return { summary: "no saved skills", tone: "ok" };
+				const skills = [...output.matchAll(/(^|[\s,])?([\w][\w-]*)\((\d+) steps\)/g)].map((m) => `${m[2]}(${m[3]})`);
+				return {
+					summary: `${skills.length} skill(s)${skills.length === 0 ? "" : ` · ${skills.join(", ")}`}`,
+					extra: skills.length === 0 ? [] : [`skills: ${skills.join(", ")}`],
+					tone: "ok"
+				};
+			}
+			if (tool === "operator_status") {
+				const versionLine = /dsh-operator[^\n]*/.exec(output)?.[0] ?? firstLine(output);
+				const counts = /skills:? [^\n]*/.exec(output)?.[0];
+				const failures = /failures?[^\n]*/i.exec(output)?.[0];
+				const parts = [versionLine, counts, failures].filter((entry) => typeof entry === "string" && entry.trim() !== "");
+				return {
+					summary: parts.join(" · "),
+					extra: output.split("\n").filter((line) => /failure|audit/i.test(line)),
+					tone: "ok"
+				};
+			}
+			return null;
+		}
+
 		const COLORS = {
 			running: "#d97706",
 			ok: "#16a34a",
@@ -147,6 +194,8 @@ window.__ModuleLoader__.load({
 			const tool = String((props && props.toolName) || block.toolName || "operator");
 			const label = ROWS[tool] ?? tool;
 			const summary = summaryOf(tool, block, args, output);
+			const rich = richSummary(tool, output);
+			const headSummary = rich === null ? summary : rich.summary;
 			const expandable = args !== null || output !== null;
 			const head = h(
 				"summary",
@@ -165,14 +214,24 @@ window.__ModuleLoader__.load({
 				h(
 					"span",
 					{ style: { opacity: 0.72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 } },
-					summary
+					headSummary
 				),
 				expandable ? h("span", { style: { opacity: 0.5, flex: "0 0 auto", marginLeft: "auto" } }, "▾") : null
 			);
+			const extraNodes = rich !== null && Array.isArray(rich.extra) && rich.extra.length > 0
+				? [
+					h(
+						"div",
+						{ style: { opacity: 0.66, fontSize: "0.88em", display: "grid", gap: 2 } },
+						...rich.extra.map((line, index) => h("div", { key: `extra-${index}` }, line))
+					)
+				]
+				: [];
 			const body = expandable
 				? h(
 					"div",
 					{ style: { marginTop: 6, display: "grid", gap: 6 } },
+					...extraNodes,
 					args !== null
 						? h(
 							"pre",
@@ -219,6 +278,7 @@ window.__ModuleLoader__.load({
 					"data-tool": tool,
 					"data-state": state,
 					"data-expandable": expandable ? "true" : void 0,
+					"data-tone": rich === null ? void 0 : rich.tone,
 					style: {
 						padding: "5px 8px",
 						borderTop: "1px dashed color-mix(in srgb, currentColor 16%, transparent)",
