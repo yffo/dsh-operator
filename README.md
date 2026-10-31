@@ -115,7 +115,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - **`ax_scroll` 自动选容器时返回的 index 是 helper 原始索引**：可能与快照里格式化后的索引不同（匿名节点被过滤），只用于本次调用的回执，别拿去 `ax_press` 复用。
 - **`ax_scroll` 可以不给 index**：滚动容器常被匿名节点过滤或排在 120 节点之外；此时传 `expect_role`（可选 `expect_title`），工具会在新鲜树里自动选面积最大的匹配滚动容器（输出带 `resolved` 标记）。给 index 时仍以快照为准，必要时把 `axMaxNodes` 调大（如 400）。
 
-- **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 系列工具只在 macOS 注册；Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
+- **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证。Windows/Linux 上扩展工具（`list_windows` / `screenshot_window` / `verify_state` / AX 系列）不注册，启动时会打印一条 `extended tools are macOS-only` 警告；截图降 token 管线（sips）也会跳过、原样返回。Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
 - **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
 - **纯视觉定位**：UI 变化、遮挡、动画过渡会导致定位失败；校验提示只能减少浪费，不能保证成功。适合可重复、可验收的操作。
 - **AX 只覆盖原生 App**：AX 树在 AppKit 原生应用里好用（系统设置、访达、备忘录、预览等），Electron / Web 应用（Chrome、Harness、微信）树很浅或不可见，少于 `axMinNodes`（默认 16）时自动不附、退回纯视觉。AX 助手是预编译的 macOS 二进制；换架构/平台需要 `pnpm run build:ax` 重新编译（需要 Xcode Command Line Tools）。
@@ -198,6 +198,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.10.4** — Windows/Linux 守卫：扩展工具跳过时打印明确警告；`sips` 降采样只在 darwin 执行，非 macOS 原样返回截图（未在 Windows 真机验证）。
 - **0.10.3** — 修 `ax_press`/`ax_set_value` 带 `expect_role` 时被「自动选滚动容器」分支抢走的问题；滚动没找到容器时改为明确报错（不再静默退回整棵快照）；自动选容器输出带 `resolved` 标记。
 - **0.10.2** — `ax_scroll` 支持省略 index：按 `expect_role`/`expect_title` 在新鲜树里自动选面积最大的滚动容器（输出 `resolved` 标记），解决滚动容器被匿名过滤/排在 120 节点外时找不到索引的问题。
 - **0.10.1** — `ax_press` / `ax_set_value` 支持「索引漂移按 role/title 自动重定位」（带 `resolved` 标记，漂移超过 16 个节点仍拒绝）；新增 `ax_scroll`（AX 滚动动作，不支持时提窗 + 全局滚轮回退）；AX 快照匿名容器节点上限 40（超限裁剪并标 `truncated`）。daemon 常驻推迟到 0.10.2。
