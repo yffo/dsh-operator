@@ -372,6 +372,14 @@ v2 做两件事：
 - 回归测试：多应用目标必须 complex、单应用多动作不得 complex；`npm test` 142 项全绿。
 - 教训：分层规则要拿真实任务文本回测，不能只看词表命中。
 
+## 8.17 0.15.0：Web 客户端卡片（2026-11-01）
+
+- 交付：`client/client.js`（手写经典脚本，`window.__ModuleLoader__.load({ id: "dsh-operator", factory })`）给本插件 11 个自定义 wire 工具注册紧凑行视图：状态点（running/ok/error/stopped）+ 工具标签 + 单行摘要，点击展开参数 JSON 与结果全文；只 `require("react")`（外壳 PLATFORM_MODULES 基座），inline style，不引入 UI primitives，也不走打包器。
+- 包声明：`package.json` 增加 `exports["./client"] = "./client/client.js"`、`dsh.client = { platform: "web" }`，`files` 包含 `client`；未新增任何运行时依赖。
+- 测试：`test/client-bundle.test.mjs` 4 项（包声明、经典脚本语法与模块 id、11 个 key 覆盖、只允许 require('react')）；`npm test` 146 项全绿。
+- 生效条件：客户端 bundle 声明在 App 启动时组合，安装后需重启 App 一次；之后改 `client/client.js` 刷新页面即可（HMR rebuilt 通道）。渲染异常时卡片退化为工具名 + 状态，不影响其他工具卡。
+- 已知取舍：暂不做自定义 toolview 的完整视觉（图标/折叠动画/耗时条），先验证「键位注册 + 数据读取 + 无构建链」这条通路；扩展卡片（失败样本、浏览器通道、技能进度）排在 0.15.1。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972

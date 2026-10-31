@@ -199,8 +199,9 @@ dsh-operator/
     ├── test-shrink.mjs          # 截图缩放冒烟测试
     ├── test-ax.mjs              # AX 快照格式化 / 降级测试
     └── test-operator.mjs        # 扩展工具 / 审计日志测试
+├── client/client.js            # Web 客户端卡片（tool.call.toolview 行视图，手写无构建链）
 ├── .github/workflows/ci.yml    # CI：macOS runner 上 build helper + npm test
-├── test/                       # node:test 测试（含失败样本库 / 场景矩阵 / doctor）
+├── test/                       # node:test 测试（含失败样本库 / 场景矩阵 / doctor / 客户端声明）
 └── bench/                      # 基准：tasks.json + scenarios.json（15 场景骨架）+ results/*.json
 ```
 
@@ -211,7 +212,7 @@ dsh-operator/
 
 测试与基准：
 
-- `test/*.test.mjs` 用 node:test（14 个文件、90 项）：AX 格式化/降级、审计脱敏与轮转、策略体积、窗口过滤、扩展工具执行路径（含错误注入与取消）、截图缩放、bench 解析。
+- `test/*.test.mjs` 用 node:test（25 个文件、146 项）：AX 格式化/降级、审计脱敏与轮转、策略体积、窗口过滤、扩展工具执行路径（含错误注入与取消）、截图缩放、bench 解析。
 - `test:coverage` 用 Node 内建覆盖率（`--experimental-test-coverage`，不需要 c8）；自研 `lib/` 行覆盖 91.65%、分支 74.60%、函数 86.49%（vendored 与脚本不计入目标）。
 - `bench/` 是脚本化基准：`bench/tasks.json` 定义 5 个真机任务与验收口径，`bench/results/*.json` 存历史结果，`npm run bench -- report` 出对比表、`npm run bench -- check` 校验数据自洽。
 
@@ -223,7 +224,7 @@ node scripts/test-shrink.mjs                    # 13 项断言
 node scripts/check-p0.mjs                       # P0 冒烟检查
 node scripts/test-ax.mjs                        # AX 快照 / 降级测试
 node scripts/test-operator.mjs                  # 扩展工具 / 审计日志测试
-node --test test/*.test.mjs                   # node:test 测试（90 项）
+node --test test/*.test.mjs                   # node:test 测试（146 项）
 node scripts/bench.mjs check                    # 基准数据自洽校验
 npm test                                        # 旧四套 + bench check + node:test 一起跑
 npm run doctor                                  # 环境自检（9 项）
@@ -288,6 +289,8 @@ node scripts/test-shrink.mjs
 - **0.14.0** — 策略段加入「Operator protocol」：多应用/登录/长任务先 `task_profile`（complex → `plan_create`+`plan_run` 逐阶段验证，simple 直接做）；优先复用 `skill_*`；浏览器优先 `browser_dom_*`（先 `browser_dom_probe` 探通道）；`operator_status` 作自诊断入口。
 
 - **0.14.1** — `task_profile` 分层改进：多应用（≥2 个 App 线索）+3 动作 + 多个连接词会显著加分，跨应用任务不再误判 simple；新增 2 项回归测试。
+
+- **0.15.0** — Web 客户端卡片：`client/client.js`（手写、无构建链）给本插件的 11 个自定义工具注册紧凑行视图（工具名 / 状态点 / 一行摘要，点击展开参数与结果全文）；`package.json` 增加 `dsh.client = { platform: "web" }` 与 `exports["./client"]`；只依赖外壳的 `react` 基座，不引入 UI primitives，渲染失败降级为工具名+状态。
 
 ## 路线图
 
