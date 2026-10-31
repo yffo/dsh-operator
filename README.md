@@ -194,7 +194,7 @@ node scripts/test-shrink.mjs                    # 13 项断言
 node scripts/check-p0.mjs                       # P0 冒烟检查
 node scripts/test-ax.mjs                        # AX 快照 / 降级测试
 node scripts/test-operator.mjs                  # 扩展工具 / 审计日志测试
-node --test 'test/*.test.mjs'                   # node:test 测试（90 项）
+node --test test/*.test.mjs                   # node:test 测试（90 项）
 node scripts/bench.mjs check                    # 基准数据自洽校验
 npm test                                        # 旧四套 + bench check + node:test 一起跑
 npm run doctor                                  # 环境自检（9 项）

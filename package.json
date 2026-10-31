@@ -28,9 +28,9 @@
 		"check:p0": "node scripts/check-p0.mjs",
 		"test:operator": "node scripts/test-operator.mjs",
 		"bench": "node scripts/bench.mjs",
-		"test": "node scripts/test-ax.mjs && node scripts/test-shrink.mjs && node scripts/test-operator.mjs && node scripts/check-p0.mjs && node scripts/bench.mjs check && node --test 'test/*.test.mjs'",
-		"test:node": "node --test 'test/*.test.mjs'",
-		"test:coverage": "node --test --experimental-test-coverage 'test/*.test.mjs'",
+		"test": "node scripts/test-ax.mjs && node scripts/test-shrink.mjs && node scripts/test-operator.mjs && node scripts/check-p0.mjs && node scripts/bench.mjs check && node --test test/*.test.mjs",
+		"test:node": "node --test test/*.test.mjs",
+		"test:coverage": "node --test --experimental-test-coverage test/*.test.mjs",
 		"doctor": "node scripts/doctor.mjs",
 		"failures": "node scripts/failures.mjs"
 	},
