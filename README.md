@@ -98,6 +98,18 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 | `idleObserveMs` | `600000` | `auto` 模式下判定「最近做过 GUI 动作」的窗口（毫秒） |
 | `guard` | `true` | 敏感动作 guard（危险快捷键 / ax_press 危险标题需 `confirm: true`） |
 | `auditLog` | `true` | 写无内容审计日志到 `~/.dsh/dsh-operator/audit.jsonl`（事件名 / 数量 / 布尔 / 耗时，不含截图、坐标、标题、输入文本） |
+| `failureSamples` | `true` | 工具失败时把诊断写进 `~/.dsh/dsh-operator/failures/<日期>.jsonl`（工具/分类/错误/脱敏参数，5MB 轮转、最多 20 个文件，绝不外传） |
+
+## 排障与失败样本
+
+```bash
+npm run doctor              # 一条命令自检：版本/挂载/helper/权限/目录（--json 可贴 issue）
+npm run failures            # 失败样本汇总（--json / --files / --dir / --top N）
+```
+
+- 失败样本落在 `~/.dsh/dsh-operator/failures/<YYYY-MM-DD>.jsonl`，每条含：工具名、失败分类（`guard_rejected` / `timeout` / `unavailable` / `not_found` / `cancelled` / `error`）、错误消息、**脱敏后的参数**（文本只留长度，枚举/方向/页码保留）、耗时。默认开启，`failureSamples: false` 可关。
+- 隐私边界：只落本机、不联网、不写截图/剪贴板/输入原文；5MB 轮转、最多保留 20 个文件。发现系统性问题后再决定是否把**脱敏片段**贴进 issue。
+- 两类排障入口：`doctor` 看「装没装对/有没有权限」，`failures` 看「哪类动作在什么工具上失败」。
 
 ## 安全
 
@@ -146,6 +158,7 @@ dsh-operator/
 │   ├── ax-observer.js          # AX 文本快照格式化 / 降级（本仓库代码）
 │   ├── macos-query.js          # 窗口 / 显示器查询（调 AX 助手 --list-windows）
 │   ├── audit-log.js            # 无内容审计日志（脱敏 + 5MB 轮转）
+│   ├── failure-store.js        # 失败样本库（分类/脱敏/轮转/汇总）
 │   ├── operator-tools.js       # 扩展工具：list_windows / screenshot_window / verify_state / ax_press / ax_set_value / ax_scroll / ax_menu / zoom_region
 │   ├── bin/ax-snapshot         # 预编译 AX 助手（macOS 通用二进制：arm64 + x86_64）
 │   └── computer-use/           # vendored：上游 dsh-orb dist/computer-use
@@ -157,8 +170,9 @@ dsh-operator/
     ├── test-shrink.mjs          # 截图缩放冒烟测试
     ├── test-ax.mjs              # AX 快照格式化 / 降级测试
     └── test-operator.mjs        # 扩展工具 / 审计日志测试
-├── test/                       # node:test 测试（8 个文件、70 项断言）
-└── bench/                      # 基准：tasks.json + results/*.json
+├── .github/workflows/ci.yml    # CI：macOS runner 上 build helper + npm test
+├── test/                       # node:test 测试（含失败样本库 / 场景矩阵 / doctor）
+└── bench/                      # 基准：tasks.json + scenarios.json（15 场景骨架）+ results/*.json
 ```
 
 > 本地开发提示：`dsh plugin add file:...` 会把包装成硬链接。若用会替换 inode 的编辑器改文件
@@ -168,7 +182,7 @@ dsh-operator/
 
 测试与基准：
 
-- `test/*.test.mjs` 用 node:test（8 个文件、70 项）：AX 格式化/降级、审计脱敏与轮转、策略体积、窗口过滤、扩展工具执行路径（含错误注入与取消）、截图缩放、bench 解析。
+- `test/*.test.mjs` 用 node:test（14 个文件、90 项）：AX 格式化/降级、审计脱敏与轮转、策略体积、窗口过滤、扩展工具执行路径（含错误注入与取消）、截图缩放、bench 解析。
 - `test:coverage` 用 Node 内建覆盖率（`--experimental-test-coverage`，不需要 c8）；自研 `lib/` 行覆盖 91.65%、分支 74.60%、函数 86.49%（vendored 与脚本不计入目标）。
 - `bench/` 是脚本化基准：`bench/tasks.json` 定义 5 个真机任务与验收口径，`bench/results/*.json` 存历史结果，`npm run bench -- report` 出对比表、`npm run bench -- check` 校验数据自洽。
 
@@ -180,9 +194,11 @@ node scripts/test-shrink.mjs                    # 13 项断言
 node scripts/check-p0.mjs                       # P0 冒烟检查
 node scripts/test-ax.mjs                        # AX 快照 / 降级测试
 node scripts/test-operator.mjs                  # 扩展工具 / 审计日志测试
-node --test 'test/*.test.mjs'                   # node:test 测试（70 项）
+node --test 'test/*.test.mjs'                   # node:test 测试（90 项）
 node scripts/bench.mjs check                    # 基准数据自洽校验
 npm test                                        # 旧四套 + bench check + node:test 一起跑
+npm run doctor                                  # 环境自检（9 项）
+npm run failures                                # 失败样本汇总
 npm run test:coverage                           # 覆盖率（Node 内建，不需要 c8）
 npm run bench -- report                         # 基准对比表（A / A2 / B）
 ./scripts/build-ax-helper.sh                    # 重新编译 AX 助手（macOS）
@@ -198,6 +214,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.11.0** — 0.11 第一批（可用性与可运维）：失败样本库（`lib/failure-store.js`，分类 + 脱敏 + 5MB 轮转，默认开）、`npm run failures` 汇总 CLI、`npm run doctor` 9 项环境自检、`bench/scenarios.json` 15 条场景矩阵骨架 + 校验测试、GitHub Actions CI（macOS runner：build helper + 全量测试）。失败样本是 JS 改动，需重启 App 后生效。
 - **0.10.6** — 修 0.10.5 的 `const captureRegion` 被循环重新赋值导致 observe 抛 `Assignment to constant variable` 的真 bug；新增静态守卫测试（并行断言 + 禁止循环内重新赋值）。
 - **0.10.5** — 观察链路并行化：AX 快照与屏幕截图并行启动（AX spawn 实测 60–80ms，原本串在截图之后），一次观察省一次串行等待；daemon 常驻据此继续暂缓（收益 <100ms/次，不值子进程生命周期风险）。
 - **0.10.4** — Windows/Linux 守卫：扩展工具跳过时打印明确警告；`sips` 降采样只在 darwin 执行，非 macOS 原样返回截图（未在 Windows 真机验证）。

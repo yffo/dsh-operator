@@ -67,7 +67,7 @@ function setupTools({ internals = {}, config = {}, backend = {}, writeImage = jp
 		AttachmentId: (value) => value
 	};
 	configureOperatorToolsInternals({ execFileAsync: execFile, ...internals });
-	registerOperatorTools(ctx, { axMaxNodes: 120, guard: true, ...config }, deps);
+	registerOperatorTools(ctx, { axMaxNodes: 120, guard: true, failureSamples: false, ...config }, deps);
 	return { tools, registered, calls };
 }
 

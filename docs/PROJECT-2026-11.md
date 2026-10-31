@@ -1,6 +1,6 @@
 # dsh-operator 立项书 + 技术方案 v2（2026-11）
 
-> 状态：草案（2026-11-01，等待杨总确认方向后转正式）
+> 状态：**正式**（2026-11-01 杨总确认：v2 演进式重构可行、工具面收敛由维护者定、反爬立场认可、决策确定即开工）
 > 关联：`docs/PLAN-2026-11.md`（v1 路线图与已完成项）、`docs/FORK.md`、`docs/ai/2026-10-31-cu-benchmark.md`（A/B/A2/A3 基准）、`README.md`
 
 ## 0. 一句话定位
@@ -250,15 +250,48 @@ v2 做两件事：
 | 方案评审 | 架构变更先写 RFC（本文件 §4 模式）再动代码 | 按需 |
 | UI/交互 | 工具卡片/进度展示先出静态方案（本文 §4.6），再实现 | 0.12 |
 | 沟通 | 每批产出「数据 + 结论 + 下一步」三行；重大风险立即说 | 每批 |
-| 发布 | tag + CHANGELOG + release checklist + 5 条 live-smoke | 每版 |
+| 发布 | tag + CHANGELOG + release checklist + 5 条 live-smoke；见 §8.1 验收分级 | 每版 |
 | 风险管理 | 已知未验证项统一标注；不做能力外承诺 | 持续 |
 
-## 8. 待拍板
+## 8. 决议记录（2026-11-01）
 
-1. v2 方向：确认「演进式重构（不推倒重写）」？
-2. 工具面收敛：同意 `observe/act/app/verify/skill/browser` 六工具 + 旧名过渡？
-3. 浏览器通道：同意「DOM 优先 + 反爬检测后人工接管，不做规避」？
-4. 0.11.0 是否立刻开工（本次对话内）？
+| 事项 | 决议 | 备注 |
+| --- | --- | --- |
+| 架构路线 | 演进式 v2，不推倒重写 | 明确约束：不得用叠 if-else / 特判来打补丁；新增能力必须进分层（perceive/plan/act/verify/skill/policy），框架性问题优先于功能 |
+| 工具面收敛 | `observe/act/app/verify/skill/browser` 六工具 + 旧名过渡一版 | 收敛时机与粒度由维护者定，按版本推进 |
+| 浏览器反爬 | DOM 优先；检测到风控就显式回报并交人工接管；**不做规避** | 补充要求：尽量不触发反爬（限速、模拟真实节奏、只读优先），减少人工干预，让 DSH 端到端处理 |
+| 开工 | 决策确定即开工 | 本批 0.11.0 已动工 |
+
+## 8.1 工程规范（0.11.0 起强制执行）
+
+**改动验收分级**（按风险从低到高，至少做一级）：
+
+| 级别 | 适用 | 做法 |
+| --- | --- | --- |
+| L1 单元/静态 | 纯函数、schema、解析、静态结构 | `npm test` 里覆盖；结构性约束写成静态守卫测试（例：`test/observe-parallel.test.mjs` 禁止 `captureRegion` 被重新赋值） |
+| L2 集成（无 GUI） | helper 协议、失败样本、doctor、bench 数据 | 可注入依赖的集成测试；`npm run doctor`、`node scripts/bench.mjs check` |
+| L3 真机冒烟 | 任何 JS 改动（工具注册/观察链路/配置） | **必须重启 App 后跑一次真实 GUI 动作**（例：`open_app` + 一次 `click`），确认 audit `action.effect` 正常；0.10.5 的 const bug 就是漏了这一步 |
+
+**规则**：
+1. 插件 JS 改动 → 重启验收（L3）才算完成；仅 helper/Swift 改动可热替换。
+2. 新增工具/字段 → 同步 schema 断言 + README 配置/工具表 + 场景矩阵条目。
+3. 破坏性动作（删除/发送/支付/退出）→ guard + `confirm` + README 记录；不新增「隐式破坏」路径。
+4. 失败样本与审计只落本机、只记脱敏元数据（文本仅长度），不联网。
+5. 每个版本必须：`npm test` 全绿 → 安装副本 `cmp` 一致 → commit + tag + push → 需要时请用户重启验收。
+
+**反爬低触发原则**（写进后续 browser 通道设计）：
+- 只读优先、先读后写；同一域名默认限速（连续动作 ≥1s），不并发轰炸。
+- 不伪造指纹/不破解挑战；检测到 Cloudflare/Turnstile 等挑战时立即停手、截图 + URL 回报并请求人工接管。
+- 表单/发送类动作必须二次确认（guard 层），失败一次即换策略而不是重试刷屏。
+
+## 8.2 0.11.0 交付状态
+
+- ✅ 失败样本库 `lib/failure-store.js` + 接线（默认 `failureSamples: true`，8 个扩展工具全覆盖）
+- ✅ `npm run failures` 汇总 CLI（`--json/--files/--dir/--top`）
+- ✅ `npm run doctor` 环境自检（9 项，`--json`，有 ❌ 退出码 1）
+- ✅ `bench/scenarios.json` 15 条场景矩阵骨架（L0 4 / L1 4 / L2 4 / 异常 3）+ 校验测试
+- ✅ GitHub Actions CI（macos-14 × Node 20/22：build helper + npm test）
+- ⏳ 运行态生效：`failureSamples` 是 JS 改动，需重启 App；重启后 `doctor`/`failures` 走一遍即算验收
 
 ## 9. 参考
 

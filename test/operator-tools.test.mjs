@@ -36,7 +36,7 @@ function collectTools() {
 			}
 		}
 	};
-	registerOperatorTools(ctx, { axMaxNodes: 120, guard: true }, {
+	registerOperatorTools(ctx, { axMaxNodes: 120, guard: true, failureSamples: false }, {
 		backend: { listScreens: async () => [] },
 		defineTool: (definition) => definition,
 		AttachmentId: (value) => value

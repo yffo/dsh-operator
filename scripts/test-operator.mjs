@@ -77,7 +77,7 @@ const fakeCtx = {
 	attachments: {},
 	get: () => undefined
 };
-registerOperatorTools(fakeCtx, { axMaxNodes: 120 }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
+registerOperatorTools(fakeCtx, { axMaxNodes: 120, failureSamples: false }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
 check(registered.length === 8, "注册八个扩展工具");
 check(
