@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { evaluatePredicate, planWindowFrame, registerOperatorTools, resolveLayoutDisplay, V2_LEGACY_TOOL_NAMES, WINDOW_LAYOUTS } from "../lib/operator-tools.js";
 import { configurePlanStore, createPlan } from "../lib/planner.js";
+import { configureFailureStore, recordFailure } from "../lib/failure-store.js";
 
 test("evaluatePredicate：未知 kind 返回事实而不抛错", async () => {
 	const result = await evaluatePredicate({ kind: "nope" });
@@ -94,7 +95,7 @@ function assertSchemaShape(schema, path) {
 	}
 }
 
-test("registerOperatorTools：仅 darwin 注册二十五个扩展工具", (t) => {
+test("registerOperatorTools：仅 darwin 注册二十六个扩展工具", (t) => {
 	const tools = collectTools();
 	if (process.platform !== "darwin") {
 		assert.equal(tools.length, 0);
@@ -103,7 +104,7 @@ test("registerOperatorTools：仅 darwin 注册二十五个扩展工具", (t) =>
 	}
 	assert.deepEqual(
 		tools.map((tool) => tool.name).sort(),
-		["ax_menu", "ax_press", "ax_scroll", "ax_set_value", "browser_dom_click", "browser_dom_fill", "browser_dom_probe", "browser_dom_snapshot", "list_windows", "operator_status", "plan_create", "plan_delete", "plan_list", "plan_run", "plan_update", "screenshot_window", "skill_delete", "skill_list", "skill_run", "skill_save", "skill_show", "task_profile", "verify_state", "window_move", "zoom_region"]
+		["ax_menu", "ax_press", "ax_scroll", "ax_set_value", "browser_dom_click", "browser_dom_fill", "browser_dom_probe", "browser_dom_snapshot", "failure_list", "list_windows", "operator_status", "plan_create", "plan_delete", "plan_list", "plan_run", "plan_update", "screenshot_window", "skill_delete", "skill_list", "skill_run", "skill_save", "skill_show", "task_profile", "verify_state", "window_move", "zoom_region"]
 	);
 	for (const tool of tools) {
 		assert.equal(typeof tool.description, "string");
@@ -168,10 +169,12 @@ test("operator_status / plan_list：返回字段全部在 output schema 声明�
 	try {
 		const planDir = join(home, "plans");
 		configurePlanStore({ dir: planDir });
+		configureFailureStore({ dir: join(home, "failures") });
 		createPlan({ goal: "schema 回归计划：只预览不执行", steps: [{ id: "one", tool: "plan_list" }, { id: "two", tool: "plan_list" }] });
 		const planId = createPlan({ goal: "schema 回归计划：单个", steps: [{ id: "only", tool: "plan_list" }] }).id;
 		const cases = [
 			["operator_status", {}],
+			["failure_list", { limit: 5 }],
 			["plan_list", {}],
 			["plan_run", { id: planId, dryRun: true }],
 			["plan_delete", { id: planId }]

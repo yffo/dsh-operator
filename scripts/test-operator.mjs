@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { configureAuditLog, audit } from "../lib/audit-log.js";
+import { configureFailureStore, recordFailure } from "../lib/failure-store.js";
 import { windowQueryAvailable } from "../lib/macos-query.js";
 import { evaluatePredicate, registerOperatorTools } from "../lib/operator-tools.js";
 
@@ -79,9 +80,10 @@ const fakeCtx = {
 };
 registerOperatorTools(fakeCtx, { axMaxNodes: 120, failureSamples: false }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
-check(registered.length === 25, "注册二十五个扩展工具");
+check(registered.length === 26, "注册二十六个扩展工具");
 check(
-	names.includes("list_windows") &&
+	names.includes("failure_list") &&
+		names.includes("list_windows") &&
 		names.includes("screenshot_window") &&
 		names.includes("verify_state") &&
 		names.includes("ax_press") &&
@@ -155,6 +157,22 @@ if (list !== undefined && helper === true) {
 	check(output.text.includes('schema_version="1"'), "list_windows 输出带 schema_version");
 	check(output.schemaVersion === 1, "list_windows 结构字段 schemaVersion=1");
 }
+
+// ---------- failure_list：脱敏归类与提示 ----------
+configureFailureStore({ dir: join(dir, "failures") });
+await recordFailure({ tool: "click", error: new Error("guarded control: 不允许"), args: { text: "秘密内容", position: [1, 2] } });
+await recordFailure({ tool: "cu_act", error: new Error("timed out after 3000ms"), args: { action: "click", value: "敏感" } });
+const failureList = registered.find((tool) => tool.name === "failure_list");
+if (failureList !== undefined) {
+	const fakeExec = { signal: { aborted: false, throwIfAborted() {}, addEventListener() {} }, agent: undefined };
+	const out = await failureList.execute({ limit: 5 }, fakeExec);
+	check(out.total === 2, "failure_list 记录总数");
+	check(out.recent.length === 2, "failure_list 返回最近记录");
+	check(out.byKind.some((row) => row.key === "guard_rejected"), "failure_list 归类 guard_rejected");
+	check(out.text.includes("hint:"), "failure_list 带 kind 提示");
+	check(out.text.includes("秘密内容") === false && out.text.includes("敏感") === false, "failure_list 不落 args 原文");
+}
+configureFailureStore({ dir: undefined });
 
 await rm(dir, { recursive: true, force: true });
 

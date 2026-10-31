@@ -327,6 +327,10 @@ node scripts/test-shrink.mjs
 
 - **0.21.5** — Windows/Linux 守卫做厚：新增 `lib/platform.js`（`areExtendedToolsSupported` / `extendedToolsSkipReason`），`operator-tools` 注册与 `operator_status` 共用同一判断与文案（状态里新增 `extendedToolsSupported` 字段与「macOS-only」说明）；非 darwin 上 `doctor` 不再把「AX helper 不存在」判成致命（改为「仅 macOS，跳过」），避免 Windows 用户误判；补平台单测。基础 GUI 工具仍走 vendored koffi 后端（Windows：GDI 截图 + SendInput；Linux 无）。`npm test` 173 项。
 
+- **0.21.6** — 客户端富卡片：`ROWS` 扩到 16 个工具，`richSummary` 为浏览器通道/DOM 快照/技能列表/状态聚合提供结构化摘要（通道 ready 状态、links/controls 计数、技能名+步数、版本+计数行），并用 `data-tone`/`extra` 明细行区分警示与正常；失败卡片留到 0.21.7 随工具一起上。`npm test` 174 项。
+
+- **0.21.7** — 失败样本查询闭环（PLAN 0.11-5 最小版）：新增 `failure_list` 工具——只读列出 `~/.dsh/dsh-operator/failures/` 的脱敏失败样本，返回总数、按 kind/tool 汇总、最近记录（tool/kind/message/时间）与每条 kind 的下一步提示；args 只保留长度、不落原文。`operator_status` 的 `failureFiles/failureRecords` 计数不变；客户端为 `failure_list` 加卡片（`N failure(s) · by kind …`，零样本显示 `no failures`）。`scripts/test-operator.mjs` 补脱敏/归类/提示断言。`npm test` 174 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图

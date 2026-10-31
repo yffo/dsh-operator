@@ -29,6 +29,7 @@ window.__ModuleLoader__.load({
 			skill_run: "Run skill",
 			skill_list: "List skills",
 			operator_status: "Operator status",
+			failure_list: "Failures",
 			browser_dom_probe: "Browser channels",
 			browser_dom_snapshot: "DOM snapshot",
 			browser_dom_click: "DOM click",
@@ -127,6 +128,19 @@ window.__ModuleLoader__.load({
 					summary: `${skills.length} skill(s)${skills.length === 0 ? "" : ` · ${skills.join(", ")}`}`,
 					extra: skills.length === 0 ? [] : [`skills: ${skills.join(", ")}`],
 					tone: "ok"
+				};
+			}
+			if (tool === "failure_list") {
+				const total = Number(/^failures: (\d+)/m.exec(output)?.[1] ?? "0");
+				const kindLine = /by kind: (.+)/.exec(output)?.[1];
+				if (total === 0) return { summary: "no failures", tone: "ok" };
+				return {
+					summary: `${total} failure(s)${kindLine === void 0 ? "" : ` · ${kindLine}`}`,
+					extra: output
+						.split("\n")
+						.filter((line) => line.startsWith("by tool:") || line.startsWith("recent:"))
+						.slice(0, 2),
+					tone: "warn"
 				};
 			}
 			if (tool === "operator_status") {
