@@ -126,3 +126,7 @@ dsh-operator
     250ms 前台缓存（backend 补丁 p6.json），每步省 100–200ms。
   - 工具面：list_windows / screenshot_window / verify_state / ax_press 四个扩展工具。
 
+- 0.8.0 新增 `zoom_region` 工具：对当前前台窗口的局部区域按 0–1000 坐标做原生分辨率
+  裁剪截图（读小字 / 图标细节 / 拥挤控件），避免为看清细节而整屏重截；
+  README 补充「每次观察只带当前截图，不重复附带历史截图」的说明。
+

@@ -115,6 +115,8 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 ## 工作原理：token 花在哪
 
+- 每次观察只带**当前这一张**截图；历史截图不会重复附带（会话上下文自己管理），所以不存在「截图越积越多」的问题。
+
 - 13 个工具的 schema 是固定前缀，命中缓存后边际成本很低；**真正的大头是每次观察的截图**。
 - 本插件的截图链路：`screencapture -x -C -R <union> -t jpg`（Retina 2x）→ `sips -Z 1280` 只缩长边 + q80 重编码 → 作为附件入上下文。实测 2558×1639 → 1280×820，图片 token 约降到 1/4。
 - 坐标始终按原图归一化，缩放不改变点击精度。
@@ -183,6 +185,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.8.0** — 新增 `zoom_region`：局部区域原生分辨率放大截图，读小字/细节不用整屏重截。
 - **0.7.0** — 新增 `ax_press`（后台 AXPress，按快照 index 命中并校验 role/title）；合并一次观察里的两次 JXA（前台缓存，每步省 100–200ms）。
 - **0.6.2** — 修正浅 AX 树阈值：改为按格式化后实际保留的节点数判断（原来按原始节点数，Electron/Web 浅树仍会被附带）。
 - **0.6.1** — 修复 0.6.0 的加载失败（`screenshot_window` 输出 schema 的嵌套 `image` object 缺 `additionalProperties`，DSH schema 编译器直接拒绝，插件整体不加载）；`test-operator.mjs` 加同类 schema 形状断言。
