@@ -114,6 +114,10 @@ test("registerOperatorTools：仅 darwin 注册二十五个扩展工具", (t) =>
 		assert.equal(tool.output.schema.additionalProperties, false);
 		assertSchemaShape(tool.output.schema, tool.name);
 	}
+	const windowMove = tools.find((tool) => tool.name === "window_move");
+	assert.equal(typeof windowMove, "object");
+	const blocks = windowMove.output.render({}, { schemaVersion: 1, ok: true, frame: { x: 1, y: 2, width: 3, height: 4 }, windowTitle: "dest" });
+	assert.ok(Array.isArray(blocks) && blocks.length === 1 && blocks[0].type === "text", "window_move render 返回文本块数组");
 });
 
 test("registerOperatorTools：缺 deps/defineTool 时静默不注册", () => {
