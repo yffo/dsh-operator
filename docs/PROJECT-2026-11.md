@@ -349,6 +349,11 @@ v2 做两件事：
 - toolview 卡片调研结论（本机 `dsh-client-ui-tool` README）：业务包要在对话里渲染自定义工具卡，需要 **client（浏览器侧）入口** 在 `ctx.slots.inject('tool.call.toolview')` 里按 wire 工具名注册卡片；runtime 负责 call/result 配对与 PTC 子调用，业务包只提供原子视图。这意味着 dsh-operator 需要新增一个 Web 客户端 bundle（打包 + 在 profile 中注册），涉及 DSH 客户端构建链，风险与工作量高于纯 host 插件。
 - 决策：0.13.1 先做「过程文案 + 状态提示」的 host 侧替代（工具描述/审计里带步骤计数），toolview 自定义卡片作为独立里程碑单独评估，不阻塞其他项。
 
+## 8.13 0.13.2 过程反馈（host 侧，2026-11-01）
+
+- 在 client 卡片（需 Web bundle）之前，先做 host 侧可见的进度：`plan_run` 输出 `totalSteps/doneSteps/nextStep`，文本变成 `n/N done, status …, next <step>`；`operator_status` 追加 `active plans: N (next <plan> → <step>)`，让模型/用户不用翻计划文件也知道下一步。
+- 测试：既有 schema 回归覆盖 `operator_status`；`plan_run` 新字段走同一 additionalProperties:false 校验。`npm test` 139 项。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972

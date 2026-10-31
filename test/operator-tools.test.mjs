@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { evaluatePredicate, registerOperatorTools } from "../lib/operator-tools.js";
+import { configurePlanStore, createPlan } from "../lib/planner.js";
 
 test("evaluatePredicate：未知 kind 返回事实而不抛错", async () => {
 	const result = await evaluatePredicate({ kind: "nope" });
@@ -105,10 +106,19 @@ test("operator_status / plan_list：返回字段全部在 output schema 声明�
 	const previous = process.env.DSH_HOME;
 	process.env.DSH_HOME = home;
 	try {
-		for (const name of ["operator_status", "plan_list"]) {
+		const planDir = join(home, "plans");
+		configurePlanStore({ dir: planDir });
+		createPlan({ goal: "schema 回归计划：只预览不执行", steps: [{ id: "one", tool: "plan_list" }, { id: "two", tool: "plan_list" }] });
+		const planId = createPlan({ goal: "schema 回归计划：单个", steps: [{ id: "only", tool: "plan_list" }] }).id;
+		const cases = [
+			["operator_status", {}],
+			["plan_list", {}],
+			["plan_run", { id: planId, dryRun: true }]
+		];
+		for (const [name, args] of cases) {
 			const tool = tools.find((entry) => entry.name === name);
 			assert.ok(tool, `缺少工具 ${name}`);
-			const value = await tool.execute({});
+			const value = await tool.execute(args, { signal: { throwIfAborted() {} } });
 			const declared = Object.keys(tool.output.schema.properties ?? {});
 			const extra = Object.keys(value).filter((key) => declared.includes(key) === false);
 			assert.deepEqual(extra, [], `${name} 返回了未声明字段: ${extra.join(",")}`);
