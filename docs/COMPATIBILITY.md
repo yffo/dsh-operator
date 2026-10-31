@@ -1,6 +1,6 @@
 # 兼容性矩阵
 
-> 更新于 v0.16.0（2026-11-01）。这里只记录「验证过」的结论；没机器/没测的组合一律标未验证，不做猜测。
+> 更新于 v0.21.5（2026-11-01）。这里只记录「验证过」的结论；没机器/没测的组合一律标未验证，不做猜测。
 
 ## DSH / 宿主
 
@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | macOS arm64 | ✅ 已验证 | 主力开发与验收环境（AX 助手为 lipo 通用二进制） |
 | macOS x86_64 | ✅ 已验证（二进制层面） | helper 含 x86_64 slice，`doctor` 校验双架构；Intel 真机未跑过 GUI 验收 |
-| Windows / Linux | ⚠️ 未验证 | 扩展工具在非 darwin 直接跳过并打印警告；截图缩放不调用 `sips`；没有真机验收 |
+| Windows / Linux | ⚠️ 未验证 | 基础 GUI 工具走 vendored koffi 后端（Windows：GDI `BitBlt` 截图 + `SendInput` 键鼠 + 窗口枚举；Linux 无后端）；扩展工具（`list_windows`/`screenshot_window`/`verify_state`/AX 系列）非 darwin 不注册并打印 macOS-only 警告；截图降 token（`sips`）跳过；`doctor` 在非 darwin 上把 AX helper 记为「仅 macOS，跳过」而不是致命。没有真机验收 |
 
 ## 运行时
 

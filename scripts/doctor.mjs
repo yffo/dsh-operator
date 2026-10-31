@@ -121,9 +121,11 @@ export async function runDoctor(options = {}) {
 		results.push({ level: "fail", text: `安装副本不存在：${installedPkg}` });
 	}
 
-	// 6. helper：存在、可执行、架构
+	// 6. helper：存在、可执行、架构（仅 macOS；其它平台扩展工具不注册，这里记跳过而不是失败）
 	const helper = join(operatorDir, "lib", "bin", "ax-snapshot");
-	if (deps.deps.exists(helper)) {
+	if (deps.platform !== "darwin") {
+		results.push({ level: "ok", text: `AX helper 仅 macOS：${deps.platform} 上扩展工具不注册（跳过）` });
+	} else if (deps.deps.exists(helper)) {
 		let mode = 0;
 		try {
 			mode = deps.deps.stat(helper).mode;

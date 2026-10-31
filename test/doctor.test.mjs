@@ -61,17 +61,18 @@ test("doctor：健康环境应该全部通过", async () => {
 	assert.ok(report.results.some((item) => item.text.includes("profile 依赖含 dsh-operator")));
 });
 
-test("doctor：非 darwin + 缺安装副本 + 缺 helper 应该报致命问题", async () => {
+test("doctor：非 darwin + 缺安装副本时，AX helper 只记「macOS-only 跳过」不误判为致命", async () => {
 	const deps = {
 		platform: "linux",
 		nodeVersion: "v18.19.0",
 		deps: fakeDeps({ files: {} })
 	};
 	const report = await runDoctor({ dshHome: "/tmp/dsh-home", appPath: "/Applications/DeepSeek Harness.app", injected: deps });
-	assert.ok(report.fatal >= 2, `期望至少 2 个致命项，实际 ${report.fatal}`);
+	assert.ok(report.fatal >= 1, `期望至少 1 个致命项（安装副本缺失），实际 ${report.fatal}`);
 	assert.equal(report.ok, false);
 	const text = report.results.map((item) => item.text).join("\n");
 	assert.match(text, /扩展工具只在 macOS 注册/);
 	assert.match(text, /安装副本不存在/);
-	assert.match(text, /AX helper 不存在/);
+	assert.match(text, /AX helper 仅 macOS：linux 上扩展工具不注册（跳过）/);
+	assert.doesNotMatch(text, /AX helper 不存在/);
 });
