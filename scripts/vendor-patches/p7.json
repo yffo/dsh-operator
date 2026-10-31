@@ -1,0 +1,58 @@
+[
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "导入 guard 与懒观察闸",
+		"marker": "import { assertHotkeyGuarded } from \"../guard.js\";",
+		"find": "import { slimPolicy } from \"../policy-slim.js\";",
+		"replace": "import { slimPolicy } from \"../policy-slim.js\";\n// PATCH(computer-use): guard + lazy observe imports\nimport { assertHotkeyGuarded } from \"../guard.js\";\nimport { noteGuiActivity, shouldObserveFirstFrame } from \"../observe-gate.js\";"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "Config 增加 guard / 懒观察字段",
+		"marker": "firstFrame: z.string().default(\"auto\")",
+		"find": "\taxMinNodes: z.number().default(16),\n\tauditLog: z.boolean().default(true)\n});",
+		"replace": "\taxMinNodes: z.number().default(16),\n\tauditLog: z.boolean().default(true),\n\t// PATCH(computer-use): guard + lazy observe config\n\tfirstFrame: z.string().default(\"auto\"),\n\tguard: z.boolean().default(true),\n\tidleObserveMs: z.number().default(600000)\n});"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "resolve 增加 guard / 懒观察字段",
+		"marker": "firstFrame: typeof config.firstFrame === \"string\"",
+		"find": "\t\taxMinNodes: Math.min(400, requireFiniteNonNegative(config.axMinNodes ?? 16, \"axMinNodes\")),\n\t\tauditLog: config.auditLog !== false\n\t};",
+		"replace": "\t\taxMinNodes: Math.min(400, requireFiniteNonNegative(config.axMinNodes ?? 16, \"axMinNodes\")),\n\t\tauditLog: config.auditLog !== false,\n\t\t// PATCH(computer-use): guard + lazy observe resolve\n\t\tfirstFrame: typeof config.firstFrame === \"string\" ? config.firstFrame : \"auto\",\n\t\tguard: config.guard !== false,\n\t\tidleObserveMs: requireFiniteNonNegative(config.idleObserveMs ?? 600000, \"idleObserveMs\")\n\t};"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "首帧观察改为懒观察（受 firstFrame 控制）",
+		"marker": "PATCH(computer-use): lazy observe gate",
+		"find": "\t\tconst mode = coordinateModeOf(agent.session);\n\t\tconst observation = await observeDesktop(ctx, backend, signal, { coordinateMode: mode });",
+		"replace": "\t\tconst mode = coordinateModeOf(agent.session);\n\t\t// PATCH(computer-use): lazy observe gate\n\t\tif (shouldObserveFirstFrame(agent.session, config) !== true) return decision;\n\t\tconst observation = await observeDesktop(ctx, backend, signal, { coordinateMode: mode });"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "recapture 记录 GUI 活动时间（懒观察依据）",
+		"marker": "noteGuiActivity(session);",
+		"find": "async function recapture(ctx, backend, exec, settleMs = 0) {\n\tconst session = sessionOf(exec);",
+		"replace": "async function recapture(ctx, backend, exec, settleMs = 0) {\n\tconst session = sessionOf(exec);\n\tnoteGuiActivity(session);"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "suspected_noop 时不重复附同一张图",
+		"marker": "screens: effect.actionEffect === \"suspected_noop\" ? [] : [...observation.screens],",
+		"find": "\tconst result = {\n\t\tscreens: [...observation.screens],",
+		"replace": "\tconst result = {\n\t\t// PATCH(computer-use): noop without duplicate image\n\t\tscreens: effect.actionEffect === \"suspected_noop\" ? [] : [...observation.screens],"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "hotkey 参数增加 confirm",
+		"marker": "confirm: {\n\t\t\ttype: \"boolean\",\n\t\t\tdescription: \"Guarded shortcut confirmation",
+		"find": "\t\tparameters: { keys: {\n\t\t\ttype: \"array\",\n\t\t\trequired: true,\n\t\t\titems: { type: \"string\" },\n\t\t\tdescription: \"Key names in order, for example [\\\"cmd\\\", \\\"c\\\"].\"\n\t\t} },",
+		"replace": "\t\tparameters: { keys: {\n\t\t\ttype: \"array\",\n\t\t\trequired: true,\n\t\t\titems: { type: \"string\" },\n\t\t\tdescription: \"Key names in order, for example [\\\"cmd\\\", \\\"c\\\"].\"\n\t\t}, confirm: {\n\t\t\ttype: \"boolean\",\n\t\t\tdescription: \"Guarded shortcut confirmation: pass true to allow quit / force-quit / lock / logout / empty-trash combinations.\"\n\t\t} },"
+	},
+	{
+		"file": "lib/computer-use/index.js",
+		"name": "hotkey 执行前跑 guard",
+		"marker": "assertHotkeyGuarded(args.keys, args.confirm === true, config.guard !== false);",
+		"find": "\t\t\tif (args.keys.length === 0) throw new Error(\"keys must contain at least one key\");\n\t\t\tassertAllowedHotkey(args.keys);",
+		"replace": "\t\t\tif (args.keys.length === 0) throw new Error(\"keys must contain at least one key\");\n\t\t\tassertAllowedHotkey(args.keys);\n\t\t\t// PATCH(computer-use): guarded hotkey\n\t\t\tassertHotkeyGuarded(args.keys, args.confirm === true, config.guard !== false);"
+	}
+]

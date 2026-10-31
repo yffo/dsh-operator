@@ -46,6 +46,12 @@ check(src.includes("COMPUTER_USE_TOOL_NAMES"), "工具名冲突检测在");
 check(src.includes('clipped: { type: "boolean" }'), "screens schema 含 clipped");
 check(src.includes("actionEffect: {"), "工具输出 schema 含 actionEffect");
 check(backend.includes("clipped: true, sourceBounds"), "backend 跨屏窗口裁切元数据在");
+check(src.includes('import { assertHotkeyGuarded } from "../guard.js";'), "0.9.0 guard 已接线");
+check(src.includes('import { noteGuiActivity, shouldObserveFirstFrame } from "../observe-gate.js";'), "0.9.0 懒观察闸已接线");
+check(src.includes('firstFrame: z.string().default("auto")'), "Config 含 firstFrame");
+check(src.includes("noteGuiActivity(session);"), "recapture 记录 GUI 活动");
+check(src.includes('screens: effect.actionEffect === "suspected_noop" ? [] : [...observation.screens]'), "noop 不重复附图");
+check(src.includes("assertHotkeyGuarded(args.keys, args.confirm === true, config.guard !== false);"), "hotkey guard 调用在");
 check(!/required:\s*false/.test(src), "schema 不用 required: false（DSH 只允许 true 或省略）");
 
 try {

@@ -130,3 +130,11 @@ dsh-operator
   裁剪截图（读小字 / 图标细节 / 拥挤控件），避免为看清细节而整屏重截；
   README 补充「每次观察只带当前截图，不重复附带历史截图」的说明。
 
+0.9.0（2026-11-01，P0 前三项）
+- 首帧懒观察：`firstFrame: "auto"`（默认）时，只有本会话最近 `idleObserveMs`（默认 10 分钟）内做过 GUI 动作，
+  新的 user 消息才自动附首帧截图；纯聊天会话不再产生截图 token。会话第一次需要看屏幕时先调 wait。
+- `suspected_noop` 不再重复附同一张截图，只回 actionEffect + note（上一步截图仍在上下文）。
+- 敏感动作 guard（v1）：hotkey 的退出/强制退出/锁屏/退出登录/清空废纸篓组合、ax_press 目标标题命中
+  危险词（删除/卸载/支付/发送…）时，默认拒绝并要求 `confirm: true` 放行；安全输入角色只做标记。
+  覆盖范围与 v2 计划（视觉点击的 AX hit-test）见 README 已知限制。
+- 新增 `test/guard.test.mjs`、`test/observe-gate.test.mjs`（node:test）。

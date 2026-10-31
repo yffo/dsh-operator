@@ -94,6 +94,9 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 | `axObservation` | `true` | 原生 App 观察时是否附 AX 文本快照；设 `false` 退回纯视觉 |
 | `axMaxNodes` | `120` | AX 快照节点上限（20–400）。越大信息越全，token 越多 |
 | `axMinNodes` | `16` | 浅 AX 树阈值：节点数少于它就不附 AX 文本（Electron / Web 通常只有十几个节点） |
+| `firstFrame` | `auto` | 首帧观察策略：`auto`（默认，仅 GUI 会话自动观察）/ `eager` / `off` |
+| `idleObserveMs` | `600000` | `auto` 模式下判定「最近做过 GUI 动作」的窗口（毫秒） |
+| `guard` | `true` | 敏感动作 guard（危险快捷键 / ax_press 危险标题需 `confirm: true`） |
 | `auditLog` | `true` | 写无内容审计日志到 `~/.dsh/dsh-operator/audit.jsonl`（事件名 / 数量 / 布尔 / 耗时，不含截图、坐标、标题、输入文本） |
 
 ## 安全
@@ -105,6 +108,8 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - **无网络上报**：只用本机文件与系统命令，插件自身不发送遥测。
 
 ## 已知限制
+
+- **guard 是 v1**：只覆盖危险快捷键与 `ax_press` 的危险标题；视觉点击的语义目标还没接 AX hit-test（v2 计划），别把它当完整的安全沙箱。
 
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 快照只在 macOS 注册；Linux 不提供 GUI 操作。
 - **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
@@ -161,6 +166,8 @@ dsh-operator/
 > （很多 GUI/工具会写临时文件再 rename），安装副本可能仍是旧内容。改完核对一下：
 > `cmp -s lib/ax-observer.js ~/.dsh/profiles/desktop/node_modules/dsh-operator/lib/ax-observer.js`，
 > 不一致就 `cp -f` 过去，或干脆 `remove` + `add` 重装一次。
+
+测试：`test/*.test.mjs` 用 node:test（guard / 懒观察闸）。
 
 ## 开发
 
