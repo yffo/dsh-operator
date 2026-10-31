@@ -149,9 +149,15 @@ function main() {
 	run("git", ["tag", "-a", `v${args.version}`, "-m", `dsh-operator ${args.version}`]);
 	run("git", ["push", "origin", "main", "--tags"]);
 	if (args.install) {
+		const installed = join(process.env.HOME ?? "~", ".dsh/profiles/desktop/node_modules/dsh-operator");
 		run("dsh", ["plugin", "--profile", "desktop", "remove", "dsh-operator"]);
 		run("dsh", ["plugin", "--profile", "desktop", "add", "--save-exact", `file:${root}`]);
-		run("node", [join(process.env.HOME ?? "~", ".dsh/profiles/desktop/node_modules/dsh-operator/scripts/doctor.mjs")]);
+		// pnpm 的 file: 依赖会复用旧内容（新文件缺失/旧文件残留），必须再强制同步一次并逐文件校验。
+		run("rsync", ["-a", "--delete", "--exclude", ".git", "--exclude", "node_modules", "--exclude", "test", "--exclude", "docs", "--exclude", "bench", "--exclude", "archive", "--exclude", ".github", `${root}/`, `${installed}/`]);
+		for (const file of ["index.js", "package.json", "lib/operator-tools.js", "lib/computer-use/index.js", "client/client.js", "scripts/release.mjs"]) {
+			run("cmp", [join(root, file), join(installed, file)]);
+		}
+		run("node", [join(installed, "scripts/doctor.mjs")]);
 	}
 	console.log(`\nreleased v${args.version}. 记得：重启 App 让 JS 改动生效；客户端卡片改动刷新页面即可。`);
 	console.log(`安装副本：${INSTALLED_PACKAGE}`);
