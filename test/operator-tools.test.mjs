@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { evaluatePredicate, registerOperatorTools, V2_LEGACY_TOOL_NAMES } from "../lib/operator-tools.js";
+import { evaluatePredicate, planWindowFrame, registerOperatorTools, resolveLayoutDisplay, V2_LEGACY_TOOL_NAMES, WINDOW_LAYOUTS } from "../lib/operator-tools.js";
 import { configurePlanStore, createPlan } from "../lib/planner.js";
 
 test("evaluatePredicate：未知 kind 返回事实而不抛错", async () => {
@@ -116,8 +116,42 @@ test("registerOperatorTools：仅 darwin 注册二十五个扩展工具", (t) =>
 	}
 	const windowMove = tools.find((tool) => tool.name === "window_move");
 	assert.equal(typeof windowMove, "object");
+	assert.equal(windowMove.parameters.layout.required, undefined, "layout 可选");
+	assert.deepEqual(windowMove.parameters.layout.enum, [...WINDOW_LAYOUTS]);
 	const blocks = windowMove.output.render({}, { schemaVersion: 1, ok: true, frame: { x: 1, y: 2, width: 3, height: 4 }, windowTitle: "dest" });
 	assert.ok(Array.isArray(blocks) && blocks.length === 1 && blocks[0].type === "text", "window_move render 返回文本块数组");
+	const layoutBlocks = windowMove.output.render({}, { schemaVersion: 1, ok: true, layout: "left-half", frame: { x: 0, y: 28, width: 756, height: 954 } });
+	assert.match(layoutBlocks[0].text, /\[left-half\]/, "render 回显布局名");
+	assert.match(windowMove.description, /layout preset/);
+});
+
+test("planWindowFrame：半屏/最大化/居中的几何按可用区域（顶部让出菜单栏）计算", () => {
+	const display = { index: 0, primary: true, bounds: { x: 0, y: 0, width: 100, height: 200 } };
+	assert.deepEqual(planWindowFrame({ layout: "left-half", display }), { x: 0, y: 28, width: 50, height: 172 });
+	assert.deepEqual(planWindowFrame({ layout: "right-half", display }), { x: 50, y: 28, width: 50, height: 172 });
+	assert.deepEqual(planWindowFrame({ layout: "top-half", display }), { x: 0, y: 28, width: 100, height: 86 });
+	assert.deepEqual(planWindowFrame({ layout: "bottom-half", display }), { x: 0, y: 114, width: 100, height: 86 });
+	assert.deepEqual(planWindowFrame({ layout: "maximize", display }), { x: 0, y: 28, width: 100, height: 172 });
+	assert.deepEqual(planWindowFrame({ layout: "center", display }), { x: 25, y: 71, width: 50, height: 86 });
+	assert.deepEqual(planWindowFrame({ layout: "center", display, width: 40, height: 60 }), { x: 30, y: 84, width: 40, height: 60 });
+	// 带偏移的显示器同样以 bounds 为基准
+	const offset = { index: 1, bounds: { x: 1000, y: 100, width: 200, height: 200 } };
+	assert.deepEqual(planWindowFrame({ layout: "left-half", display: offset }), { x: 1000, y: 128, width: 100, height: 172 });
+});
+
+test("planWindowFrame：非法布局或缺失显示器几何返回 undefined", () => {
+	assert.equal(planWindowFrame({ layout: "nope", display: { bounds: { x: 0, y: 0, width: 10, height: 10 } } }), undefined);
+	assert.equal(planWindowFrame({ display: { bounds: { x: 0, y: 0, width: 10, height: 10 } } }), undefined);
+	assert.equal(planWindowFrame({ layout: "left-half" }), undefined);
+	assert.equal(planWindowFrame({ layout: "left-half", display: { bounds: { x: 0, y: 0, width: 0, height: 10 } } }), undefined);
+	assert.equal(planWindowFrame({ layout: "left-half", display: { bounds: { x: 0, y: Number.NaN, width: 10, height: 10 } } }), undefined);
+});
+
+test("resolveLayoutDisplay：优先主屏，缺省取第一块", () => {
+	assert.equal(resolveLayoutDisplay([{ index: 0 }, { index: 1, primary: true }]).index, 1);
+	assert.equal(resolveLayoutDisplay([{ index: 2 }, { index: 3 }]).index, 2);
+	assert.equal(resolveLayoutDisplay(undefined), undefined);
+	assert.equal(resolveLayoutDisplay([]), undefined);
 });
 
 test("registerOperatorTools：缺 deps/defineTool 时静默不注册", () => {

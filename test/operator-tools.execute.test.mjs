@@ -162,6 +162,42 @@ test("list_windows：输出文本结构与降级", async (t) => {
 	await assert.rejects(degraded.tools.list_windows.execute({}, exec), /window query unavailable/);
 });
 
+test("window_move：布局预设按主屏几何计算、回显 layout；非法布局/缺参/无几何都给事实", async (t) => {
+	if (!darwin) {
+		t.skip("darwin only");
+		return;
+	}
+	const frames = [];
+	const results = [{ ok: true, windowTitle: "dest", frame: { x: 50, y: 28, width: 50, height: 172 } }];
+	const { tools } = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			setWindowFrame: async (options) => {
+				frames.push(options);
+				return results.shift();
+			}
+		}
+	});
+	const value = await tools.window_move.execute({ layout: "right-half", window_title: "dest" }, exec);
+	assert.equal(value.ok, true);
+	assert.equal(value.layout, "right-half");
+	assert.deepEqual(frames[0], { pid: 12, frame: { x: 50, y: 28, width: 50, height: 172 }, windowTitle: "dest" });
+	const render = tools.window_move.output.render({}, value);
+	assert.match(render[0].text, /\[right-half\]/);
+
+	const badLayout = await tools.window_move.execute({ layout: "diagonal" }, exec);
+	assert.equal(badLayout.ok, false);
+	assert.match(badLayout.error, /layout must be one of/);
+	const missing = await tools.window_move.execute({ x: 1, y: 2 }, exec);
+	assert.equal(missing.ok, false);
+	assert.match(missing.error, /x\/y\/width\/height must be numbers, or pass layout/);
+
+	const noDisplay = setupTools({ internals: { listWindows: async () => ({ ...fixtureWindows, displays: [] }) } });
+	const noGeometry = await noDisplay.tools.window_move.execute({ layout: "left-half" }, exec);
+	assert.equal(noGeometry.ok, false);
+	assert.match(noGeometry.error, /no display geometry for layout/);
+});
+
 test("screenshot_window：attach=true 带图片、attach=false 只给路径、非法参数拒绝", async (t) => {
 	if (!darwin) {
 		t.skip("darwin only");

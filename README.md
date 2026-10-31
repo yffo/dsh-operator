@@ -321,6 +321,8 @@ node scripts/test-shrink.mjs
 
 - **0.21.2** — `verify_state` 失败现场可读化：`window_title` 未命中时回显当前可见窗口标题、`app_running` 回显可见 App 列表、`ax_text`/`ax_element` 未命中时回显 AX 快照里的样例标题（各取前 3 个），把「假超时」从盲猜变成可判断。`npm test` 165 项。
 
+- **0.21.3** — `window_move` 支持布局预设：`layout` 取 `left-half`/`right-half`/`top-half`/`bottom-half`/`maximize`/`center`，按主屏可用区域（顶部让出 28pt 菜单栏）计算 frame；`center` 可用 `width`/`height` 指定窗口尺寸。并排两窗从 3+ 步压到 1 步；`window_move` 的 `x/y/width/height` 改为在无 `layout` 时才必需。样例标题去重（`[...new Set(titles)]`）。`npm test` 169 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图
