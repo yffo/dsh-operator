@@ -6,7 +6,10 @@ import {
 	formatAxSnapshot,
 	observeAxSnapshot,
 	pressAx,
-	snapshotAx
+	pressAxMenu,
+	setAxValue,
+	snapshotAx,
+	MAX_TEXT_CHARS
 } from "../lib/ax-observer.js";
 
 // 一份可复现的 AX helper 输出：两处菜单栏节点应被过滤、无 frame 的节点应被过滤、
@@ -103,4 +106,34 @@ test("configureAxObservation：关闭后 observeAxSnapshot 直接降级", async 
 	configureAxObservation({ enabled: false });
 	assert.equal(await observeAxSnapshot({ pid: 4242 }), undefined);
 	configureAxObservation({ enabled: true, maxNodes: 200, minNodes: 16 });
+});
+
+test("formatAxSnapshot：字符预算超出时截断并标 truncated", () => {
+	const many = {
+		pid: 1,
+		appName: "测试",
+		windowTitle: "窗口",
+		windowFrame: { x: 0, y: 0, width: 1000, height: 800 },
+		nodes: Array.from({ length: 400 }, (_, i) => ({
+			index: i,
+			depth: 1,
+			role: "AXButton",
+			title: `按钮${String(i)}${"很长的标题".repeat(8)}`,
+			value: "",
+			frame: { x: 10, y: 10, width: 40, height: 20 }
+		})),
+		truncated: false
+	};
+	const text = formatAxSnapshot(many, {}, { x: 0, y: 0, width: 1000, height: 800 });
+	assert.ok(typeof text === "string");
+	assert.match(text, /truncated="true"/);
+	assert.ok(text.length < MAX_TEXT_CHARS + 2000);
+});
+
+test("setAxValue/pressAxMenu：参数不合法时安全返回", async () => {
+	assert.deepEqual(await setAxValue({ pid: 0, index: 1, value: "x" }), { ok: false, index: 1, error: "invalid pid" });
+	assert.deepEqual(await setAxValue({ pid: 10, index: -1, value: "x" }), { ok: false, index: -1, error: "invalid index" });
+	assert.deepEqual(await setAxValue({ pid: 10, index: 0, value: 3 }), { ok: false, index: 0, error: "value must be a string" });
+	assert.deepEqual(await pressAxMenu({ pid: 0, path: ["文件"] }), { ok: false, path: ["文件"], error: "invalid pid" });
+	assert.deepEqual(await pressAxMenu({ pid: 10, path: [] }), { ok: false, path: [], error: "empty menu path" });
 });

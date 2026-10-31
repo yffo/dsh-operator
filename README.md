@@ -34,7 +34,7 @@
 | 键盘 | `input_text`（可替换原内容、回车提交）、`hotkey` |
 | 等待 | `wait`、`long_wait` |
 | 应用 / 文件 | `list_apps`、`open_app`、`open_in_browser`、`open_in_finder` |
-| 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图） |
+| 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图）、`ax_press` / `ax_set_value`（按 AX 快照 index 后台点按/写入）、`ax_menu`（菜单路径触发）、`zoom_region`（局部原生放大） |
 | 后台会话 | `code_agent`、`code_agent_status`、`code_agent_stop` |
 
 每次工具调用后自动附带新的前台窗口截图，坐标用 0–1000 归一化（Retina / 多倍屏都按比例，不是像素）。
@@ -109,9 +109,9 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 ## 已知限制
 
-- **guard 是 v1**：只覆盖危险快捷键与 `ax_press` 的危险标题；视觉点击的语义目标还没接 AX hit-test（v2 计划），别把它当完整的安全沙箱。
+- **guard 是 v1**：覆盖危险快捷键、`ax_press` / `ax_set_value` / `ax_menu` 的危险标题与路径；视觉点击的语义目标还没接 AX hit-test（v2 计划），别把它当完整的安全沙箱。
 
-- **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 快照只在 macOS 注册；Linux 不提供 GUI 操作。
+- **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 系列工具只在 macOS 注册；Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
 - **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
 - **纯视觉定位**：UI 变化、遮挡、动画过渡会导致定位失败；校验提示只能减少浪费，不能保证成功。适合可重复、可验收的操作。
 - **AX 只覆盖原生 App**：AX 树在 AppKit 原生应用里好用（系统设置、访达、备忘录、预览等），Electron / Web 应用（Chrome、Harness、微信）树很浅或不可见，少于 `axMinNodes`（默认 16）时自动不附、退回纯视觉。AX 助手是预编译的 macOS 二进制；换架构/平台需要 `pnpm run build:ax` 重新编译（需要 Xcode Command Line Tools）。
@@ -142,8 +142,8 @@ dsh-operator/
 │   ├── ax-observer.js          # AX 文本快照格式化 / 降级（本仓库代码）
 │   ├── macos-query.js          # 窗口 / 显示器查询（调 AX 助手 --list-windows）
 │   ├── audit-log.js            # 无内容审计日志（脱敏 + 5MB 轮转）
-│   ├── operator-tools.js       # 扩展工具：list_windows / screenshot_window / verify_state / ax_press / zoom_region
-│   ├── bin/ax-snapshot         # 预编译 AX 助手（macOS arm64）
+│   ├── operator-tools.js       # 扩展工具：list_windows / screenshot_window / verify_state / ax_press / ax_set_value / ax_menu / zoom_region
+│   ├── bin/ax-snapshot         # 预编译 AX 助手（macOS 通用二进制：arm64 + x86_64）
 │   └── computer-use/           # vendored：上游 dsh-orb dist/computer-use
 ├── scripts/
     ├── fetch-upstream.sh        # 拉取上游 tarball 供人工 diff（不覆盖 lib/computer-use）
@@ -194,6 +194,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.10.0** — 新增 `ax_set_value`（后台 AX 写原生文本框，secure 字段拒绝）、`ax_menu`（按菜单路径后台触发，危险路径需 `confirm: true`）；AX 助手改为通用二进制（arm64 + x86_64）；AX 快照加 24000 字符正文预算（异常大树截断并标 `truncated`）。
 - **0.8.0** — 新增 `zoom_region`：局部区域原生分辨率放大截图，读小字/细节不用整屏重截。
 - **0.7.0** — 新增 `ax_press`（后台 AXPress，按快照 index 命中并校验 role/title）；合并一次观察里的两次 JXA（前台缓存，每步省 100–200ms）。
 - **0.6.2** — 修正浅 AX 树阈值：改为按格式化后实际保留的节点数判断（原来按原始节点数，Electron/Web 浅树仍会被附带）。

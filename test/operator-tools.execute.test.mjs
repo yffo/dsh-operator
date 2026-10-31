@@ -306,3 +306,71 @@ test("扩展工具输出 render：verify_state / ax_press / list_windows 文本"
 	const pressBlocks = tools.ax_press.output.render({}, { schemaVersion: 1, pressed: true, index: 3, role: "AXButton", title: "通用" });
 	assert.match(pressBlocks[0].text, /Pressed AX node \[3\] AXButton "通用"/);
 });
+
+test("ax_set_value：成功、secure 拒绝、危险标题需 confirm", async (t) => {
+	if (!darwin) return t.skip("darwin only");
+	const snapshotFixture = { nodes: [{ index: 5, role: "AXTextField", title: "搜索", value: "" }] };
+	const values = [];
+	const { tools } = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			snapshotAx: async () => snapshotFixture,
+			setAxValue: async (args) => {
+				values.push(args);
+				return { ok: true, index: args.index, role: "AXTextField", title: "搜索" };
+			}
+		}
+	});
+	const value = await tools.ax_set_value.execute({ index: 5, value: "显示器" }, exec);
+	assert.equal(value.ok, true);
+	assert.equal(value.index, 5);
+	assert.deepEqual(values[0], { pid: 12, index: 5, value: "显示器", expectRole: undefined });
+
+	const secure = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			snapshotAx: async () => ({ nodes: [{ index: 1, role: "AXSecureTextField", title: "密码", value: "" }] }),
+			setAxValue: async () => assert.fail("must not be called")
+		}
+	});
+	const denied = await secure.tools.ax_set_value.execute({ index: 1, value: "x" }, exec);
+	assert.equal(denied.ok, false);
+	assert.match(denied.error, /secure input fields/);
+
+	const guarded = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			snapshotAx: async () => ({ nodes: [{ index: 2, role: "AXTextField", title: "删除账户", value: "" }] }),
+			setAxValue: async () => ({ ok: true, index: 2, role: "AXTextField", title: "删除账户" })
+		}
+	});
+	const refused = await guarded.tools.ax_set_value.execute({ index: 2, value: "x" }, exec);
+	assert.equal(refused.ok, false);
+	assert.match(refused.error, /guarded/);
+	const allowed = await guarded.tools.ax_set_value.execute({ index: 2, value: "x", confirm: true }, exec);
+	assert.equal(allowed.ok, true);
+});
+
+test("ax_menu：成功、危险路径需 confirm", async (t) => {
+	if (!darwin) return t.skip("darwin only");
+	const paths = [];
+	const { tools } = setupTools({
+		internals: {
+			listWindows: async () => fixtureWindows,
+			pressAxMenu: async ({ pid, path }) => {
+				paths.push({ pid, path });
+				return { ok: true, path };
+			}
+		}
+	});
+	const value = await tools.ax_menu.execute({ path: "文件/新建窗口" }, exec);
+	assert.equal(value.ok, true);
+	assert.equal(value.path, "文件/新建窗口");
+	assert.deepEqual(paths[0], { pid: 12, path: ["文件", "新建窗口"] });
+
+	const refused = await tools.ax_menu.execute({ path: "文件/删除" }, exec);
+	assert.equal(refused.ok, false);
+	assert.match(refused.error, /guarded/);
+	const allowed = await tools.ax_menu.execute({ path: "文件/删除", confirm: true }, exec);
+	assert.equal(allowed.ok, true);
+});

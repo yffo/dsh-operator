@@ -68,7 +68,7 @@ function assertSchemaShape(schema, path) {
 	}
 }
 
-test("registerOperatorTools：仅 darwin 注册五个扩展工具", (t) => {
+test("registerOperatorTools：仅 darwin 注册七个扩展工具", (t) => {
 	const tools = collectTools();
 	if (process.platform !== "darwin") {
 		assert.equal(tools.length, 0);
@@ -77,7 +77,7 @@ test("registerOperatorTools：仅 darwin 注册五个扩展工具", (t) => {
 	}
 	assert.deepEqual(
 		tools.map((tool) => tool.name).sort(),
-		["ax_press", "list_windows", "screenshot_window", "verify_state", "zoom_region"]
+		["ax_menu", "ax_press", "ax_set_value", "list_windows", "screenshot_window", "verify_state", "zoom_region"]
 	);
 	for (const tool of tools) {
 		assert.equal(typeof tool.description, "string");

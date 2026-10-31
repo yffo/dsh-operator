@@ -5,6 +5,12 @@
 //       读一份“最小取证”的 AX 树，输出 JSON（节点上限/深度由参数控制）。
 //   ax-snapshot --list-windows [--pid <pid>]
 //       输出显示器列表 + 可视窗口列表（CGWindowList）+ 前台 App。用于 list_windows 工具。
+//   ax-snapshot --pid <pid> --press <index> [--expect-role R] [--expect-title T]
+//       按快照索引语义后台 AXPress（不移动光标）。
+//   ax-snapshot --pid <pid> --set-value <index> --value <文本> [--expect-role R]
+//       直接写原生文本框的值（AXTextField/AXTextArea/AXComboBox/AXSearchField），不经过剪贴板。
+//   ax-snapshot --pid <pid> --menu <路径，用 / 分隔> [--menu-item 段]...
+//       后台点菜单路径（如 "文件/新建"）。
 //
 // 编译：scripts/build-ax-helper.sh（xcrun swiftc -O）
 
@@ -205,6 +211,106 @@ func windowList(pidFilter: Int32, limit: Int) -> WindowListOutput {
     )
 }
 
+// MARK: - 共用：按索引找节点
+
+struct FoundNode {
+    let element: AXUIElement
+    let role: String
+    let title: String
+}
+
+func findNodeIndexed(app: AXUIElement, target: Int, maxDepth: Int) -> FoundNode? {
+    var validCount = 0
+    var explored = 0
+    var stack: [(element: AXUIElement, depth: Int)] = [(app, 0)]
+    while stack.isEmpty == false && explored < 20000 {
+        explored += 1
+        let current = stack.removeLast()
+        let element = current.element
+        let role = stringAttribute(element, kAXRoleAttribute) ?? ""
+        if !role.isEmpty, frameAttribute(element) != nil {
+            if validCount == target {
+                let rawTitle = stringAttribute(element, kAXTitleAttribute) ?? ""
+                let rawDescription = stringAttribute(element, kAXDescriptionAttribute) ?? ""
+                return FoundNode(
+                    element: element,
+                    role: role,
+                    title: rawTitle.isEmpty ? rawDescription : rawTitle
+                )
+            }
+            validCount += 1
+        }
+        if current.depth < maxDepth {
+            for child in children(of: element).reversed() {
+                stack.append((child, current.depth + 1))
+            }
+        }
+    }
+    return nil
+}
+
+// MARK: - 输出结构（新增模式）
+
+struct SetValueOutput: Codable {
+    let ok: Bool
+    let index: Int
+    let role: String
+    let title: String
+    let error: String?
+}
+
+struct MenuOutput: Codable {
+    let ok: Bool
+    let path: [String]
+    let error: String?
+}
+
+let textRoles: Set<String> = ["AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"]
+
+// MARK: - 菜单：沿路径 AXPress（后台）
+
+func menuChild(of parent: AXUIElement, title: String) -> AXUIElement? {
+    func search(_ element: AXUIElement) -> AXUIElement? {
+        let kids = children(of: element)
+        for kid in kids {
+            let kidTitle = stringAttribute(kid, kAXTitleAttribute) ?? ""
+            if kidTitle == title { return kid }
+        }
+        for kid in kids where (stringAttribute(kid, kAXRoleAttribute) ?? "") == "AXMenu" {
+            if let hit = search(kid) { return hit }
+        }
+        return nil
+    }
+    return search(parent)
+}
+
+func pressMenuPath(app: AXUIElement, path: [String]) -> MenuOutput {
+    guard path.isEmpty == false else {
+        return MenuOutput(ok: false, path: path, error: "empty menu path")
+    }
+    guard let rawBar = attribute(app, kAXMenuBarAttribute) else {
+        return MenuOutput(ok: false, path: path, error: "menu bar not available")
+    }
+    var current = rawBar as! AXUIElement
+    for (offset, segment) in path.enumerated() {
+        guard let item = menuChild(of: current, title: segment) else {
+            return MenuOutput(ok: false, path: path, error: "menu item not found: \(segment)")
+        }
+        if offset == path.count - 1 {
+            let result = AXUIElementPerformAction(item, kAXPressAction as CFString)
+            return result == .success
+                ? MenuOutput(ok: true, path: path, error: nil)
+                : MenuOutput(ok: false, path: path, error: "AXPress failed (AXError \(result.rawValue))")
+        }
+        _ = AXUIElementPerformAction(item, kAXPressAction as CFString)
+        usleep(40_000)
+        current = item
+    }
+    return MenuOutput(ok: true, path: path, error: nil)
+}
+
+// MARK: - 主入口
+
 func main() -> Int32 {
     let arguments = CommandLine.arguments
     var pid: Int32 = 0
@@ -213,6 +319,9 @@ func main() -> Int32 {
     var maxDepth = 12
     var listWindowsMode = false
     var pressIndex: Int? = nil
+    var setValueIndex: Int? = nil
+    var setValueText: String? = nil
+    var menuPath: [String]? = nil
     var expectRole: String? = nil
     var expectTitle: String? = nil
     var index = 1
@@ -234,6 +343,20 @@ func main() -> Int32 {
         case "--press":
             index += 1
             pressIndex = Int(arguments[index])
+        case "--set-value":
+            index += 1
+            setValueIndex = Int(arguments[index])
+        case "--value":
+            index += 1
+            setValueText = arguments[index]
+        case "--menu":
+            index += 1
+            menuPath = arguments[index].split(separator: "/").map(String.init)
+        case "--menu-item":
+            index += 1
+            var path = menuPath ?? []
+            path.append(arguments[index])
+            menuPath = path
         case "--expect-role":
             index += 1
             expectRole = arguments[index]
@@ -270,6 +393,56 @@ func main() -> Int32 {
     }
 
     let app = AXUIElementCreateApplication(pid)
+
+    // 后台写原生文本框的值（不经过剪贴板/键盘）
+    if let target = setValueIndex {
+        guard let text = setValueText else {
+            FileHandle.standardError.write(Data("ax-snapshot: --value is required with --set-value\n".utf8))
+            return 2
+        }
+        guard let found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth) else {
+            return emit(encoder, SetValueOutput(ok: false, index: target, role: "", title: "", error: "element not found (index out of range)"))
+        }
+        if let role = expectRole, found.role != role {
+            return emit(encoder, SetValueOutput(ok: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "role mismatch: expected \(role), got \(found.role)"))
+        }
+        if textRoles.contains(found.role) == false {
+            return emit(encoder, SetValueOutput(ok: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "role \(found.role) is not a text field"))
+        }
+        let result = AXUIElementSetAttributeValue(found.element, kAXValueAttribute as CFString, text as CFString)
+        let output: SetValueOutput
+        if result == .success {
+            output = SetValueOutput(ok: true, index: target, role: found.role, title: String(found.title.prefix(100)), error: nil)
+        } else {
+            output = SetValueOutput(ok: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "AXSetValue failed (AXError \(result.rawValue))")
+        }
+        return emit(encoder, output)
+    }
+
+    // 后台按路径点菜单
+    if let path = menuPath {
+        return emit(encoder, pressMenuPath(app: app, path: path))
+    }
+
+    // AXPress 后台投递：按快照里的节点 index 重新遍历（索引语义与快照一致），
+    // 命中后先校验 role/title 期望，再对元素直接发 AXPress（不动光标、不抢焦点）。
+    if let target = pressIndex {
+        guard let found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth) else {
+            return emit(encoder, PressOutput(pressed: false, index: target, role: "", title: "", error: "element not found (index out of range)"))
+        }
+        if let role = expectRole, found.role != role {
+            return emit(encoder, PressOutput(pressed: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "role mismatch: expected \(role), got \(found.role)"))
+        }
+        if let needle = expectTitle, found.title.contains(needle) == false {
+            return emit(encoder, PressOutput(pressed: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "title mismatch: expected to contain \"\(needle)\""))
+        }
+        let result = AXUIElementPerformAction(found.element, kAXPressAction as CFString)
+        let output = result == .success
+            ? PressOutput(pressed: true, index: target, role: found.role, title: String(found.title.prefix(100)), error: nil)
+            : PressOutput(pressed: false, index: target, role: found.role, title: String(found.title.prefix(100)), error: "AXPress failed (AXError \(result.rawValue))")
+        return emit(encoder, output)
+    }
+
     let appName = stringAttribute(app, kAXTitleAttribute) ?? ""
     let window: AXUIElement?
     if let raw = attribute(app, kAXFocusedWindowAttribute) {
@@ -279,70 +452,6 @@ func main() -> Int32 {
     }
     let windowTitle = window.flatMap { stringAttribute($0, kAXTitleAttribute) }
     let windowFrame = window.flatMap { frameAttribute($0) }
-
-    // AXPress 后台投递：按快照里的节点 index 重新遍历（索引语义与快照一致），
-    // 命中后先校验 role/title 期望，再对元素直接发 AXPress（不动光标、不抢焦点）。
-    if let target = pressIndex {
-        var validCount = 0
-        var found: AXUIElement? = nil
-        var foundRole = ""
-        var foundTitle = ""
-        var explored = 0
-        var pressStack: [(element: AXUIElement, depth: Int)] = [(app, 0)]
-        while pressStack.isEmpty == false && explored < 20000 {
-            explored += 1
-            let current = pressStack.removeLast()
-            let element = current.element
-            let role = stringAttribute(element, kAXRoleAttribute) ?? ""
-            if !role.isEmpty, frameAttribute(element) != nil {
-                if validCount == target {
-                    found = element
-                    foundRole = role
-                    let rawTitle = stringAttribute(element, kAXTitleAttribute) ?? ""
-                    let rawDescription = stringAttribute(element, kAXDescriptionAttribute) ?? ""
-                    foundTitle = rawTitle.isEmpty ? rawDescription : rawTitle
-                    break
-                }
-                validCount += 1
-            }
-            if current.depth < maxDepth {
-                let childElements = children(of: element)
-                for child in childElements.reversed() {
-                    pressStack.append((child, current.depth + 1))
-                }
-            }
-        }
-        var pressed = false
-        var error: String? = nil
-        if found == nil {
-            error = "element not found (index out of range)"
-        } else if let role = expectRole, foundRole != role {
-            error = "role mismatch: expected \(role), got \(foundRole)"
-        } else if let needle = expectTitle, foundTitle.contains(needle) == false {
-            error = "title mismatch: expected to contain \"\(needle)\""
-        } else {
-            let result = AXUIElementPerformAction(found!, kAXPressAction as CFString)
-            if result == .success {
-                pressed = true
-            } else {
-                error = "AXPress failed (AXError \(result.rawValue))"
-            }
-        }
-        let output = PressOutput(
-            pressed: pressed,
-            index: target,
-            role: foundRole,
-            title: String(foundTitle.prefix(100)),
-            error: error
-        )
-        guard let data = try? encoder.encode(output) else {
-            FileHandle.standardError.write(Data("ax-snapshot: failed to encode press output\n".utf8))
-            return 4
-        }
-        FileHandle.standardOutput.write(data)
-        FileHandle.standardOutput.write(Data("\n".utf8))
-        return 0
-    }
 
     var nodes: [Node] = []
     var truncated = false
@@ -370,8 +479,7 @@ func main() -> Int32 {
             ))
         }
         if current.depth < maxDepth {
-            let childElements = children(of: element)
-            for child in childElements.reversed() {
+            for child in children(of: element).reversed() {
                 stack.append((child, current.depth + 1))
             }
         }
@@ -386,6 +494,16 @@ func main() -> Int32 {
         truncated: truncated
     )
     guard let data = try? encoder.encode(output) else {
+        FileHandle.standardError.write(Data("ax-snapshot: failed to encode output\n".utf8))
+        return 4
+    }
+    FileHandle.standardOutput.write(data)
+    FileHandle.standardOutput.write(Data("\n".utf8))
+    return 0
+}
+
+func emit<T: Codable>(_ encoder: JSONEncoder, _ value: T) -> Int32 {
+    guard let data = try? encoder.encode(value) else {
         FileHandle.standardError.write(Data("ax-snapshot: failed to encode output\n".utf8))
         return 4
     }

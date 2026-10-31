@@ -138,3 +138,12 @@ dsh-operator
   危险词（删除/卸载/支付/发送…）时，默认拒绝并要求 `confirm: true` 放行；安全输入角色只做标记。
   覆盖范围与 v2 计划（视觉点击的 AX hit-test）见 README 已知限制。
 - 新增 `test/guard.test.mjs`、`test/observe-gate.test.mjs`（node:test）。
+
+0.10.0（2026-11-01，P1 批次首版）
+- `ax_set_value`：按 `<ax_snapshot>` 节点 index 直接设置原生文本框的值
+  （AXUIElementSetAttributeValue，后台投递）；只接受 AXTextField / AXTextArea /
+  AXComboBox / AXSearchField，secure 字段拒绝；危险标题需 `confirm: true`。
+- `ax_menu`：按菜单路径（如 `文件/新建窗口`）逐段 AXPress；路径命中危险词需 `confirm: true`。
+- Swift 助手新增 `--set-value / --value / --menu` 模式；改为通用二进制
+  （arm64 + x86_64，`scripts/build-ax-helper.sh` 用 lipo 合成，单架构失败降级）。
+- AX 快照正文加 24000 字符预算（`MAX_TEXT_CHARS`），超出截断并标 `truncated`。

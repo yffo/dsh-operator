@@ -4,6 +4,7 @@
  * - 精简策略体积 < 5KB，且 0–1000 坐标段仍是上游原文（backgroundPolicyFor 依赖）
  * - 图片准入降级、裁切元数据、结构化 actionEffect、工具名冲突检测都在
  * - fork 状态（docs/FORK.md 存在、修改点注释在、无补丁机制残留）
+ * - 0.9.0 懒观察/guard/actionEffect、0.10.0 ax_set_value/ax_menu/文本预算
  *
  * 用法：node scripts/check-p0.mjs
  */
@@ -17,6 +18,8 @@ import { slimPolicy } from "../lib/policy-slim.js";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = await readFile(join(root, "lib/computer-use/index.js"), "utf8");
 const backend = await readFile(join(root, "lib/computer-use/backend-xLwiz83E.js"), "utf8");
+const operatorTools = await readFile(join(root, "lib/operator-tools.js"), "utf8");
+const axObserver = await readFile(join(root, "lib/ax-observer.js"), "utf8");
 
 const failures = [];
 function check(ok, label) {
@@ -58,6 +61,12 @@ check(existsSync(join(root, "docs", "FORK.md")), "docs/FORK.md 记录上游与�
 check(src.includes("PATCH(computer-use)"), "fork 修改点注释（PATCH(computer-use)）在");
 check(!existsSync(join(root, "scripts", "apply-vendor-patches.mjs")), "补丁器已移除（fork 化）");
 check(!existsSync(join(root, "scripts", "vendor-patches")), "vendor-patches 目录已移除");
+
+check(operatorTools.includes('name: "ax_set_value"'), "ax_set_value 工具在");
+check(operatorTools.includes('name: "ax_menu"'), "ax_menu 工具在");
+check(axObserver.includes("export async function setAxValue"), "setAxValue 包装在");
+check(axObserver.includes("export async function pressAxMenu"), "pressAxMenu 包装在");
+check(axObserver.includes("MAX_TEXT_CHARS"), "AX 文本字符预算在");
 
 if (failures.length > 0) {
 	console.error(`\n✗ P0 检查失败 ${failures.length} 项`);
