@@ -22,7 +22,7 @@ const checkOnly = process.argv.includes("--check");
 
 const MARK = "PATCH(computer-use)";
 
-/** @type {{ file: string, name: string, marker?: string, find: string, replace: string }[]} */
+/** @type {{ file: string, name: string, marker?: string, occurrences?: number, find: string, replace: string }[]} */
 const patches = [
 	{
 		file: "lib/computer-use/index.js",
@@ -100,6 +100,14 @@ const patches = [
 		marker: `readonly captureMaxEdge: number;`,
 		find: `interface ResolvedComputerUseConfig {\n  readonly postActionWaitMs: number;\n}`,
 		replace: `interface ResolvedComputerUseConfig {\n  readonly postActionWaitMs: number;\n  readonly captureMaxEdge: number;\n  readonly jpegQuality: number;\n}`
+	},
+	{
+		file: "lib/computer-use/backend-xLwiz83E.js",
+		name: "修复 list_apps / open_app：JXA 的 activationPolicy 是字符串",
+		marker: `if (Number(app.activationPolicy) !== 0) continue`,
+		occurrences: 2,
+		find: `if (app.activationPolicy !== 0) continue`,
+		replace: `if (Number(app.activationPolicy) !== 0) continue`
 	}
 ];
 
@@ -118,11 +126,12 @@ for (const patch of patches) {
 		continue;
 	}
 	const count = source.split(patch.find).length - 1;
-	if (count !== 1) {
-		console.error(`❌ [${patch.file}] ${patch.name}: 锚点出现 ${count} 次（期望 1 次），上游结构可能变了，需要人工核对。`);
+	const expected = patch.occurrences ?? 1;
+	if (count !== expected) {
+		console.error(`❌ [${patch.file}] ${patch.name}: 锚点出现 ${count} 次（期望 ${expected} 次），上游结构可能变了，需要人工核对。`);
 		process.exit(1);
 	}
-	const next = source.replace(patch.find, patch.replace);
+	const next = expected === 1 ? source.replace(patch.find, patch.replace) : source.split(patch.find).join(patch.replace);
 	files.set(patch.file, next);
 	applied += 1;
 }

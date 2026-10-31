@@ -1,6 +1,6 @@
 {
   "name": "dsh-operator",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "给每个 DSH 会话一双手：全局 Computer Use——13 个桌面 GUI 工具 + 后台 code_agent，观察截图自动降 token，动作失败有校验提示",
   "type": "module",
   "main": "index.js",
