@@ -82,6 +82,14 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 > pnpm 用硬链接把插件装进 profile。改完源码后如果行为没变，最稳的做法是 `remove` 再 `add` 一次；只改 `lib/` 里的 JS 通常下次加载就生效。
 
+## 技能库（0.11.2 起步）
+
+`skill_save` / `skill_list` / `skill_show` / `skill_delete` 把可复用的操作序列存成 JSON：`~/.dsh/dsh-operator/skills/<name>.json`。
+
+- 只存「工具名 + 参数」，不存截图/剪贴板/密码；参数里出现 password/secret/token/apiKey/cookie 等键会被拒绝。
+- 名字限小写 kebab-case（防路径穿越），单技能 ≤50 步、args ≤8KB、最多 100 个；写入走临时文件 + rename。
+- 本版只做管理；回放执行器（按步骤调用工具 + 失败重试/降级）在 0.11.3/0.12 接。
+
 ## 浏览器 DOM 通道（0.11.1，实验）
 
 `lib/browser-dom.js` 是 0.11.2 技能库/0.12 规划器要用的浏览器底座，两条后端：

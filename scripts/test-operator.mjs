@@ -79,7 +79,7 @@ const fakeCtx = {
 };
 registerOperatorTools(fakeCtx, { axMaxNodes: 120, failureSamples: false }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
-check(registered.length === 8, "注册八个扩展工具");
+check(registered.length === 12, "注册十二个扩展工具");
 check(
 	names.includes("list_windows") &&
 		names.includes("screenshot_window") &&

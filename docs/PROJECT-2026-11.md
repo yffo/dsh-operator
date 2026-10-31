@@ -300,6 +300,13 @@ v2 做两件事：
 - 已知限制：AppleScript JS 默认被 Chrome 关闭（需用户一次性开菜单开关「查看 → 开发者 → 允许 Apple 事件中的 JavaScript」）；CDP 路径要求独立 profile，暂无法复用日常 Chrome 登录态（0.11.2 做 profile 复用与登录接力）。
 - 下一步（0.11.2）：把 DOM 能力包成 `browser` 工具族 + 技能库录制/回放，并在 guard 里加浏览器动作分类。
 
+## 8.4 0.11.2 交付状态
+
+- 技能库起步版：`lib/skill-store.js`（kebab-case 校验、敏感键拒绝、≤50 步/8KB/100 技能、临时文件+rename 原子写）+ 四个工具 `skill_save`/`skill_list`/`skill_show`/`skill_delete`；扩展工具注册面 8 → 12。
+- 测试：`test/skill-store.test.mjs` 4 项（校验/增删查改/非法名/工具级 save→list→show→delete），`npm test` 109 项全绿。
+- 限制：本版不含回放执行器；技能只是「可复用清单」，回放与失败恢复在 0.11.3 接。技能工具属 JS 改动，需重启 App 一次才在运行态出现。
+- 下一步（0.11.3）：技能回放执行器（按步骤调用工具、带 expect/verify 与中断恢复）+ DOM 能力包装成 `browser_*` 工具族 + 工具门面收敛预研。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972
