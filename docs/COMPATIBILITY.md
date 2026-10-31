@@ -31,4 +31,4 @@
 
 - AX 助手是 Swift 编译产物：若系统升级后签名/权限异常，`npm run doctor` 会给出提示。
 - 浏览器 DOM 通道只做只读+点击+填表；不读 Cookie/密码、不伪造指纹、遇风控停手。
-- 多屏混合 DPI 的截图侧修正未实现（`list_windows` 已带显示器 bounds/scale）。
+- 多屏 / 混合 DPI：坐标与点击换算按全局逻辑点、与显示器 scale 无关（`backend-xLwiz83E.js` 的 `mapFractionToGlobal` / `modelPositionToHid`）；观察截图按捕获矩形的逻辑点区域取像素，混合 DPI 下不同屏的截图像素密度不同、跨屏 union 仍可能裁错（上游 dsh-orb issue #38）。未在双屏机上验证（当前单屏机）；`list_windows` 已带每屏 bounds/scale，可用 `screenshot_window` 按窗口截图规避。

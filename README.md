@@ -161,7 +161,7 @@ npm run failures            # 失败样本汇总（--json / --files / --dir / --
 - **多窗口拖拽前先把目标窗口置顶**：其他 App 窗口（如 Harness）可能盖住目标 Finder 窗口，拖拽落点会交给最上层窗口（实测掉进 Harness 聊天框变成附件）。用 `ax_menu` 的「窗口/<标题>」或 `open_app` 后点击目标窗口，再执行跨窗拖拽。
 
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证。Windows/Linux 上扩展工具（`list_windows` / `screenshot_window` / `verify_state` / AX 系列）不注册，启动时会打印一条 `extended tools are macOS-only` 警告；截图降 token 管线（sips）也会跳过、原样返回。Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
-- **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
+- **多屏 / 混合 DPI**：坐标与点击换算按全局逻辑点、与显示器 scale 无关；观察截图按捕获矩形的逻辑点区域取像素，混合 DPI 下不同屏的截图像素密度不同、跨屏 union 仍可能裁错（上游 dsh-orb issue #38，单屏机无法真机验证）。`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
 - **纯视觉定位**：UI 变化、遮挡、动画过渡会导致定位失败；校验提示只能减少浪费，不能保证成功。适合可重复、可验收的操作。
 - **AX 只覆盖原生 App**：AX 树在 AppKit 原生应用里好用（系统设置、访达、备忘录、预览等），Electron / Web 应用（Chrome、Harness、微信）树很浅或不可见，少于 `axMinNodes`（默认 16）时自动不附、退回纯视觉。AX 助手是预编译的 macOS 二进制；换架构/平台需要 `pnpm run build:ax` 重新编译（需要 Xcode Command Line Tools）。
 - **首次授权**：屏幕录制 / 辅助功能需要用户手动在系统设置里允许；未授权时截图与输入都会失败。
