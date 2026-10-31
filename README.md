@@ -225,6 +225,9 @@ node scripts/test-shrink.mjs
 
 ## 路线图
 
+- 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
+- v1 路线图与已完成项：[docs/PLAN-2026-11.md](docs/PLAN-2026-11.md)
+
 完整计划（0.9 / 0.10 / 0.11、架构评审、借鉴 vs 自研、测试矩阵）见 [docs/PLAN-2026-11.md](docs/PLAN-2026-11.md)。
 
 - 用 5 类真实任务（Finder、系统设置、浏览器、办公 App、多步跨应用）记录成功率 / token / 耗时的基线。
