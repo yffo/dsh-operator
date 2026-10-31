@@ -163,6 +163,8 @@ lib/
 > 因此 v2 收敛要先做「注册表统一」：给 fork 侧补一个 `toolHandlers` 映射并经 internals 暴露，再把两边合成一个 `registry`；`cu_observe`/`cu_act` 等 dispatcher 通过 registry 调用，输出 schema 取被合并工具字段的并集（`additionalProperties: false` 不能破）。顺序：① registry 统一（纯重构、行为不变）→ ② `cu_observe` pilot（合并 screenshot/list_windows/window_screenshot/zoom/verify）→ ③ `cu_act`（合 9 个动作类）→ ④ 旧名 deprecation 一版。每步都要重启验收，避免一次性大改。
 >
 > **进度（0.17.0）**：① 完成——`lib/tool-registry.js`（mergeToolRegistries/registryNames/hasTool），`registerOperatorTools` 返回惰性 `buildRegistry`，fork 侧 13 个工具经 `computerUseToolDefs` 汇入；② `cu_observe` pilot 完成——`lib/tool-surface.js`（buildDispatcher：入参/输出 schema 并集、required 剥离、render/execute 直通）+ 5 个 action，旧工具名保留；下一步 ③ `cu_act`（注意动作类工具输出含 screens/foreground，需实测 schema 并集）。
+>
+> **进度（0.18.0）**：③ `cu_act` 完成——9 个动作类合入一个强工具，显式参数并集 + 按 action 运行时必填校验（`requiredByAction`）；`buildDispatcher` 支持显式 `parameters`/`requiredByAction`；客户端卡片覆盖 `cu_observe`/`cu_act`。下一步 ④ 旧工具名 deprecation 一版（README 标注 + 配置开关）。
 
 ### 4.4 技能沉淀（browser-use 思路）
 

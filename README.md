@@ -300,6 +300,9 @@ node scripts/test-shrink.mjs
 
 - **0.17.0** — v2 工具面收敛第一步：统一注册表（扩展 24 工具 + fork 14 工具合成 registry）；新增强工具 `cu_observe`（action = screenshot / windows / window_screenshot / zoom / verify，旧工具名保留过渡）。`npm test` 159 项。
 
+- **0.17.1** — 修 `cu_observe` 合并入参时的 defineTool 编译态 schema（`parameters` 已是 JSON Schema，需归一化回参数映射；且 DSL 只接受 `required: true`）。`npm test` 160 项。
+- **0.18.0** — 工具面收敛第三步：新增 `cu_act`（9 个动作：click / drag / scroll / input / hotkey / ax_press / ax_set_value / ax_menu / ax_scroll），显式参数并集 + 按 action 运行时必填校验；客户端卡片覆盖 `cu_observe`/`cu_act`。
+
 - **0.15.3** — 卡片覆盖扩到浏览器 DOM 工具（`DOM snapshot` / `DOM click` / `DOM fill`，连同 probe 共 14 个工具）；摘要去掉重复的 `tool: ` 前缀（如 `Task profile` 不再显示 `task_profile:` 开头）。`npm test` 149 项。
 
 ## 路线图
