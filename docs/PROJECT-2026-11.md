@@ -343,6 +343,12 @@ v2 做两件事：
 - 产物加入 `.gitignore`（`bench/*-scenarios-sheet.md`、`bench/results/*-scenarios.jsonl`），避免跑分数据污染仓库。
 - 下一步：0.13 自定义 toolview 卡片（「正在操作中…」步骤卡）+ 更主动的执行策略；多屏 DPI/Windows/seam 排队。
 
+## 8.11 0.13.0 交付与 toolview 卡片调研（2026-11-01）
+
+- 交付：`lib/status.js` + `operator_status`（版本/平台/axMaxNodes/failureSamples/browserCdpPort/技能数/计划数/失败文件与条数/审计行数与字节）、`plan_list`（计划 id/目标/状态/完成步数/更新时间）；扩展工具 21→23；`test/status.test.mjs` 2 项；`npm test` 138 项全绿。
+- toolview 卡片调研结论（本机 `dsh-client-ui-tool` README）：业务包要在对话里渲染自定义工具卡，需要 **client（浏览器侧）入口** 在 `ctx.slots.inject('tool.call.toolview')` 里按 wire 工具名注册卡片；runtime 负责 call/result 配对与 PTC 子调用，业务包只提供原子视图。这意味着 dsh-operator 需要新增一个 Web 客户端 bundle（打包 + 在 profile 中注册），涉及 DSH 客户端构建链，风险与工作量高于纯 host 插件。
+- 决策：0.13.1 先做「过程文案 + 状态提示」的 host 侧替代（工具描述/审计里带步骤计数），toolview 自定义卡片作为独立里程碑单独评估，不阻塞其他项。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972

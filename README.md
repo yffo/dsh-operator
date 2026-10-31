@@ -277,6 +277,8 @@ node scripts/test-shrink.mjs
 
 - **0.12.3** — 场景跑分工具：`npm run scenarios -- list|sheet|record|report`（32 条场景按层筛选、生成 markdown 跑分表、记录 JSONL 并汇总成功率/动作数/耗时/成本/失败分类）；`lib/scenarios.js` 纯函数 + 4 项测试。
 
+- **0.13.0** — 状态与计划可见性：`operator_status`（版本/配置/技能数/计划数/失败样本/审计计数，用于自诊断）、`plan_list`（列出计划与完成进度）；扩展工具 21→23；`lib/status.js` + 2 项测试，`npm test` 138 项。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
