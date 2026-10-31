@@ -157,6 +157,8 @@ npm run failures            # 失败样本汇总（--json / --files / --dir / --
 - **`ax_scroll` 的回退会把目标 App 提到前台**：原生支持 AX scroll action 的 App 走后台动作；不支持的 App（如 Finder 图标视图）会先提窗 + 激活再发全局滚轮，副作用是前台切换。
 - **`ax_scroll` 自动选容器时返回的 index 是 helper 原始索引**：可能与快照里格式化后的索引不同（匿名节点被过滤），只用于本次调用的回执，别拿去 `ax_press` 复用。
 - **`ax_scroll` 可以不给 index**：滚动容器常被匿名节点过滤或排在 120 节点之外；此时传 `expect_role`（可选 `expect_title`），工具会在新鲜树里自动选面积最大的匹配滚动容器（输出带 `resolved` 标记）。给 index 时仍以快照为准，必要时把 `axMaxNodes` 调大（如 400）。
+- **`window_move` 的 Finder 尺寸限制**：实测部分 Finder 窗口接受 AXPosition 但拒绝 AXSize（位置成功、尺寸保持原值，例如「下载」窗口 920x436 不变）；需要精确并排时优先选择接受 resize 的窗口，或让用户手动调整。AX frame 位置读回以 AX frame 为准，CGWindow bounds 与其有系统性偏移。
+- **多窗口拖拽前先把目标窗口置顶**：其他 App 窗口（如 Harness）可能盖住目标 Finder 窗口，拖拽落点会交给最上层窗口（实测掉进 Harness 聊天框变成附件）。用 `ax_menu` 的「窗口/<标题>」或 `open_app` 后点击目标窗口，再执行跨窗拖拽。
 
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证。Windows/Linux 上扩展工具（`list_windows` / `screenshot_window` / `verify_state` / AX 系列）不注册，启动时会打印一条 `extended tools are macOS-only` 警告；截图降 token 管线（sips）也会跳过、原样返回。Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
 - **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
