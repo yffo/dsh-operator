@@ -93,9 +93,12 @@ test("registerV2Tools 注册 cu_observe：action 枚举、输出并集、分派�
 	assert.equal(cuObserve.name, "cu_observe");
 	assert.deepEqual(cuObserve.parameters.action.enum, ["screenshot", "windows", "window_screenshot", "zoom", "verify"]);
 	assert.equal(cuObserve.parameters.action.required, true);
-	// 并集参数来自被合并工具（list_windows 的 pid、screenshot_window 的 window_id）
+	// 并集参数全部可选：只有 action 是 required（0.18.2 回归：合并成员自带的 required 不能带进来）
 	assert.ok(cuObserve.parameters.pid !== void 0);
 	assert.ok(cuObserve.parameters.window_id !== void 0);
+	assert.equal(cuObserve.parameters.window_id.required, void 0);
+	assert.equal(cuObserve.parameters.kind.required, void 0);
+	assert.deepEqual(Object.keys(cuObserve.parameters).filter((key) => cuObserve.parameters[key].required === true), ["action"]);
 	// 输出 schema：additionalProperties=false 且包含关键字段，不能带 required（否则某个 action 缺字段会失败）
 	const schema = cuObserve.output.schema;
 	assert.equal(schema.additionalProperties, false);
@@ -106,6 +109,11 @@ test("registerV2Tools 注册 cu_observe：action 枚举、输出并集、分派�
 	const value = await cuObserve.execute({ action: "screenshot" }, {});
 	assert.deepEqual(value, { schemaVersion: 1 });
 	await assert.rejects(() => cuObserve.execute({ action: "nope" }, {}), /unknown action/);
+	// verify 需要 kind；window_screenshot 需要 window_id；其余 action 不强制
+	await assert.rejects(() => cuObserve.execute({ action: "verify" }, {}), /missing parameter\(s\) for action "verify": kind/);
+	await assert.rejects(() => cuObserve.execute({ action: "window_screenshot" }, {}), /missing parameter\(s\) for action "window_screenshot": window_id/);
+	const windowsValue = await cuObserve.execute({ action: "windows" }, {});
+	assert.equal(windowsValue.schemaVersion, 1);
 	// cu_act：9 个动作、显式参数并集、按 action 校验必填、分派到旧工具
 	assert.equal(cuAct.name, "cu_act");
 	assert.deepEqual(cuAct.parameters.action.enum, ["click", "drag", "scroll", "input", "hotkey", "ax_press", "ax_set_value", "ax_menu", "ax_scroll"]);
