@@ -166,7 +166,9 @@ lib/
 >
 > **进度（0.18.0）**：③ `cu_act` 完成——9 个动作类合入一个强工具，显式参数并集 + 按 action 运行时必填校验（`requiredByAction`）；`buildDispatcher` 支持显式 `parameters`/`requiredByAction`；客户端卡片覆盖 `cu_observe`/`cu_act`。下一步 ④ 旧工具名 deprecation 一版（README 标注 + 配置开关）。
 
-### 4.4 技能沉淀（browser-use 思路）
+> **进度（0.19.0）**：④ 旧名过渡完成——配置 `legacyToolNames`（默认 `true`）；`false` 时被覆盖的 14 个旧工具不再直接暴露，但 registry 内保留供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。下一步进 0.11.x 的失败样本/测试矩阵与浏览器 DOM 存量工作，再评估多屏与 Windows。
+
+## 4.4 技能沉淀（browser-use 思路）
 
 技能结构（`~/.dsh/dsh-operator/skills/<name>.json`）：
 

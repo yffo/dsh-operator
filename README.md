@@ -127,6 +127,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 | `idleObserveMs` | `600000` | `auto` 模式下判定「最近做过 GUI 动作」的窗口（毫秒） |
 | `guard` | `true` | 敏感动作 guard（危险快捷键 / ax_press 危险标题需 `confirm: true`） |
 | `auditLog` | `true` | 写无内容审计日志到 `~/.dsh/dsh-operator/audit.jsonl`（事件名 / 数量 / 布尔 / 耗时，不含截图、坐标、标题、输入文本） |
+| `legacyToolNames` | `true` | 被 v2 强工具覆盖的 14 个旧工具名是否仍直接暴露；`false` 时只保留 `cu_observe`/`cu_act`（registry 内仍保留供分派/回放） |
 | `failureSamples` | `true` | 工具失败时把诊断写进 `~/.dsh/dsh-operator/failures/<日期>.jsonl`（工具/分类/错误/脱敏参数，5MB 轮转、最多 20 个文件，绝不外传） |
 
 ## 排障与失败样本
@@ -296,14 +297,20 @@ node scripts/test-shrink.mjs
 
 - **0.15.2** — 修卡片标题总是 `operator`：工具名应取 `props.toolName`（`block` 上没有 `toolName`），现在会显示 `Task profile` / `Operator status` / `Run plan` 等标签；`npm test` 148 项。
 
+- **0.15.3** — 卡片覆盖扩到浏览器 DOM 工具（`DOM snapshot` / `DOM click` / `DOM fill`，连同 probe 共 14 个工具）；摘要去掉重复的 `tool: ` 前缀（如 `Task profile` 不再显示 `task_profile:` 开头）。`npm test` 149 项。
 - **0.16.0** — 发布工程：`npm run release -- <version>` 一条命令完成「校验 → 改版本 → 全量测试 → commit → tag → push（可选同步安装副本 + doctor）」；新增 `docs/RELEASE.md` 发布清单与 `docs/COMPATIBILITY.md` 兼容矩阵。`npm test` 154 项。
 
 - **0.17.0** — v2 工具面收敛第一步：统一注册表（扩展 24 工具 + fork 14 工具合成 registry）；新增强工具 `cu_observe`（action = screenshot / windows / window_screenshot / zoom / verify，旧工具名保留过渡）。`npm test` 159 项。
 
 - **0.17.1** — 修 `cu_observe` 合并入参时的 defineTool 编译态 schema（`parameters` 已是 JSON Schema，需归一化回参数映射；且 DSL 只接受 `required: true`）。`npm test` 160 项。
-- **0.18.0** — 工具面收敛第三步：新增 `cu_act`（9 个动作：click / drag / scroll / input / hotkey / ax_press / ax_set_value / ax_menu / ax_scroll），显式参数并集 + 按 action 运行时必填校验；客户端卡片覆盖 `cu_observe`/`cu_act`。
 
-- **0.15.3** — 卡片覆盖扩到浏览器 DOM 工具（`DOM snapshot` / `DOM click` / `DOM fill`，连同 probe 共 14 个工具）；摘要去掉重复的 `tool: ` 前缀（如 `Task profile` 不再显示 `task_profile:` 开头）。`npm test` 149 项。
+- **0.18.0** — 工具面收敛第二步：新增 `cu_act`（9 个动作：click / drag / scroll / input / hotkey / ax_press / ax_set_value / ax_menu / ax_scroll），显式参数并集 + 按 action 运行时必填校验；客户端卡片覆盖 `cu_observe`/`cu_act`。
+
+- **0.18.1** — 修 `cu_act` 参数里的 `minimum/maximum`（参数 DSL 不支持）；发布流程固定为「先 headless 引导预验，再让用户重启」。
+
+- **0.18.2** — 修 `cu_observe` 入参必填串味：合并成员工具的 `required` 被带进并集，导致 `windows/screenshot` 也强制要 `window_id/kind`；改为合并后全部可选，必填按 action 在 `requiredByAction` 校验。
+
+- **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图
 

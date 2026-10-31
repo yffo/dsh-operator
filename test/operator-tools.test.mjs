@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { evaluatePredicate, registerOperatorTools } from "../lib/operator-tools.js";
+import { evaluatePredicate, registerOperatorTools, V2_LEGACY_TOOL_NAMES } from "../lib/operator-tools.js";
 import { configurePlanStore, createPlan } from "../lib/planner.js";
 
 test("evaluatePredicate：未知 kind 返回事实而不抛错", async () => {
@@ -47,6 +47,28 @@ function collectTools() {
 	});
 	return registered;
 }
+
+test("legacyToolNames=false：被 v2 覆盖的旧工具不再直接暴露，其余扩展工具保留", () => {
+	const collectNames = (config) => {
+		const names = [];
+		const ctx = { tools: { register: (tool) => names.push(tool.name) } };
+		registerOperatorTools(ctx, config, {
+			backend: { listScreens: async () => [] },
+			defineTool: (definition) => definition,
+			AttachmentId: (value) => value
+		});
+		return names;
+	};
+	const withLegacy = collectNames({ axMaxNodes: 120, guard: true, failureSamples: false, legacyToolNames: true });
+	const withoutLegacy = collectNames({ axMaxNodes: 120, guard: true, failureSamples: false, legacyToolNames: false });
+	const hidden = withLegacy.filter((name) => V2_LEGACY_TOOL_NAMES.has(name));
+	assert.ok(hidden.length > 0);
+	for (const name of hidden) assert.equal(withoutLegacy.includes(name), false, `${name} 应被隐藏`);
+	// 非 legacy 的扩展工具保持不变
+	for (const name of withLegacy.filter((item) => !V2_LEGACY_TOOL_NAMES.has(item))) {
+		assert.ok(withoutLegacy.includes(name), `${name} 应保留`);
+	}
+});
 
 function assertSchemaShape(schema, path) {
 	if (schema === null || typeof schema !== "object") return;
