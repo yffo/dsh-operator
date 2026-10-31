@@ -81,6 +81,7 @@ test("executor：dryRun 只预览、不调用 execute", async () => {
 	const run = await executeSteps([{ id: "a", tool: "echo", args: { value: "x", secret: "y" } }], { handlers, allowedTools: allowed, dryRun: true });
 	assert.equal(run.executed, 1);
 	assert.equal(run.results[0].status, "dry-run");
+	assert.deepEqual(Object.keys(run.results[0]).sort(), ["id", "status", "tool"]);
 	assert.equal(calls.length, 0);
 });
 

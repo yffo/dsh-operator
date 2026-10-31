@@ -273,6 +273,8 @@ node scripts/test-shrink.mjs
 
 - **0.12.1** — 步骤执行器：`skill_run`（回放技能库里的工具序列）与 `plan_run`（按计划推进 pending 步骤并写回状态）；`lib/executor.js` 只允许本插件扩展工具、失败即停可配、dryRun 预览、结果只留短摘要；扩展工具 19→21；测试 132 项。JS 改动，需重启 App 后生效。
 
+- **0.12.2** — 修 `skill_run`/`plan_run` 的 dryRun 输出含未声明字段 `argsPreview` 被 DSH 校验拒绝；`plan_run` 在没有 pending 步骤时返回明确成功（不再抛 `non-empty steps array is required`），dryRun 只预览 pending/running 步骤。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
