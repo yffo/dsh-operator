@@ -142,10 +142,10 @@ dsh-operator/
 │   ├── ax-observer.js          # AX 文本快照格式化 / 降级（本仓库代码）
 │   ├── macos-query.js          # 窗口 / 显示器查询（调 AX 助手 --list-windows）
 │   ├── audit-log.js            # 无内容审计日志（脱敏 + 5MB 轮转）
-│   ├── operator-tools.js       # 扩展工具：list_windows / screenshot_window / verify_state
+│   ├── operator-tools.js       # 扩展工具：list_windows / screenshot_window / verify_state / ax_press / zoom_region
 │   ├── bin/ax-snapshot         # 预编译 AX 助手（macOS arm64）
 │   └── computer-use/           # vendored：上游 dsh-orb dist/computer-use
-└── scripts/
+├── scripts/
     ├── apply-vendor-patches.mjs # 幂等补丁器（--check 只检查；补丁在 vendor-patches/*.json）
     ├── vendor-patches/p0.json   # 0.4.0 P0 补丁集
     ├── vendor-patches/p1.json   # 0.5.0 AX 观察补丁集
@@ -153,6 +153,8 @@ dsh-operator/
     ├── vendor-patches/p3.json   # 0.5.2 pid 透传
     ├── vendor-patches/p4.json   # 0.5.3 截图区域归一化
     ├── vendor-patches/p5.json   # 0.6.0 扩展工具 / 审计 / 浅 AX 阈值接线
+    ├── vendor-patches/p6.json   # 0.7.0 ax_press / P1-9 前台缓存
+    ├── vendor-patches/p7.json   # 0.9.0 懒观察 / noop 不附图 / guard
     ├── sync-from-orb.sh         # 从 npm 同步上游 dist/computer-use 并重打补丁
     ├── ax-helper.swift          # AX 助手源码（build-ax-helper.sh 编译）
     ├── build-ax-helper.sh       # 编译 AX 助手到 lib/bin/ax-snapshot
@@ -160,6 +162,8 @@ dsh-operator/
     ├── test-shrink.mjs          # 截图缩放冒烟测试
     ├── test-ax.mjs              # AX 快照格式化 / 降级测试
     └── test-operator.mjs        # 扩展工具 / 审计日志测试
+├── test/                       # node:test 测试（8 个文件、70 项断言）
+└── bench/                      # 基准：tasks.json + results/*.json
 ```
 
 > 本地开发提示：`dsh plugin add file:...` 会把包装成硬链接。若用会替换 inode 的编辑器改文件
@@ -167,7 +171,11 @@ dsh-operator/
 > `cmp -s lib/ax-observer.js ~/.dsh/profiles/desktop/node_modules/dsh-operator/lib/ax-observer.js`，
 > 不一致就 `cp -f` 过去，或干脆 `remove` + `add` 重装一次。
 
-测试：`test/*.test.mjs` 用 node:test（guard / 懒观察闸）。
+测试与基准：
+
+- `test/*.test.mjs` 用 node:test（8 个文件、70 项）：AX 格式化/降级、审计脱敏与轮转、策略体积、窗口过滤、扩展工具执行路径（含错误注入与取消）、截图缩放、bench 解析。
+- `test:coverage` 用 Node 内建覆盖率（`--experimental-test-coverage`，不需要 c8）；自研 `lib/` 行覆盖 91.65%、分支 74.60%、函数 86.49%（vendored 与脚本不计入目标）。
+- `bench/` 是脚本化基准：`bench/tasks.json` 定义 5 个真机任务与验收口径，`bench/results/*.json` 存历史结果，`npm run bench -- report` 出对比表、`npm run bench -- check` 校验数据自洽。
 
 ## 开发
 
@@ -178,7 +186,11 @@ node scripts/test-shrink.mjs                    # 13 项断言
 node scripts/check-p0.mjs                       # P0 冒烟检查
 node scripts/test-ax.mjs                        # AX 快照 / 降级测试
 node scripts/test-operator.mjs                  # 扩展工具 / 审计日志测试
-npm test                                        # 上面三套测试一起跑
+node --test 'test/*.test.mjs'                   # node:test 测试（70 项）
+node scripts/bench.mjs check                    # 基准数据自洽校验
+npm test                                        # 旧四套 + bench check + node:test 一起跑
+npm run test:coverage                           # 覆盖率（Node 内建，不需要 c8）
+npm run bench -- report                         # 基准对比表（A / A2 / B）
 ./scripts/build-ax-helper.sh                    # 重新编译 AX 助手（macOS）
 bash -n scripts/sync-from-orb.sh
 ```

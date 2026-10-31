@@ -1,0 +1,16 @@
+{
+	"run": "2026-10-31-b",
+	"implementation": "official-cua-driver-native",
+	"version": "0.2.1-rc.5",
+	"date": "2026-10-31",
+	"mode": "官方 seam + cua-driver-native（50+ 工具）",
+	"tasks": [
+		{ "id": "T1", "success": true, "steps": 2, "seconds": 10 },
+		{ "id": "T2", "success": true, "steps": 9, "seconds": 60, "note": "launch_app 超时两次；后台 drag 不可用需 foreground" },
+		{ "id": "T3", "success": true, "steps": 8, "seconds": 50, "note": "Chrome 窗口不可捕获，靠 Spotlight 重开新窗口" },
+		{ "id": "T4", "success": true, "steps": 6, "seconds": 40, "note": "像素焦点点击失败，改用 AX 插入" },
+		{ "id": "T5", "success": false, "steps": 11, "seconds": 120, "note": "事件创建成功但标题输入失败、删除失败（最终用 osascript 清理）" }
+	],
+	"totals": { "steps": 36, "seconds": 280, "costCny": 0.7049, "outputTokens": 21000 },
+	"notes": ["原生 helper 约 53MB", "T5 记为失败：删除未完成"]
+}

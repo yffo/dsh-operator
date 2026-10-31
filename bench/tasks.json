@@ -1,0 +1,36 @@
+{
+	"schemaVersion": 1,
+	"protocol": "每个实现跑同一套 5 个任务；记录成功率、GUI 工具步数、墙钟秒数、会话费用增量（元）、输出 token 增量。口径固定：同一模型、同一账号、同一操作者（模型自测），从任务开始到最后一个工具返回。",
+	"tasks": [
+		{
+			"id": "T1",
+			"title": "打开系统设置 → 显示器 → 截图",
+			"success": "显示器面板可见且截图已保存",
+			"stepsHint": "open_app / click / screenshot"
+		},
+		{
+			"id": "T2",
+			"title": "Finder 把 hello.txt 拖进 dest 文件夹",
+			"success": "bash find 确认 dest/hello.txt 存在",
+			"stepsHint": "open_in_finder / drag"
+		},
+		{
+			"id": "T3",
+			"title": "浏览器搜索「DeepSeek Harness GitHub」并截图",
+			"success": "搜索结果页出现且截图已保存",
+			"stepsHint": "浏览器窗口 / 输入 / 截图"
+		},
+		{
+			"id": "T4",
+			"title": "备忘录新建一条中文笔记",
+			"success": "编辑器落字且列表可见新笔记",
+			"stepsHint": "open_app / 新建 / input_text"
+		},
+		{
+			"id": "T5",
+			"title": "日历建一个事件并删除",
+			"success": "事件创建成功且删除成功（任一步失败记 false）",
+			"stepsHint": "open_app / 双击 / 输入标题 / 删除"
+		}
+	]
+}

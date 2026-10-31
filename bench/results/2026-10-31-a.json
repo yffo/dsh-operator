@@ -1,0 +1,16 @@
+{
+	"run": "2026-10-31-a",
+	"implementation": "dsh-operator",
+	"version": "0.4.1",
+	"date": "2026-10-31",
+	"mode": "visual-only（无 AX）",
+	"tasks": [
+		{ "id": "T1", "success": true, "steps": 2, "seconds": 7 },
+		{ "id": "T2", "success": true, "steps": 2, "seconds": 15 },
+		{ "id": "T3", "success": true, "steps": 4, "seconds": 16 },
+		{ "id": "T4", "success": true, "steps": 4, "seconds": 50, "note": "第一次点错中栏，重试一次" },
+		{ "id": "T5", "success": true, "steps": 7, "seconds": 65 }
+	],
+	"totals": { "steps": 19, "seconds": 150, "costCny": 0.1958, "outputTokens": 9000 },
+	"notes": ["缓存命中 97.9%", "截图 1280 宽（降 token 生效）"]
+}
