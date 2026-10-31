@@ -298,6 +298,8 @@ node scripts/test-shrink.mjs
 
 - **0.16.0** — 发布工程：`npm run release -- <version>` 一条命令完成「校验 → 改版本 → 全量测试 → commit → tag → push（可选同步安装副本 + doctor）」；新增 `docs/RELEASE.md` 发布清单与 `docs/COMPATIBILITY.md` 兼容矩阵。`npm test` 154 项。
 
+- **0.17.0** — v2 工具面收敛第一步：统一注册表（扩展 24 工具 + fork 14 工具合成 registry）；新增强工具 `cu_observe`（action = screenshot / windows / window_screenshot / zoom / verify，旧工具名保留过渡）。`npm test` 159 项。
+
 - **0.15.3** — 卡片覆盖扩到浏览器 DOM 工具（`DOM snapshot` / `DOM click` / `DOM fill`，连同 probe 共 14 个工具）；摘要去掉重复的 `tool: ` 前缀（如 `Task profile` 不再显示 `task_profile:` 开头）。`npm test` 149 项。
 
 ## 路线图
