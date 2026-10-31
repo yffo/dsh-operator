@@ -46,6 +46,10 @@ dsh-operator
 
 除上述补丁外，上游代码逻辑未改。上游更新时用 `scripts/sync-from-orb.sh <版本>` 重新同步，脚本会自动重打补丁。
 
+- 0.4.1 修复 0.4.0 的 schema 回归：观察输出里 `screens[].image` 曾写成
+  `required: false`，DSH 的 schema 编译器只允许 `required: true` 或省略该键，
+  导致插件在加载阶段抛 JsonSchemaError、全局 GUI 工具不注册。现在省略该键
+  （`image` 变为可选字段），并加进 `scripts/check-p0.mjs` 的回归断言。
 - 0.4.0 起按源码审计（docs/ai/2026-10-31-cu-audit-official.md）落地 P0：
   - 策略提示词从上游约 8.4KB 精简到约 3.9KB（`lib/policy-slim.js`，仍保留上游
     0–1000 坐标段原文，`backgroundPolicyFor()` 行为不变）。

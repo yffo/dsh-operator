@@ -143,6 +143,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.4.1** — 修复 0.4.0 的 schema 回归（`screens[].image.required: false` 在 DSH schema 里非法，导致插件加载即失败、GUI 工具全部消失）；`check-p0.mjs` 增加回归断言。
 - **0.4.0** — 按源码审计落地 P0：策略提示词 8.4KB → 3.9KB、截图存储失败降级为纯文本观察、跨屏窗口 `clipped` 元数据、结构化 `actionEffect`、工具名冲突检测。
 - **0.3.2** — 修复 `open_app` 激活已运行 App：JXA 没有 `activateWithOptions_` 桥接、中文显示名 `open -a` 也找不到，改走 `open -b <bundleId>`。
 - **0.3.1** — 修复 `list_apps` 恒为空 / `open_app` 无法激活已运行 App（JXA 的 `activationPolicy` 是字符串，上游用 `!== 0` 比较）。

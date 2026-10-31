@@ -46,6 +46,7 @@ check(src.includes("COMPUTER_USE_TOOL_NAMES"), "工具名冲突检测在");
 check(src.includes('clipped: { type: "boolean" }'), "screens schema 含 clipped");
 check(src.includes("actionEffect: {"), "工具输出 schema 含 actionEffect");
 check(backend.includes("clipped: true, sourceBounds"), "backend 跨屏窗口裁切元数据在");
+check(!/required:\s*false/.test(src), "schema 不用 required: false（DSH 只允许 true 或省略）");
 
 try {
 	execFileSync(process.execPath, [join(root, "scripts/apply-vendor-patches.mjs"), "--check"], { stdio: "pipe" });
