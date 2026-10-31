@@ -135,6 +135,11 @@ dsh-operator/
     └── test-ax.mjs              # AX 快照格式化 / 降级测试
 ```
 
+> 本地开发提示：`dsh plugin add file:...` 会把包装成硬链接。若用会替换 inode 的编辑器改文件
+> （很多 GUI/工具会写临时文件再 rename），安装副本可能仍是旧内容。改完核对一下：
+> `cmp -s lib/ax-observer.js ~/.dsh/profiles/desktop/node_modules/dsh-operator/lib/ax-observer.js`，
+> 不一致就 `cp -f` 过去，或干脆 `remove` + `add` 重装一次。
+
 ## 开发
 
 ```bash
