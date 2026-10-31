@@ -336,6 +336,13 @@ v2 做两件事：
 - 测试：`test/executor.test.mjs` 6 项（顺序执行/失败即停/继续执行/未授权工具与递归拒绝/dryRun/摘要裁剪）；`npm test` **132 项全绿**。
 - 已知限制：基础 GUI 工具（click/input_text/drag 等）不在本执行器白名单，含这些步骤的计划/技能会显式失败，需要模型手动执行；自定义 toolview 卡片仍未开始。
 
+## 8.10 0.12.3 交付状态（2026-11-01）
+
+- 场景跑分工具：`lib/scenarios.js`（load/filter/group/buildRunSheet/validateRecord/recordLine/parseRecords/summarizeRecords/renderSummaryTable，本地日期）；CLI `scripts/scenarios.mjs` 四个子命令：`list`（按层/id/关键词筛选，可 --json）、`sheet`（生成 markdown 跑分表，含成功标准与结果栏）、`record`（追加 `bench/results/<本地日期>-scenarios.jsonl`）、`report`（读最近记录并输出分层次成功率/平均动作数/平均耗时/成本/失败分类）。
+- 测试：`test/scenarios-tools.test.mjs` 4 项（32 条/分层 8-8-8-8、筛选、跑分表格式、记录校验与汇总计算）；`npm test` 136 项全绿。
+- 产物加入 `.gitignore`（`bench/*-scenarios-sheet.md`、`bench/results/*-scenarios.jsonl`），避免跑分数据污染仓库。
+- 下一步：0.13 自定义 toolview 卡片（「正在操作中…」步骤卡）+ 更主动的执行策略；多屏 DPI/Windows/seam 排队。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972

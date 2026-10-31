@@ -275,6 +275,8 @@ node scripts/test-shrink.mjs
 
 - **0.12.2** — 修 `skill_run`/`plan_run` 的 dryRun 输出含未声明字段 `argsPreview` 被 DSH 校验拒绝；`plan_run` 在没有 pending 步骤时返回明确成功（不再抛 `non-empty steps array is required`），dryRun 只预览 pending/running 步骤。
 
+- **0.12.3** — 场景跑分工具：`npm run scenarios -- list|sheet|record|report`（32 条场景按层筛选、生成 markdown 跑分表、记录 JSONL 并汇总成功率/动作数/耗时/成本/失败分类）；`lib/scenarios.js` 纯函数 + 4 项测试。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）
