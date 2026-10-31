@@ -82,6 +82,16 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 
 > pnpm 用硬链接把插件装进 profile。改完源码后如果行为没变，最稳的做法是 `remove` 再 `add` 一次；只改 `lib/` 里的 JS 通常下次加载就生效。
 
+## 浏览器 DOM 工具（0.11.3）
+
+三个扩展工具，走 AppleScript JS 通道（无需重启浏览器、保留登录态；需一次性开 Chrome 菜单「查看 → 开发者 → 允许 Apple 事件中的 JavaScript」）：
+
+- `browser_dom_snapshot`：返回当前标签页 `title/url/text/links/interactive`（只读；不读 input 值/Cookie/密码）。
+- `browser_dom_click`：按 CSS selector 或可见文本点按钮/链接；命中删除/pay/send 等破坏性词需 `confirm:true`。
+- `browser_dom_fill`：原生 setter + input/change 填表（React/Vue 可用）；`type=password` 字段直接拒绝，值不进日志。
+
+通道关闭时 snapshot 会返回 `available:false` + 具体菜单路径提示，此时回退截图工具（视觉通道）。CDP 后端（`lib/browser-dom.js` + `npm run browser:spike`）用于独立 profile 的自动化验证，0.11.4 再接进工具。
+
 ## 技能库（0.11.2 起步）
 
 `skill_save` / `skill_list` / `skill_show` / `skill_delete` 把可复用的操作序列存成 JSON：`~/.dsh/dsh-operator/skills/<name>.json`。

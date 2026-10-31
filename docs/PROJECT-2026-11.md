@@ -307,6 +307,13 @@ v2 做两件事：
 - 限制：本版不含回放执行器；技能只是「可复用清单」，回放与失败恢复在 0.11.3 接。技能工具属 JS 改动，需重启 App 一次才在运行态出现。
 - 下一步（0.11.3）：技能回放执行器（按步骤调用工具、带 expect/verify 与中断恢复）+ DOM 能力包装成 `browser_*` 工具族 + 工具门面收敛预研。
 
+## 8.5 0.11.3 交付状态
+
+- 浏览器 DOM 工具族：`browser_dom_snapshot` / `browser_dom_click` / `browser_dom_fill`（AppleScript JS 通道；只读优先、不读 input 值/Cookie、password 字段拒绝、破坏性点击需 confirm）；扩展工具 12 → 15。
+- 测试：`test/browser-tools.test.mjs` 4 项（快照解析/通道关闭提示/点击 guard/填表与密码拒绝），`npm test` 113 项全绿。
+- 限制：AppleScript 通道需一次性菜单开关；CDP 后端尚未接进工具（spike 已验证）；浏览器动作尚不进 `actionEffect` 体系。
+- 下一步（0.11.4）：CDP 接入工具（独立 profile + DevToolsActivePort + 连接缓存）、技能回放执行器、`browser_*` 统一门面命名。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972
