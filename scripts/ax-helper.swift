@@ -218,6 +218,7 @@ struct FoundNode {
     let element: AXUIElement
     let role: String
     let title: String
+    let index: Int
 }
 
 func findNodeIndexed(app: AXUIElement, target: Int, maxDepth: Int) -> FoundNode? {
@@ -236,7 +237,8 @@ func findNodeIndexed(app: AXUIElement, target: Int, maxDepth: Int) -> FoundNode?
                 return FoundNode(
                     element: element,
                     role: role,
-                    title: rawTitle.isEmpty ? rawDescription : rawTitle
+                    title: rawTitle.isEmpty ? rawDescription : rawTitle,
+                    index: target
                 )
             }
             validCount += 1
@@ -277,7 +279,7 @@ func findNodeByIdentity(app: AXUIElement, role: String?, title: String?, maxDept
             if roleOk && titleOk && !(role == nil && title == nil) {
                 let distance = abs(nodeIndex - target)
                 if best == nil || distance < best!.distance {
-                    best = (FoundNode(element: element, role: nodeRole, title: nodeTitle), distance: distance)
+                    best = (FoundNode(element: element, role: nodeRole, title: nodeTitle, index: nodeIndex), distance: distance)
                 }
             }
         }
@@ -289,6 +291,44 @@ func findNodeByIdentity(app: AXUIElement, role: String?, title: String?, maxDept
     }
     guard let candidate = best, candidate.distance <= maxDistance else { return nil }
     return candidate.node
+}
+
+func findLargestScrollable(app: AXUIElement, role: String, title: String?, maxDepth: Int) -> FoundNode? {
+    // 没有快照索引时按 role/title 自动选滚动容器：取 frame 面积最大的匹配节点。
+    var best: (node: FoundNode, area: Double)? = nil
+    var validCount = 0
+    var explored = 0
+    var stack: [(element: AXUIElement, depth: Int)] = [(app, 0)]
+    while stack.isEmpty == false && explored < 20000 {
+        explored += 1
+        let current = stack.removeLast()
+        let element = current.element
+        let nodeRole = stringAttribute(element, kAXRoleAttribute) ?? ""
+        var nodeIndex = -1
+        var frameArea: Double = 0
+        if !nodeRole.isEmpty, let f = frameAttribute(element) {
+            nodeIndex = validCount
+            validCount += 1
+            frameArea = f.width * f.height
+        }
+        if nodeIndex >= 0, nodeRole == role {
+            let rawTitle = stringAttribute(element, kAXTitleAttribute) ?? ""
+            let rawDescription = stringAttribute(element, kAXDescriptionAttribute) ?? ""
+            let nodeTitle = rawTitle.isEmpty ? rawDescription : rawTitle
+            if title == nil || nodeTitle.contains(title!) {
+                let area = frameArea
+                if best == nil || area > best!.area {
+                    best = (FoundNode(element: element, role: nodeRole, title: nodeTitle, index: nodeIndex), area)
+                }
+            }
+        }
+        if current.depth < maxDepth {
+            for child in children(of: element).reversed() {
+                stack.append((child, current.depth + 1))
+            }
+        }
+    }
+    return best?.node
 }
 
 // MARK: - 输出结构（新增模式）
@@ -527,7 +567,10 @@ func main() -> Int32 {
     }
 
 
-    // AX 原生滚动：对 AXScrollArea（或支持滚动动作的元素）发 page/line 滚动动作
+    // AX 原生滚动：对 AXScrollArea（或支持滚动动作的元素）发 page/line 滚动动作。
+    // 有 index 时按索引（含 role/title 漂移重定位）；没有 index 但给了 expect-role/title 时
+    // 自动选同角色里 frame 面积最大的容器，模型不必先做原始扫描。
+    var scrollFound: FoundNode? = nil
     if let target = scrollIndex {
         var found = findNodeIndexed(app: app, target: target, maxDepth: maxDepth)
         if found == nil || (expectRole != nil && found!.role != expectRole!) {
@@ -535,9 +578,12 @@ func main() -> Int32 {
                 found = redo
             }
         }
-        guard let foundNode = found else {
-            return emit(encoder, ScrollOutput(ok: false, index: target, role: "", direction: scrollDirection, page: scrollPage, resolved: nil, error: "element not found (index out of range)"))
-        }
+        scrollFound = found
+    } else if expectRole != nil || expectTitle != nil {
+        scrollFound = findLargestScrollable(app: app, role: expectRole ?? "AXScrollArea", title: expectTitle, maxDepth: maxDepth)
+    }
+    if let foundNode = scrollFound {
+        let target = foundNode.index
         let actions: [String: (page: String, line: String)] = [
             "down": ("AXScrollDownByPage", "AXScrollDown"),
             "up": ("AXScrollUpByPage", "AXScrollUp"),

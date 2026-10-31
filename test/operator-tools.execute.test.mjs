@@ -384,7 +384,7 @@ test("ax_scroll：成功路径透传参数，失败原样报错", async (t) => {
 			scrollAx: async (args) => {
 				calls.push(args);
 				if (args.direction === "left") return { ok: false, index: args.index, error: "scroll failed" };
-				return { ok: true, index: args.index, role: "AXScrollArea", direction: args.direction, page: args.page === true, resolved: "index drifted" };
+				return { ok: true, index: args.index ?? 161, role: "AXScrollArea", direction: args.direction, page: args.page === true, resolved: args.index === undefined ? "auto-picked largest AXScrollArea" : "index drifted" };
 			}
 		}
 	});
@@ -392,7 +392,21 @@ test("ax_scroll：成功路径透传参数，失败原样报错", async (t) => {
 	assert.equal(value.ok, true);
 	assert.equal(value.direction, "down");
 	assert.equal(value.page, true);
+	assert.equal(value.resolved, "index drifted");
 	assert.deepEqual(calls[0], { pid: 12, index: 2, direction: "down", page: true, expectRole: "AXScrollArea", expectTitle: undefined });
+
+	// 省略 index：按 expect_role 自动选容器，透传时不带 index 字段。
+	const auto = await tools.ax_scroll.execute({ direction: "down", expect_role: "AXScrollArea" }, exec);
+	assert.equal(auto.ok, true);
+	assert.equal(auto.index, 161);
+	assert.equal(auto.resolved, "auto-picked largest AXScrollArea");
+	assert.equal(calls[1].index, undefined);
+	assert.equal(calls[1].expectRole, "AXScrollArea");
+
+	// 既没有 index 也没有身份条件：直接报错，不猜。
+	const refused = await tools.ax_scroll.execute({ direction: "down" }, exec);
+	assert.equal(refused.ok, false);
+	assert.match(refused.error, /index or expect_role/);
 
 	const failed = await tools.ax_scroll.execute({ index: 3, direction: "left" }, exec);
 	assert.equal(failed.ok, false);

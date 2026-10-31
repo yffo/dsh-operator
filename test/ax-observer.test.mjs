@@ -163,6 +163,12 @@ test("formatAxSnapshot：匿名节点超过上限时裁剪并标 truncated", () 
 
 test("scrollAx：参数不合法时安全返回", async () => {
 	assert.equal((await scrollAx({ pid: 0, index: 1, direction: "down" })).error, "invalid pid");
-	assert.equal((await scrollAx({ pid: 10, index: -1, direction: "down" })).error, "invalid index");
+	assert.equal((await scrollAx({ pid: 10, index: -1, direction: "down" })).error, "index or expect_role/expect_title required");
 	assert.equal((await scrollAx({ pid: 10, index: 0, direction: "diagonal" })).error, "direction must be up/down/left/right");
+});
+
+test("scrollAx：省略 index 时按 expect_role/expect_title 自动选容器", async () => {
+	// pid 校验在自动选容器之前，用非法 pid 断言参数路径不会走到 helper。
+	const result = await scrollAx({ pid: 0, direction: "down", expectRole: "AXScrollArea", page: true });
+	assert.equal(result.error, "invalid pid");
 });

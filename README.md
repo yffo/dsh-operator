@@ -34,7 +34,7 @@
 | 键盘 | `input_text`（可替换原内容、回车提交）、`hotkey` |
 | 等待 | `wait`、`long_wait` |
 | 应用 / 文件 | `list_apps`、`open_app`、`open_in_browser`、`open_in_finder` |
-| 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图）、`ax_press` / `ax_set_value`（按 AX 快照 index 后台点按/写入）、`ax_scroll`（AX 滚动区域，原生动作优先、不支持时提窗滚轮回退）、`ax_menu`（菜单路径触发）、`zoom_region`（局部原生放大） |
+| 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图）、`ax_press` / `ax_set_value`（按 AX 快照 index 后台点按/写入）、`ax_scroll`（AX 滚动区域，可给 index 或按 role/title 自动选容器；原生动作优先、不支持时提窗滚轮回退）、`ax_menu`（菜单路径触发）、`zoom_region`（局部原生放大） |
 | 后台会话 | `code_agent`、`code_agent_status`、`code_agent_stop` |
 
 每次工具调用后自动附带新的前台窗口截图，坐标用 0–1000 归一化（Retina / 多倍屏都按比例，不是像素）。
@@ -112,7 +112,7 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - **guard 是 v1**：覆盖危险快捷键、`ax_press` / `ax_set_value` / `ax_menu` 的危险标题与路径；视觉点击的语义目标还没接 AX hit-test（v2 计划），别把它当完整的安全沙箱。
 - **`ax_menu` 需要目标 App 在前台**：后台 App 的菜单栏 AXPress 不会真正展开（实测后台调用返回成功但无效果）；需要菜单操作时先 `open_app` 再调用。
 - **`ax_scroll` 的回退会把目标 App 提到前台**：原生支持 AX scroll action 的 App 走后台动作；不支持的 App（如 Finder 图标视图）会先提窗 + 激活再发全局滚轮，副作用是前台切换。
-- **`ax_scroll` 的 index 需来自快照**：滚动容器可能被匿名节点过滤或排在 120 节点之外，必要时把 `axMaxNodes` 调大（如 400）或先用 helper 原始扫描确认索引。
+- **`ax_scroll` 可以不给 index**：滚动容器常被匿名节点过滤或排在 120 节点之外；此时传 `expect_role`（可选 `expect_title`），工具会在新鲜树里自动选面积最大的匹配滚动容器（输出带 `resolved` 标记）。给 index 时仍以快照为准，必要时把 `axMaxNodes` 调大（如 400）。
 
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证，且 `list_windows` / `screenshot_window` / `verify_state` / AX 系列工具只在 macOS 注册；Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
 - **多屏 / 混合 DPI**：观察截图取「前台 App 窗口 union」，跨屏仍可能裁错（上游 dsh-orb issue #38）；`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
@@ -197,6 +197,7 @@ node scripts/test-shrink.mjs
 
 ## 版本
 
+- **0.10.2** — `ax_scroll` 支持省略 index：按 `expect_role`/`expect_title` 在新鲜树里自动选面积最大的滚动容器（输出 `resolved` 标记），解决滚动容器被匿名过滤/排在 120 节点外时找不到索引的问题。
 - **0.10.1** — `ax_press` / `ax_set_value` 支持「索引漂移按 role/title 自动重定位」（带 `resolved` 标记，漂移超过 16 个节点仍拒绝）；新增 `ax_scroll`（AX 滚动动作，不支持时提窗 + 全局滚轮回退）；AX 快照匿名容器节点上限 40（超限裁剪并标 `truncated`）。daemon 常驻推迟到 0.10.2。
 - **0.10.0** — 新增 `ax_set_value`（后台 AX 写原生文本框，secure 字段拒绝）、`ax_menu`（按菜单路径后台触发，危险路径需 `confirm: true`）；AX 助手改为通用二进制（arm64 + x86_64）；AX 快照加 24000 字符正文预算（异常大树截断并标 `truncated`）。
 - **0.8.0** — 新增 `zoom_region`：局部区域原生分辨率放大截图，读小字/细节不用整屏重截。
