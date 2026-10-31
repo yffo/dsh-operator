@@ -279,6 +279,8 @@ node scripts/test-shrink.mjs
 
 - **0.13.0** — 状态与计划可见性：`operator_status`（版本/配置/技能数/计划数/失败样本/审计计数，用于自诊断）、`plan_list`（列出计划与完成进度）；扩展工具 21→23；`lib/status.js` + 2 项测试，`npm test` 138 项。
 
+- **0.13.1** — 修 `operator_status` 输出缺 `dataDir` 声明导致 DSH 报 `returned invalid output`；补「返回字段必须全部在 output schema 声明」回归测试。
+
 ## 路线图
 
 - 方向与 v2 方案：[docs/PROJECT-2026-11.md](docs/PROJECT-2026-11.md)（立项/调研/架构/排期，2026-11）

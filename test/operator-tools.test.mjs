@@ -1,5 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { evaluatePredicate, registerOperatorTools } from "../lib/operator-tools.js";
 
 test("evaluatePredicate：未知 kind 返回事实而不抛错", async () => {
@@ -94,4 +97,25 @@ test("registerOperatorTools：缺 deps/defineTool 时静默不注册", () => {
 	const ctx = { tools: { register: () => assert.fail("不应注册") } };
 	registerOperatorTools(ctx, {}, {});
 	registerOperatorTools(ctx, {}, { backend: {} });
+});
+
+test("operator_status / plan_list：返回字段全部在 output schema 声明（防 invalid output）", async () => {
+	const tools = collectTools();
+	const home = mkdtempSync(join(tmpdir(), "dsh-operator-tools-schema-"));
+	const previous = process.env.DSH_HOME;
+	process.env.DSH_HOME = home;
+	try {
+		for (const name of ["operator_status", "plan_list"]) {
+			const tool = tools.find((entry) => entry.name === name);
+			assert.ok(tool, `缺少工具 ${name}`);
+			const value = await tool.execute({});
+			const declared = Object.keys(tool.output.schema.properties ?? {});
+			const extra = Object.keys(value).filter((key) => declared.includes(key) === false);
+			assert.deepEqual(extra, [], `${name} 返回了未声明字段: ${extra.join(",")}`);
+		}
+	} finally {
+		if (previous === undefined) delete process.env.DSH_HOME;
+		else process.env.DSH_HOME = previous;
+		rmSync(home, { recursive: true, force: true });
+	}
 });
