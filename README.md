@@ -89,6 +89,8 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 - `browser_dom_snapshot`：返回当前标签页 `title/url/text/links/interactive`（只读；不读 input 值/Cookie/密码）。
 - `browser_dom_click`：按 CSS selector 或可见文本点按钮/链接；命中删除/pay/send 等破坏性词需 `confirm:true`。
 - `browser_dom_fill`：原生 setter + input/change 填表（React/Vue 可用）；`type=password` 字段直接拒绝，值不进日志。
+- `browser_dom_probe`：一次看两个通道的状态（AppleScript 是否开启、CDP 端口是否可达），据此决定用 DOM 还是截图。
+- CDP 回退：配置 `browserCdpPort`（默认 0 = 关）并在启动 Chrome 时加 `--remote-debugging-port=<相同端口>`；AppleScript 通道报 disabled/error 时，snapshot/click/fill 会自动走 CDP，并在结果里带 `backend:"cdp"`。CDP 只连用户自己启动的 Chrome，不接管生命周期、不碰日常 profile。
 
 通道关闭时 snapshot 会返回 `available:false` + 具体菜单路径提示，此时回退截图工具（视觉通道）。CDP 后端（`lib/browser-dom.js` + `npm run browser:spike`）用于独立 profile 的自动化验证，0.11.4 再接进工具。
 

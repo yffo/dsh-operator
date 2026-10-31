@@ -314,6 +314,13 @@ v2 做两件事：
 - 限制：AppleScript 通道需一次性菜单开关；CDP 后端尚未接进工具（spike 已验证）；浏览器动作尚不进 `actionEffect` 体系。
 - 下一步（0.11.4）：CDP 接入工具（独立 profile + DevToolsActivePort + 连接缓存）、技能回放执行器、`browser_*` 统一门面命名。
 
+## 8.6 0.11.4 交付状态
+
+- CDP 通道接进工具：`lib/browser-dom.js` 增 `cdpEvalScript/readCdpSnapshot/clickCdpDom/fillCdpDom/probeCdp`；Config 增 `browserCdpPort`（默认 0）；`browser_dom_snapshot/click/fill` 在 AppleScript 失败时按端口回退 CDP，输出带 `backend`；新增 `browser_dom_probe` 同时报告两通道状态（扩展工具 15 → 16）。
+- 真机验证：临时 headless Chrome（file:// 页面 + 随机调试端口）→ `probeCdp` 报 Chrome/156、`readCdpSnapshot` 解析 title/text/interactive、`fillCdpDom` 返回 valueLength、`clickCdpDom` 点「Go」后页面文本 from before → clicked，全链路通过；测试用注入 fake 覆盖工具层回退与 probe（`npm test` 115 项全绿）。
+- 限制：CDP 需用户自己以调试端口启动 Chrome（插件不接管进程/不碰日常 profile）；AppleScript 通道仍默认关闭需菜单开关；技能回放执行器推迟到 0.12。
+- 下一步（0.12）：复杂度分层与规划器、技能回放、自定义 toolview 卡片、30+ 场景矩阵；之后多屏 DPI、Windows、seam 适配层。
+
 ## 9. 参考
 
 - OSWorld — https://arxiv.org/abs/2404.07972

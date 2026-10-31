@@ -107,3 +107,45 @@ test("browser_dom_fill：成功返回长度，密码框由页面侧拒绝", asyn
 	assert.equal(refused.ok, false);
 	assert.match(refused.reason, /password/);
 });
+
+test("browser_dom_snapshot：AppleScript 关闭时按 browserCdpPort 回退 CDP", async (t) => {
+	if (!darwin) return t.diagnostic("skipped: darwin only");
+	const disabled = () => Promise.resolve({ ok: false, stdout: "", stderr: "通过 AppleScript 执行 JavaScript 的功能已关闭。", error: "" });
+	const tools = setup({
+		osascript: disabled,
+		config: { browserCdpPort: 9222 },
+		internals: {}
+	});
+	// 注入 CDP 假实现：setup 里还没接 internals，这里覆盖
+	configureOperatorToolsInternals({
+		cdpSnapshot: async ({ port }) => {
+			assert.equal(port, 9222);
+			return { url: "https://example.com/cdp", title: "CDP page", text: "cdp text", links: [], interactive: [] };
+		}
+	});
+	const value = await tools.browser_dom_snapshot.execute({}, exec);
+	assert.equal(value.ok, true);
+	assert.equal(value.backend, "cdp");
+	assert.equal(value.title, "CDP page");
+});
+
+test("browser_dom_probe：报告 AppleScript 与 CDP 两个通道状态", async (t) => {
+	if (!darwin) return t.diagnostic("skipped: darwin only");
+	const tools = setup({
+		osascript: () => Promise.resolve({ ok: false, stdout: "", stderr: "通过 AppleScript 执行 JavaScript 的功能已关闭。", error: "" }),
+		config: { browserCdpPort: 9222 }
+	});
+	configureOperatorToolsInternals({
+		cdpProbe: async ({ port }) => {
+			assert.equal(port, 9222);
+			return { available: true, reason: "ok", browser: "Chrome/140" };
+		}
+	});
+	const value = await tools.browser_dom_probe.execute({}, exec);
+	assert.equal(value.ok, true);
+	assert.equal(value.applescript.available, false);
+	assert.equal(value.applescript.reason, "disabled");
+	assert.equal(value.cdp.available, true);
+	assert.equal(value.cdp.browser, "Chrome/140");
+	assert.equal(value.browserCdpPort, 9222);
+});
