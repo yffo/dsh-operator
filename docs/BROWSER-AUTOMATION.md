@@ -83,6 +83,12 @@
 | `protected_resource_scope_invalid` | 缺少精确 target | 传 `target_id`/`tab_id`（绑定后会自动带） |
 | `refused` | 参数或能力不满足 | 看 `refusal.message`，不要盲目重试 |
 
+### 对话框 / 下载 / 文件上传（0.29.0）
+
+- `browser_dialog`：`action:"inspect"` 拿 `dialog_id`，再 `accept`/`dismiss`；prompt 可带 `prompt_text`。不要靠截图猜弹窗内容。
+- `browser_download`：给下载链接的 ref + 绝对目录 `destination_root`，并且必须 `confirm:true`——这是写磁盘动作。
+- `browser_set_input_files`：给 `<input type=file>` 的 ref 和 1–32 个绝对路径，绕过原生文件选择器。
+
 ## CDP 后端（可选，0.25.0）
 
 cua-driver 的 `browser_*` 只给「语义快照 + 输入动作」，拿不到 Runtime/Network 事件。要「导航后等网络空闲」「看控制台错误」「看失败请求」，走 CDP，但**只连你显式开启的调试端口**——cua-driver 的环回代理不暴露 `/json/*`，复用它只会 404。
