@@ -85,6 +85,8 @@ cua_act({window_id:42, action:"click", element_token:"s00000004:12"})
 - **macOS 原生拖放不支持后台**：跨 App 的 drag&drop 会 `background_unavailable`，只能前台执行。
 - **窗口必须可见**：`x/y` 路径要求窗口在屏幕上（不用置顶，但不能最小化/在别的 Space）。`element_token` 不受此限。
 - **cua_* 与旧工具是两套通道**：旧工具会移动真实光标；混用没问题，但别期待旧工具也「不抢焦点」。
+- **cua-driver 的 agent cursor overlay 会干扰部分「前台 App」探测**：实测原生 `screenshot` 的 `frontmost_app` 可能显示成 `cua-driver`（overlay 窗口在顶层），但 `cua_windows` 的 frontmost 判定仍正确；以后台语义为准，必要时以 `cua_windows` 交叉确认。
+- **element_token 只同相邻 observe→act 有效**：跨调用/跨进程会 stale；`cua_act` 会自动重新 observe 并重试一次（结果标 `retried="true"`），仍失败时优先改用 `role/name` 或窗口局部 `x/y`。
 
 ## 验证
 
