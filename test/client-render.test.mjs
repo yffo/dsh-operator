@@ -126,6 +126,13 @@ test("运行中的 ax_batch 展示标题/步骤/实时耗时，且不把内部�
 	assert.equal(nodes.filter((node) => node.props?.["data-dop-elapsed"] !== undefined).length, 1, "运行卡片要有实时耗时节点");
 });
 
+test("运行中的卡片带长任务提示节点，结算后不带", () => {
+	const running = render("ax_batch", startBlock("ax_batch", "c-long", { steps: [{ action: "press" }, { action: "press" }] }));
+	assert.equal(running.nodes.filter((node) => node.props?.["data-dop-long"] !== undefined).length, 1, "运行卡片要有长耗时提示节点");
+	const settled = render("ax_batch", resultBlock("ax_batch", "c-done", { steps: [] }, { text: "ax_batch: 2/2 ok" }));
+	assert.equal(settled.nodes.filter((node) => node.props?.["data-dop-long"] !== undefined).length, 0, "结算后不再显示长耗时提示");
+});
+
 test("需要确认的高危工具展示确认门与前台徽标", () => {
 	const { text } = render("ax_press", startBlock("ax_press", "c2", { role: "AXButton", title: "保存", delivery_mode: "foreground" }));
 	assert.match(text, /需要你确认/);

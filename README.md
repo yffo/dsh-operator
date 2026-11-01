@@ -157,6 +157,7 @@ npm test            # 207 项测试
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
 - **0.23.0** toolview P0 落地真客户端：中文活动卡片（第 n/N 步、实时耗时、执行模式/确认门徽标）、分段进度、逐步行、结果缩略图+灯箱、失败原因与建议、完成折叠；新增渲染测试 `test/client-render.test.mjs`。
+- **0.23.1** toolview 长任务表达：运行中步骤序号加一圈 1.8s 脉冲（`dopPulse`），超过 10s 在卡片里显示「已耗时 Xs，仍在执行；你可以继续做别的事」；结算后自动收起。
 - **0.22.6** 新增 `cua_launch`（后台启动 App 不置顶）；`open_app` 文档明确为前台激活。
 - **0.22.5** `cua_act` 失败信息聚合（message/stdout/stderr/steps），stale token 自动重试更可靠。
 - **0.22.4** `open_app` 中文名回退 bundle id；`cua_act` 过期 token 自动重新观察并重试。

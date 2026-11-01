@@ -105,6 +105,10 @@ window.__ModuleLoader__.load({
 			".dop-step[data-state=\"done\"] .dop-idx{color:var(--dop-ok);border-color:color-mix(in srgb,var(--dop-ok) 35%,transparent);background:color-mix(in srgb,var(--dop-ok) 12%,transparent)}",
 			".dop-step[data-state=\"running\"] .dop-idx{color:var(--dop-warn);border-color:color-mix(in srgb,var(--dop-warn) 40%,transparent);background:color-mix(in srgb,var(--dop-warn) 12%,transparent);animation:dopIdx .55s cubic-bezier(.3,1.5,.5,1) both}",
 			".dop-step[data-state=\"error\"] .dop-idx,.dop-step[data-state=\"warn\"] .dop-idx{color:var(--dop-err);border-color:color-mix(in srgb,var(--dop-err) 35%,transparent);background:color-mix(in srgb,var(--dop-err) 12%,transparent)}",
+			".dop-step .dop-idx{position:relative}",
+			".dop-step[data-state=\"running\"] .dop-idx::after{content:\"\";position:absolute;inset:-3px;border-radius:50%;border:1px solid color-mix(in srgb,var(--dop-warn) 55%,transparent);animation:dopPulse 1.8s ease-out infinite}",
+			".dop-long{margin:6px 0 0;font-size:12px;color:color-mix(in srgb,currentColor 62%,transparent)}",
+			".dop-long[hidden]{display:none}",
 			".dop-step .dop-body{flex:1;min-width:0}",
 			".dop-step .dop-step-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:560}",
 			".dop-step .dop-tag{font-size:11px;font-weight:400;color:color-mix(in srgb,currentColor 58%,transparent)}",
@@ -134,6 +138,7 @@ window.__ModuleLoader__.load({
 			"@keyframes dopSweep{0%{background-position:130% 0;opacity:0}18%{opacity:1}100%{background-position:-30% 0;opacity:0}}",
 			"@keyframes dopBreath{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--dop-warn) 18%,transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--dop-warn) 7%,transparent)}}",
 			"@keyframes dopFade{from{opacity:0}to{opacity:1}}",
+			"@keyframes dopPulse{0%{transform:scale(.92);opacity:.6}100%{transform:scale(1.35);opacity:0}}",
 			"@media (prefers-reduced-motion: reduce){.dop-card *,.dop-lightbox{animation:none!important}}"
 		].join("");
 
@@ -758,10 +763,14 @@ window.__ModuleLoader__.load({
 						output === null ? null : h("pre", { className: "dop-pre" }, output)
 					);
 
+			const longHint = running
+				? h("div", { className: "dop-long", "data-dop-long": "", hidden: true })
+				: null;
 			const body = h(
 				"div",
 				{ className: "dop-collapsible" },
 				stepNodes,
+				longHint,
 				reason === null ? null : h(Reason, { reason }),
 				bodyNote(summary, multi, target),
 				extras,
@@ -789,9 +798,15 @@ window.__ModuleLoader__.load({
 						if (running === false) return;
 						const start = elapsedStart;
 						const update = () => {
+							const elapsed = Date.now() - start;
 							const holder = node.querySelector("[data-dop-elapsed]");
-							if (holder === null) return;
-							holder.textContent = formatMs(Date.now() - start) || "0.0s";
+							if (holder !== null) holder.textContent = formatMs(elapsed) || "0.0s";
+							const hint = node.querySelector("[data-dop-long]");
+							if (hint !== null) {
+								const long = elapsed >= 10000;
+								hint.hidden = long === false;
+								if (long) hint.textContent = `已耗时 ${formatMs(elapsed)}，仍在执行；你可以继续做别的事`;
+							}
 						};
 						update();
 						if (ticker !== null) clearInterval(ticker);
