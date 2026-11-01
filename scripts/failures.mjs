@@ -3,26 +3,35 @@
  * 失败样本汇总：把 ~/.dsh/dsh-operator/failures/*.jsonl 归纳成可读报告。
  *
  * 用法：
- *   node scripts/failures.mjs            # 看最近汇总
- *   node scripts/failures.mjs --json     # 输出 JSON（给脚本/issue 用）
+ *   node scripts/failures.mjs                 # 看最近汇总
+ *   node scripts/failures.mjs --json          # 输出 JSON（给脚本/issue 用）
  *   node scripts/failures.mjs --dir /tmp/x --top 5
- *   node scripts/failures.mjs --files    # 只列文件大小
+ *   node scripts/failures.mjs --files         # 只列文件大小
+ *   node scripts/failures.mjs --report        # 输出 markdown 归纳（含每类失败的处理建议）
+ *   node scripts/failures.mjs --write [path]  # 把 markdown 写到文件（默认 ~/.dsh/dsh-operator/failure-report.md）
  */
-import { existsSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
-import { digestFailures, failureDir } from "../lib/failure-store.js";
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { digestFailures, failureDir, renderFailureReport } from "../lib/failure-store.js";
 
 function parseArgs(argv) {
-	const args = { dir: failureDir(), top: 10, json: false, files: false };
+	const args = { dir: failureDir(), top: 10, json: false, files: false, report: false, write: undefined };
 	for (let i = 0; i < argv.length; i += 1) {
 		const item = argv[i];
 		if (item === "--json") args.json = true;
 		else if (item === "--files") args.files = true;
+		else if (item === "--report") args.report = true;
+		else if (item === "--write") args.write = argv[i + 1]?.startsWith("--") === true || argv[i + 1] === undefined ? defaultReportPath() : argv[++i];
 		else if (item === "--dir") args.dir = argv[++i];
 		else if (item === "--top") args.top = Number(argv[++i] ?? 10);
 		else if (item === "-h" || item === "--help") args.help = true;
 	}
 	return args;
+}
+
+function defaultReportPath() {
+	return join(homedir(), ".dsh", "dsh-operator", "failure-report.md");
 }
 
 function main() {
@@ -43,6 +52,18 @@ function main() {
 		return;
 	}
 	const digest = digestFailures({ dir: args.dir, top: args.top });
+	if (args.report || args.write !== undefined) {
+		const markdown = renderFailureReport(digest, { dir: args.dir });
+		const target = args.write;
+		if (target !== undefined) {
+			mkdirSync(dirname(target), { recursive: true });
+			writeFileSync(target, `${markdown}\n`);
+			console.log(`report written: ${target} (${markdown.length} chars)`);
+		} else {
+			console.log(markdown);
+		}
+		return;
+	}
 	if (args.json) {
 		console.log(JSON.stringify({ dir: args.dir, ...digest }, null, 2));
 		return;

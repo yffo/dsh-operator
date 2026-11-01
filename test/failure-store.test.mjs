@@ -10,7 +10,9 @@ import {
 	digestFailures,
 	failureDir,
 	recordFailure,
-	sanitizeArgs
+	renderFailureReport,
+	sanitizeArgs,
+	suggestForKind
 } from "../lib/failure-store.js";
 
 function tempDir() {
@@ -112,6 +114,26 @@ test("失败样本库接线：扩展工具 execute 抛错与返回 error 都会�
 	} finally {
 		configureFailureStore({ dir: undefined });
 		resetOperatorToolsInternals();
+		rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test("renderFailureReport：markdown 含策略与下一步建议", () => {
+	const dir = tempDir();
+	try {
+		configureFailureStore({ dir });
+		recordFailure({ tool: "ax_press", error: new Error("element not found"), args: { index: 1 } });
+		recordFailure({ tool: "click", error: new Error("guarded control: 不允许"), args: {} });
+		const digest = digestFailures({ dir });
+		const markdown = renderFailureReport(digest, { dir, generatedAt: "2026-11-01T00:00:00.000Z" });
+		assert.match(markdown, /# dsh-operator 失败样本归纳/);
+		assert.match(markdown, /总条数：2/);
+		assert.match(markdown, /## 策略与下一步/);
+		assert.equal(suggestForKind("not_found").includes("刷新一次 AX 快照"), true);
+		assert.equal(suggestForKind("guard_rejected").includes("确认目标应用"), true);
+		assert.match(markdown, /## 最近样本/);
+	} finally {
+		configureFailureStore({ dir: undefined });
 		rmSync(dir, { recursive: true, force: true });
 	}
 });

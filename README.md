@@ -335,6 +335,8 @@ node scripts/test-shrink.mjs
 
 - **0.21.9** — 多动作批处理正式版（PLAN 0.11-1）：`ax_batch` 动作面扩到 8 种（AX `ax_press`/`ax_set_value`/`ax_menu`/`ax_scroll` + fork `click`/`scroll`/`input`/`hotkey`，用 `x`/`y`/`text`/`keys`/`scroll_level` 等字段表达），失败判定沿用异常、`pressed:false`、`ok:false`。解析改为 **handlers 优先、`computerUseToolDefs` 兜底**（修 0.21.8 中自研 AX 工具不在 fork 工具表、运行时可能误报 `not registered` 的隐患）。「一次观察复用」语义明确：先 `cu_observe`/AX 快照观察一次，再用批处理回放已知序列，中间截图丢弃、只回逐步摘要。`npm test` 176 项。
 
+- **0.21.10** — 失败样本归纳报告（PLAN 0.11-5 完整版）：`lib/failure-store.js` 新增 `KIND_SUGGESTIONS` / `suggestForKind()` / `renderFailureReport()`——把失败计数升级为 markdown 报告（总条数、按 kind、**策略与下一步**、按工具/消息/天、最近样本），每类失败带可执行建议（guard 拦截怎么办、超时先 recapture、定位失败如何刷新 AX/改 expect_role、能力不可用查权限等）；`scripts/failures.mjs` 增 `--report`（打印 markdown）与 `--write [path]`（默认 `~/.dsh/dsh-operator/failure-report.md`），可接 cron 定期留档。`npm test` 177 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图
