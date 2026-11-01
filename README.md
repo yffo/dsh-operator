@@ -180,6 +180,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.24.5** 插件拉起 cua-driver 时带 `--grant existing-profile`（`DSH_OPERATOR_CUA_GRANT=0` 可关）：否则手动/自动重启 daemon 后，`browser_prepare` 会以 `browser_consent_required` 拒绝接真实 Chrome。
 - **0.24.4** `browser_state` 输出元素 `refs`（`p2:2 a href=…`），支持 `snapshot_format` 与 `query`：之前只列 tabs，`browser_click` 拿不到 ref；本轮真机验证已能点到真实链接。
 - **0.24.3** `browser_prepare` 同样显式传 `strategy: {kind:"existing_profile"}`：不带时驱动只做端点探测（`already_prepared`），`get_browser_state` 仍以 `browser_consent_required` 拒绝。
 - **0.24.2** `browser_state` 首次绑定补 `strategy: {kind:"existing_profile"}`：cua-driver 对 `pid+window_id` 形式的快照要求显式策略，缺了会以 `browser_consent_required` 拒绝。
