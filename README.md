@@ -163,8 +163,8 @@ npm test            # 199 项测试
 - **0.22.1** 修 `cua_observe` 可选字段输出（lossless JSON）。
 - **0.22.0** 接入 cua-driver 可选后端（`cua_windows` / `cua_observe` / `cua_act`），后台人机并行。
 - **0.21.12** `seam provider` 适配（探测式，不装 seam 时行为不变）。
+- **0.21.11** 工具输出 schema 统一注入 `schemaVersion`，与 DSH 新版校验兼容。
 - **0.21.8** `ax_batch`：一批 2–12 个 AX 动作，首错即停。
-- **0.21.0** 可选的 cua/原生后端分层。
 
 ## 路线图
 
