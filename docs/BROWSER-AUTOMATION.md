@@ -56,6 +56,29 @@
 | `protected_resource_scope_invalid` | 缺少精确 target | 传 `target_id`/`tab_id`（绑定后会自动带） |
 | `refused` | 参数或能力不满足 | 看 `refusal.message`，不要盲目重试 |
 
+## CDP 后端（可选，0.25.0）
+
+cua-driver 的 `browser_*` 只给「语义快照 + 输入动作」，拿不到 Runtime/Network 事件。要「导航后等网络空闲」「看控制台错误」「看失败请求」，走 CDP，但**只连你显式开启的调试端口**——cua-driver 的环回代理不暴露 `/json/*`，复用它只会 404。
+
+开启方式（不影响日常浏览器）：用独立数据目录起一个 Chrome，再把端口配进插件。
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9222 \
+  --user-data-dir="$HOME/.dsh/chrome-cdp" \
+  --no-first-run --no-default-browser-check
+```
+
+插件配置：`browserCdpPort: 9222`（默认 0 = 关闭）。开启后多三个工具：
+
+| 工具 | 做什么 | 备注 |
+| --- | --- | --- |
+| `browser_wait` | 等 `document.readyState === "complete"` 且网络空闲（默认 500ms） | 可用 `url_contains` / `title_contains` / `index` 选 tab |
+| `browser_console` | 收集 error/warning/未捕获异常 | `reload:true` 会重载页面，才能抓到加载期错误 |
+| `browser_network` | 收集失败请求与 4xx/5xx | 同上；默认只收调用之后的流量 |
+
+边界：只读（启用 Runtime/Log/Network 收集事件，不执行页面 JS、不改 DOM、不导 Cookie）；`browserCdpPort=0` 或端口连不上时三个工具都返回同一句开启指引，不会抛错。
+
 ## 配置
 
 - `DSH_OPERATOR_BROWSER=0`：关闭整组 `browser_*`；

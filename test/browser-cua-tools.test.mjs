@@ -41,14 +41,14 @@ after(() => {
 	rmSync(dir, { recursive: true, force: true });
 });
 
-function setup() {
+function setup(config = {}) {
 	const tools = {};
 	const ctx = { tools: { register: (tool) => { tools[tool.name] = tool; } } };
-	const handle = registerBrowserTools(ctx, {}, { defineTool: (definition) => definition, version: "0.24.0" });
+	const handle = registerBrowserTools(ctx, config, { defineTool: (definition) => definition, version: "0.25.0" });
 	return { tools, handle };
 }
 
-test("注册 7 个 browser_* 工具，schema 与 execute 齐备", () => {
+test("注册全部 browser_* 工具，schema 与 execute 齐备", () => {
 	const { tools, handle } = setup();
 	assert.equal(handle.registered, true);
 	assert.deepEqual(handle.names, [...BROWSER_TOOL_NAMES]);
@@ -129,4 +129,22 @@ test("browser_select 要求 ref 且 label/value 二选一", async () => {
 	assert.equal(missing.ok, false);
 	const both = await tools.browser_select.execute({ ref: "p1:2", label: "a", value: "b" }, {});
 	assert.equal(both.ok, false);
+});
+
+test("CDP 工具在 browserCdpPort=0 时给出开启指引", async () => {
+	const { tools } = setup({ browserCdpPort: 0 });
+	for (const name of ["browser_wait", "browser_console", "browser_network"]) {
+		assert.equal(typeof tools[name].execute, "function");
+		const value = await tools[name].execute({});
+		assert.equal(value.ok, false);
+		assert.match(value.text, /browserCdpPort/);
+		assert.match(value.text, /remote-debugging-port/);
+	}
+});
+
+test("CDP 工具在端口连不上时返回失败而不是抛错", async () => {
+	const { tools } = setup({ browserCdpPort: 1 });
+	const value = await tools.browser_wait.execute({ timeout_ms: 800 });
+	assert.equal(value.ok, false);
+	assert.match(value.text, /browser_wait 失败|CDP 后端不可用/);
 });
