@@ -42,6 +42,8 @@
 
 3. 重启 App；`operator_status` 里出现 `seam provider: dsh-operator` 即生效。
 
+> 挂载顺序：seam 那行请放在 `dsh-operator` **之前**（组合按顺序加载；若顺序颠倒，本包可能先看不到 `computerUse` 服务而回落到全局挂载——不会崩，只是不注册 seam）。
+
 **注意**：同一组合里不要再挂官方 cua-driver-native provider——两套 computer-use 抢桌面，本包会按上面的语义直接抛错。真要用官方 provider，就把 dsh-operator 从组合里移掉（二选一）。
 
 ## 4. 验证方式
