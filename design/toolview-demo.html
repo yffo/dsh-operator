@@ -519,6 +519,8 @@
 
   var timers = [];
   var stepNodes = [];
+  var stepSig = [];
+  var progressKey = "";
   var running = false;
   var modeBackground = true;
   var startedAt = 0;
@@ -567,15 +569,26 @@
   }
 
   function buildProgress(){
-    actProgress.innerHTML = "";
+    var classes = [];
     for(var i=0;i<STEPS.length;i++){
-      var s = el("span");
-      if(i < currentIdx) s.className="done";
-      else if(i === currentIdx) s.className = STEPS[i].state==="warn"||STEPS[i].state==="error" ? "err" : "active";
-      if(i===currentIdx-1 && s.className==="done") s.classList.add("justdone");
-      if(s.className==="active") s.classList.add("flow");
-      if(s.className==="active" && STEPS[i].state==="running") s.classList.add("working");
-      actProgress.appendChild(s);
+      var s = STEPS[i], c = "";
+      if(i < currentIdx) c = "done";
+      else if(i === currentIdx) c = (s.state==="warn" || s.state==="error") ? "err" : "active";
+      classes.push(c);
+    }
+    var key = classes.map(function(c, i){ return c + (i === currentIdx ? ":" + STEPS[i].state : ""); }).join("|");
+    if(key === progressKey) return;
+    var prev = progressKey === "" ? [] : progressKey.split("|").map(function(c){ return c.split(":")[0]; });
+    progressKey = key;
+    actProgress.innerHTML = "";
+    for(var j=0;j<classes.length;j++){
+      var sp = el("span", classes[j]);
+      if(classes[j]==="done" && prev[j] !== "done") sp.classList.add("justdone");
+      if(classes[j]==="active"){
+        sp.classList.add("flow");
+        if(STEPS[j].state==="running") sp.classList.add("working");
+      }
+      actProgress.appendChild(sp);
     }
   }
 
@@ -658,18 +671,23 @@
     return step;
   }
 
+  function stepSignature(st){
+    return JSON.stringify([st.state, st.label, st.meta, st.thumb, st.reason, st.reasonTitle, st.hint, st.retryable, st.gate, st.targetTag]);
+  }
+  // 只重建有变化的步骤，避免未变化的行被重复插入触发勾号/扫光动画
   function renderAll(onlyIndex){
     syncHud();
-    if(onlyIndex == null){
-      actSteps.innerHTML = "";
-      stepNodes = [];
-      for(var i=0;i<STEPS.length;i++) actSteps.appendChild(renderStep(i));
-    }else{
-      // replace single step node in place
-      var old = stepNodes[onlyIndex];
-      var node = renderStep(onlyIndex);
-      stepNodes[onlyIndex] = node;
-      if(old && old.parentNode) old.parentNode.replaceChild(node, old);
+    var list = onlyIndex == null ? STEPS.map(function(_, i){ return i; }) : [onlyIndex];
+    for(var n=0;n<list.length;n++){
+      var i = list[n];
+      var sig = stepSignature(STEPS[i]);
+      if(stepNodes[i] && stepSig[i] === sig) continue;
+      var node = renderStep(i);
+      var old = actSteps.children[i];
+      if(old) actSteps.replaceChild(node, old);
+      else actSteps.appendChild(node);
+      stepNodes[i] = node;
+      stepSig[i] = sig;
     }
     buildProgress();
   }
@@ -847,6 +865,8 @@
     stepStartedAt = Date.now();
     actCard.classList.remove("complete");
     currentIdx = 0;
+    stepSig = [];
+    progressKey = "";
     elapsedBase = 0;
     startedAt = Date.now();
     for(var i=0;i<STEPS.length;i++){ STEPS[i].state="idle"; delete STEPS[i].reason; delete STEPS[i].reasonTitle; delete STEPS[i].retryable; renderAll(i); }
