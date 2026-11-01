@@ -1,6 +1,6 @@
 # 工具卡片（toolview）设计：从「一行日志」到「活动卡片」
 
-> 状态：设计稿 + 可交互 demo v2（`design/toolview-demo.html`）。P0 未实现，先评审。
+> 状态：设计稿 + 可交互 demo v3（`design/toolview-demo.html`）；**P0 已落地 `client/client.js`（0.23.0）**，可按 `design/toolview-preview.html` 看真实卡片，宿主契约与验证方式见 [`docs/TOOLVIEW-P0-HANDOFF.md`](TOOLVIEW-P0-HANDOFF.md)。
 > 交互稿截图：[确认门 + 桌面 HUD](design/screenshots/demo-hud-gate.jpg)、[失败与恢复 + HUD 需要处理](design/screenshots/demo-hud-failure.jpg)、[接管 + HUD 等你操作](design/screenshots/demo-hud-takeover.jpg)。
 > m08916 拍板结论已并入本文（见 §7），HUD 作为 P2 概念的可行性评估见 §9。
 
@@ -83,7 +83,7 @@ DSH 的 `tool.call.toolview` 已按 wire 工具名分发自定义视图，客户
   "hint": "目标窗口可能被其他窗口挡住" }
 ```
 
-全部可选、不破坏旧 schema；客户端优先读 `ui`，缺失时回退 P0 解析。P1 的改动由 199 项测试兜住。
+全部可选、不破坏旧 schema；客户端优先读 `ui`，缺失时回退 P0 解析。P1 的改动由 207 项测试兜住。
 
 ## 5. 交互细节
 
@@ -102,8 +102,8 @@ DSH 的 `tool.call.toolview` 已按 wire 工具名分发自定义视图，客户
 
 | 阶段 | 范围 | 风险 |
 | --- | --- | --- |
-| P0（1–2 天） | 客户端：活动卡片容器 + n/N + 每步耗时 + 缩略图取 image 附件 + 失败原因/建议（复用现有 note/actionEffect）+ 确认门展示 | 低：只改 `client/client.js`，不碰宿主 |
-| P1（2–3 天） | 宿主补可选 `ui` 字段；连续动作折叠成一张卡；完成后折叠摘要 | 中：动 wire schema，199 项测试兜底 |
+| P0（1–2 天）✅ | 客户端：活动卡片容器 + n/N + 每步耗时 + 缩略图取 image 附件 + 失败原因/建议 + 确认门展示（0.23.0 已落地，见 HANDOFF §6） | 低：只改 `client/client.js`，不碰宿主 |
+| P1（2–3 天） | 宿主补可选 `ui` 字段；连续动作折叠成一张卡；完成后折叠摘要 | 中：动 wire schema，207 项测试兜底 |
 | P2（可选） | 暂停/接管（cua-driver 已支持前台接管语义）；卡片内直接确认破坏性动作（对接 guard） | 中：涉及执行控制 |
 
 先做 P0，不碰宿主组合层与 wire 协议，风险最小。

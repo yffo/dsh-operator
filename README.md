@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，199 项测试 + CI 全绿；欢迎自己改、自己发布。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，207 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -135,7 +135,7 @@ cua-driver 相关：`DSH_OPERATOR_CUA`、`DSH_OPERATOR_CUA_BIN`、`DSH_OPERATOR_
 npm run doctor      # 安装/数据目录/权限/日志等 9 项体检
 npm run preflight   # 隔离环境里做一次 DSH 引导，抓插件加载错误
 npm run failures    # 失败样本摘要（按错误类别分组）
-npm test            # 199 项测试
+npm test            # 207 项测试
 ```
 
 会话里也可以直接问 `operator_status`（版本/工具面/审计行数），或列出失败样本（`failure_list`）。
@@ -146,7 +146,7 @@ npm test            # 199 项测试
 - [兼容性与平台边界](docs/COMPATIBILITY.md)
 - [cua-driver 人机并行](docs/CUA-DRIVER.md)
 - [第三方许可（NOTICE）](NOTICE)
-- [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html)
+- [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html) · [真实客户端预览页](design/toolview-preview.html) · [P0 进度与交接](docs/TOOLVIEW-P0-HANDOFF.md)
 - [发布与版本](docs/RELEASE.md)
 - [场景/验收矩阵](docs/SCENARIOS-2026-11.md)
 - [seam provider 适配说明](docs/SEAM-PROVIDER.md)
@@ -156,6 +156,7 @@ npm test            # 199 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.23.0** toolview P0 落地真客户端：中文活动卡片（第 n/N 步、实时耗时、执行模式/确认门徽标）、分段进度、逐步行、结果缩略图+灯箱、失败原因与建议、完成折叠；新增渲染测试与 `design/toolview-preview.html` 预览页。
 - **0.22.6** 新增 `cua_launch`（后台启动 App 不置顶）；`open_app` 文档明确为前台激活。
 - **0.22.5** `cua_act` 失败信息聚合（message/stdout/stderr/steps），stale token 自动重试更可靠。
 - **0.22.4** `open_app` 中文名回退 bundle id；`cua_act` 过期 token 自动重新观察并重试。
