@@ -69,11 +69,10 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
   .card-head{display:flex;align-items:center;gap:10px;padding:12px 14px 10px}
   .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--idle)}
-  .dot.run{background:var(--warn);animation:pulse 1.4s ease-in-out infinite}
+  .dot.run{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}
   .dot.ok{background:var(--ok)}
   .dot.warn{background:var(--warn)}
   .dot.err{background:var(--err)}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 45%, transparent)}50%{box-shadow:0 0 0 6px transparent}}
   .card-title{font-weight:650;letter-spacing:.1px}
   .card-sub{color:var(--muted);font-size:12.5px;margin-top:1px}
   .card-meta{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
@@ -126,8 +125,8 @@
   .mini .main i{display:block;height:3px;border-radius:2px;background:var(--line-strong);opacity:.55}
   .mini .main i.t{height:5px;width:52%;opacity:.85}
   .mini .target{position:absolute;inset:auto 4px 4px auto;border:1.5px solid var(--accent);border-radius:4px;width:56%;height:46%;
-    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%, transparent);animation:focusGlow 2.2s ease-in-out infinite}
-  @keyframes focusGlow{0%,100%{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 10%, transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 22%, transparent)}}
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%, transparent);animation:focusGlow 4s ease-in-out infinite}
+  @keyframes focusGlow{0%,100%{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 8%, transparent)}50%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 13%, transparent)}}
   .mini.shot .side{display:none}
   .mini.shot .main{background:linear-gradient(160deg,var(--panel-2),var(--panel))}
   .mini.shot .main i{opacity:.35}
@@ -177,24 +176,20 @@
   .hud .bar i.done{background:var(--ok)}.hud .bar i.active{background:var(--warn)}.hud .bar i.err{background:var(--err)}
   .hud .hint{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   .hud .hint .badge{margin-left:0;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
-  .hud[data-state="warn"] .dot{animation:pulse 1.8s ease-out infinite}
+  .hud[data-state="warn"] .dot{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent)}
   .hud[data-state="takeover"] .dot{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
   .hud[data-state="takeover"] .t{color:var(--accent)}
   .hud[data-state="done"] .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
   /* ===== 动效增强 ===== */
   .card{animation:cardIn .34s cubic-bezier(.2,.7,.3,1) both}
   @keyframes cardIn{from{opacity:0;transform:translateY(6px) scale(.996)}to{opacity:1;transform:none}}
-  .step{animation:stepIn .26s ease both}
-  @keyframes stepIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
   .mini{position:relative}
   .thumb{position:relative;transition:transform .18s ease, box-shadow .18s ease}
   .thumb:hover{transform:scale(1.06);box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:2}
-  .mini .flash{position:absolute;inset:0;background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.9) 50%,transparent 68%);transform:translateX(-130%);animation:shotFlash 2.6s ease-in-out infinite;mix-blend-mode:screen}
-  @keyframes shotFlash{0%,52%{transform:translateX(-130%)}74%,100%{transform:translateX(130%)}}
+  .mini .flash{display:none}
   .mini.drag .dotA,.mini.drag .dotB{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
   .mini.drag .dotA{left:7%;top:66%}.mini.drag .dotB{right:7%;top:42%}
-  .mini.drag .path i{position:absolute;left:10%;top:63%;width:30%;height:2px;border-radius:2px;background:var(--accent);transform-origin:left center;transform:rotate(-16deg);animation:dragFlow 1.8s ease-in-out infinite}
-  @keyframes dragFlow{0%,100%{opacity:.32}50%{opacity:1;box-shadow:0 0 4px color-mix(in srgb,var(--accent) 55%,transparent)}}
+  .mini.drag .path i{position:absolute;left:10%;top:63%;width:30%;height:2px;border-radius:2px;background:var(--accent);opacity:.72;transform-origin:left center;transform:rotate(-16deg)}
   .reason.gate{animation:sheetIn .26s cubic-bezier(.2,.7,.3,1) both}
   @keyframes sheetIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
   .step[data-state="warn"] .reason,.step[data-state="error"] .reason{animation:shake .42s ease}
@@ -625,7 +620,6 @@
     }
     var steps = actSteps.querySelectorAll(".step");
     for(var j=0;j<steps.length;j++){
-      steps[j].style.animationDelay = reduce ? "0ms" : (j*26)+"ms";
       var th = steps[j].querySelector(".thumb");
       if(th){ th.title = "点击查看上一步截图"; th.onclick = (function(idx){ return function(){ openLightbox(idx); }; })(j); }
     }
