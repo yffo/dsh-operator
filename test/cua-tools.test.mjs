@@ -257,3 +257,29 @@ test("cua_act：element_token 过期时自动 re-observe 并重试一次", async
 	assert.ok(relook.some((entry) => entry.payload.tree_format === "elements"));
 });
 
+
+test("cua_launch：后台启动 App，不置顶并返回 launch_state", async () => {
+	const { definitions, dir, logPath } = setup();
+	const tool = definitions.get("cua_launch");
+	assert.ok(tool);
+	const output = await tool.execute({ bundle_id: "com.apple.Safari", creates_new_application_instance: true }, {});
+	const logged = lastCall(logPath, "launch_app");
+	cleanup(dir);
+	assert.equal(output.schemaVersion, 1);
+	assert.match(output.text, /<cua_launch pid="5151" bundle_id="com.apple.Safari" name="Safari"/);
+	assert.match(output.text, /launch_state="ready"/);
+	assert.match(output.text, /process_running="true"/);
+	assert.match(output.text, /window_ready="true"/);
+	assert.match(output.text, /self_activation_suppressed="true"/);
+	assert.match(output.text, /windows="1"/);
+	assert.ok(logged);
+	assert.equal(logged.payload.bundle_id, "com.apple.Safari");
+	assert.equal(logged.payload.creates_new_application_instance, true);
+});
+
+test("cua_launch：缺 bundle_id/name 时报错", async () => {
+	const { definitions, dir } = setup();
+	const tool = definitions.get("cua_launch");
+	await assert.rejects(() => tool.execute({}, {}), /需要 bundle_id 或 name/);
+	cleanup(dir);
+});

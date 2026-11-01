@@ -36,7 +36,7 @@
 | 应用 / 文件 | `list_apps`、`open_app`、`open_in_browser`、`open_in_finder` |
 | 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图）、`ax_press` / `ax_set_value`（按 AX 快照 index 后台点按/写入）、`ax_scroll`（AX 滚动区域，可给 index 或按 role/title 自动选容器；原生动作优先、不支持时提窗滚轮回退）、`ax_menu`（菜单路径触发）、`window_move`（按 pid/标题后台移动/缩放窗口，AXPosition/AXSize）、`zoom_region`（局部原生放大） |
 | 后台会话 | `code_agent`、`code_agent_status`、`code_agent_stop` |
-| 人机并行（0.22.0 可选） | `cua_windows`、`cua_observe`、`cua_act`（走 cua-driver 后台投递，不移动用户鼠标；需另装 cua-driver，见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)） |
+| 人机并行（0.22.x 可选） | `cua_windows`、`cua_observe`、`cua_act`、`cua_launch`（走 cua-driver 后台投递，不移动用户鼠标、不置顶；需另装 cua-driver，见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)） |
 
 每次工具调用后自动附带新的前台窗口截图，坐标用 0–1000 归一化（Retina / 多倍屏都按比例，不是像素）。
 
@@ -164,6 +164,7 @@ npm run failures            # 失败样本汇总（--json / --files / --dir / --
 ## 已知限制
 
 - **guard 是 v1**：覆盖危险快捷键、`ax_press` / `ax_set_value` / `ax_menu` 的危险标题与路径；视觉点击的语义目标还没接 AX hit-test（v2 计划），别把它当完整的安全沙箱。
+- **`open_app` 是前台激活**：会走 JXA/`open -b` 把 App 接到前台；如果你正在用电脑、不希望被打扰，用 `cua_launch`（cua-driver 的 launch_app，后台启动、不置顶、返回 pid/windows）。
 - **`ax_menu` 需要目标 App 在前台**：后台 App 的菜单栏 AXPress 不会真正展开（实测后台调用返回成功但无效果）；需要菜单操作时先 `open_app` 再调用。
 - **`ax_scroll` 的回退会把目标 App 提到前台**：原生支持 AX scroll action 的 App 走后台动作；不支持的 App（如 Finder 图标视图）会先提窗 + 激活再发全局滚轮，副作用是前台切换。
 - **`ax_scroll` 自动选容器时返回的 index 是 helper 原始索引**：可能与快照里格式化后的索引不同（匿名节点被过滤），只用于本次调用的回执，别拿去 `ax_press` 复用。
@@ -355,6 +356,7 @@ node scripts/test-shrink.mjs
 
 - **0.21.12** — 官方 computer-use seam provider 适配（PLAN 0.11-4）：研究确认 seam 只是「单 provider 独占注册表」（无工具目录/ActionResult 契约），因此新增 `lib/seam-provider.js`——`ctx.get("computerUse")` 探测：seam 未挂载时保持原有全局挂载；已挂载时以 `dsh-operator` 注册为官方 provider 并随插件生命周期释放；槽位被其它 provider 占用时 fail-fast（避免两套 computer-use 抢桌面）。`operator_status` 增 `seamProvider` 字段与文本行；不用 cordis 必需注入以兼容没装 seam 的用户；`brand` 运行时恒等、零依赖。文档见 [docs/SEAM-PROVIDER.md](docs/SEAM-PROVIDER.md)。`npm test` 182 项。
 
+- **0.22.6** — 新增 `cua_launch`：走 cua-driver 的 `launch_app` 后台启动/打开 App（不置顶、不抢焦点，返回 pid/bundle_id/launch_state/windows/self_activation_suppressed；可选 `urls`、`creates_new_application_instance`、`webkit_inspector_port`）；README 注明 `open_app` 是前台激活、别在用户操作时用它；`docs/CUA-DRIVER.md` 补第四件工具与后台启动工作流；单测 17 项、全量 199 项。
 - **0.22.5** — cua_act 的 stale token 自动重试修复：驱动失败时 stdout 里完整的 `element_token is stale…` 之前被 runRaw 只保留末 8 行截掉、failureText 又只读 error.message，导致重试分支不触发；现在 failureText 汇总 error.message + error.stdout + error.stderr + result.steps；fake 驱动对此路径改为非零退出做回归；单测 15 项、全量 197 项。
 - **0.22.4** — `open_app` 对本地化 App 显示名回退 bundle id（修 `open -a 系统设置` 失败：先 `id of app` 解析，再 `open -b`）；`cua_act` 遇到 `element_token` 过期自动重新 observe 并重试一次（结果标 `retried="true"`），并在文档中明确 token 只在同一次 observe→act 内有效、优先用 role/name 或 x/y；假驱动/单测补 1 项（15 项）。
 - **0.22.0** — cua-driver 可选后端（人机并行）：新增 `lib/cua-driver.js`（bin 探测 / daemon 懒启动 / `call` 封装）与 `lib/cua-tools.js`（`cua_windows` 列窗口、`cua_observe` 取 AX 树+可选截图、`cua_act` 后台执行 click/type_text/press_key/hotkey/scroll/drag/set_value），动作走 cua-driver 的 background 投递，不移动用户鼠标/不前置窗口，用户可同时操作同一台 Mac。原 13 个 GUI 工具与 AX 系列保持不变；未安装 cua-driver 时三个工具自动跳过。截图被 TCC 挡住时 `cua_observe` 自动退回纯 AX 并提示 `cua-driver permissions grant`。环境变量 `DSH_OPERATOR_CUA / _BIN / _SOCKET`；文档见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。`npm test` 新增 12 项（假驱动，共 194 项）。
@@ -380,7 +382,7 @@ node scripts/test-shrink.mjs
 - zoom 局部放大、历史截图轮转、多屏 DPI 修正（`list_windows` 已给出显示器 bounds/scale，剩下是截图侧）。
 - Windows 侧验证与做厚（当前仅 vendored 基础工具；`list_windows` / `screenshot_window` / `verify_state` / `ax_press` 只在 macOS 注册）。
 - 官方 seam provider（已完成，0.21.12）：seam 挂载时本包自动以 provider 形态加入，未挂载保持全局挂载；用法与二选一语义见 [docs/SEAM-PROVIDER.md](docs/SEAM-PROVIDER.md)。
-- cua-driver 可选后端（已完成，0.22.0）：`cua_windows/cua_observe/cua_act` 三工具走后台投递实现人机并行，见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。
+- cua-driver 可选后端（已完成，0.22.0→0.22.6）：`cua_windows/cua_observe/cua_act/cua_launch` 四工具走后台投递实现人机并行（含后台启动，不置顶），见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。
 
 ## 上游与许可
 

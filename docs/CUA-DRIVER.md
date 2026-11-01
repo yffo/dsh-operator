@@ -27,13 +27,16 @@
 
 3. 插件第一次调用 `cua_*` 时会自动 `spawn cua-driver serve` 拉起 daemon（约 1–2s），之后复用同一个 daemon；也可以用 `cua-driver serve` 手动常驻。
 
-## 三个工具
+## 四个工具
 
 | 工具 | 作用 | 关键参数 |
 | --- | --- | --- |
 | `cua_windows` | 列窗口 / 显示器 / 前台窗口（含 `window_id`、pid、layer、bounds） | `app_contains`、`title_contains`、`on_screen_only`、`limit` |
 | `cua_observe` | 取某个窗口的快照：AX 树（`element_token`）+ 可选截图 | `window_id`（必填）、`include_screenshot`、`max_elements`、`max_depth`、`query`、`since` |
 | `cua_act` | 对窗口执行一个后台动作 | `window_id`、`action` + 动作参数（见下） |
+| `cua_launch` | 后台启动/打开 App，不置顶 | `bundle_id`（优先）/`name`、`urls`、`creates_new_application_instance`、`webkit_inspector_port` |
+
+`cua_launch` 与 `open_app` 的区别：`open_app` 走系统激活，会把 App 接到前台；`cua_launch` 走 cua-driver 的 `launch_app`，在后台启动、目标**不会**到前台，返回 `pid/bundle_id/name/launch_state/windows` 以及 `self_activation_suppressed`（true = 焦点仍在原前台）。适合「用户正在用电脑，AI 在后台开工具干自己的活」。App 已经在前台时也可以用它拉起/开新窗口；想避免和别的会话抢同一窗口时传 `creates_new_application_instance: true`。
 
 `cua_act` 的 `action`：
 
@@ -52,6 +55,7 @@
 ## 典型工作流
 
 ```text
+cua_launch({bundle_id:"com.apple.Safari"})  → 后台起 App（不置顶）
 cua_windows                                  → 找到 window_id（比如 42）
 cua_observe({window_id:42})                  → 拿 element_token（如 s00000004:12）与截图
 cua_act({window_id:42, action:"click", element_token:"s00000004:12"})

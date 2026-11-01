@@ -170,6 +170,18 @@ if (command === "call") {
 		console.log(JSON.stringify(fixture));
 		process.exit(0);
 	}
+	if (tool === "launch_app") {
+		const fixtureWindows = windowsFixture().windows;
+		console.log(JSON.stringify({
+			pid: 5151,
+			bundle_id: payload.bundle_id ?? "com.apple.Safari",
+			name: payload.name ?? "Safari",
+			launch_state: { requested: true, process_running: true, window_ready: true },
+			self_activation_suppressed: true,
+			windows: fixtureWindows.slice(0, 1)
+		}));
+		process.exit(0);
+	}
 	if (tool === "get_screen_size") {
 		console.log(JSON.stringify({ width: 1512, height: 982, scale_factor: 2 }));
 		process.exit(0);

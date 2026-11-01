@@ -85,6 +85,8 @@ check(cuaDriver.includes("ensureCuaDaemon") && cuaDriver.includes("DSH_OPERATOR_
 check(src.includes("registerCuaTools(ctx, resolvedConfig"), "apply 里注册 cua 工具面");
 check(backend.includes("resolveBundleId"), "open_app 本地化名回退 bundle id（0.22.4）");
 check(cuaTools.includes("cua_act_token_retry"), "cua_act stale token 自动重试（0.22.4）");
+	check(cuaTools.includes("cua_launch"), "cua_launch 后台启动工具（0.22.6）");
+	check(cuaDriver.includes("cuaLaunchApp"), "cua-driver launch_app 封装（0.22.6）");
 	check(cuaTools.includes("error.stdout"), "stale 检测覆盖被截断的异常输出（0.22.5）");
 check(existsSync(join(root, "lib", "seam-provider.js")), "lib/seam-provider.js 在");
 
