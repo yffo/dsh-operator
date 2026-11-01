@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT。能力层 fork 自 [dsh-orb](https://github.com/mini-yifan/dsh-orb) v0.2.0 后直接收编进本仓库（无上游补丁链），199 项测试 + CI 全绿，欢迎自己改。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，199 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -145,7 +145,8 @@ npm test            # 199 项测试
 - [项目说明与决策记录](docs/PROJECT-2026-11.md)
 - [兼容性与平台边界](docs/COMPATIBILITY.md)
 - [cua-driver 人机并行](docs/CUA-DRIVER.md)
-- [fork 说明](docs/FORK.md)
+- [第三方许可（NOTICE）](NOTICE)
+- [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html)
 - [发布与版本](docs/RELEASE.md)
 - [场景/验收矩阵](docs/SCENARIOS-2026-11.md)
 - [seam provider 适配说明](docs/SEAM-PROVIDER.md)
@@ -175,4 +176,4 @@ npm test            # 199 项测试
 
 ## 许可
 
-MIT。`lib/computer-use/` 与工具提示词能力层 fork 自 [dsh-orb](https://github.com/mini-yifan/dsh-orb) v0.2.0（MIT），本仓库做了裁剪与工程化改造，版权与出处见 [NOTICE](NOTICE) 与 [docs/FORK.md](docs/FORK.md)。
+MIT。第三方组件的版权与许可声明集中在 [NOTICE](NOTICE)；其余为本项目自有代码。
