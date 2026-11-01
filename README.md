@@ -181,6 +181,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.26.1** 驱动会话自动重建：cua-driver 空闲/重启后会回收会话，工具遇 `session has ended` 先 `start_session` 再重试一次（`browser_key` 也改走统一 `call()`）。
 - **0.26.0** 键盘输入：新增 `browser_key`（return/tab/escape/方向键/修饰键组合，绑定后复用 pid，默认后台投递）；文档补「风控清单」与「profile 姿态」两节；测试 220→222。
 - **0.25.0** CDP 后端：新增 `browser_wait` / `browser_console` / `browser_network`（只连显式开启的调试端口，受 `browserCdpPort` 门控；`reload:true` 时重载页面抓加载期错误）；新增 `lib/browser-cdp.js` 与 `test/browser-cdp.test.mjs`，测试 213→220。
 - **0.24.5** 插件拉起 cua-driver 时带 `--grant existing-profile`（`DSH_OPERATOR_CUA_GRANT=0` 可关）：否则手动/自动重启 daemon 后，`browser_prepare` 会以 `browser_consent_required` 拒绝接真实 Chrome。
