@@ -22,6 +22,8 @@
 
 import AppKit
 import ApplicationServices
+import CoreGraphics
+import Vision
 
 /// RPC 模式下把 JSON 输出收进内存，而不是写 stdout。
 final class OutputSink {
@@ -500,6 +502,66 @@ func cgScrollFallback(element: AXUIElement, app: AXUIElement, pid: Int32, direct
 
 // MARK: - 主入口
 
+
+/// OCR（Vision）输出：坐标是图像像素、左上原点。
+struct OCRLine: Codable {
+    let text: String
+    let x: Double
+    let y: Double
+    let width: Double
+    let height: Double
+    let confidence: Double
+}
+
+struct OCROutput: Codable {
+    let ok: Bool
+    let width: Double
+    let height: Double
+    let lines: [OCRLine]
+    let error: String?
+}
+
+/// 对一张 PNG/JPEG 做文本识别，返回行级文本与像素级包围盒。
+func ocrImage(path: String) -> OCROutput {
+    guard let image = NSImage(contentsOfFile: path), let tiff = image.tiffRepresentation,
+          let bitmap = NSBitmapImageRep(data: tiff), let cgImage = bitmap.cgImage else {
+        return OCROutput(ok: false, width: 0, height: 0, lines: [], error: "image could not be read: \(path)")
+    }
+    let width = Double(cgImage.width)
+    let height = Double(cgImage.height)
+    let request = VNRecognizeTextRequest()
+    request.recognitionLevel = .accurate
+    request.usesLanguageCorrection = false
+    request.recognitionLanguages = ["zh-Hans", "en-US"]
+    let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+    do {
+        try handler.perform([request])
+    } catch {
+        return OCROutput(ok: false, width: width, height: height, lines: [], error: "vision failed: \(error.localizedDescription)")
+    }
+    let observations = (request.results ?? []) as [VNRecognizedTextObservation]
+    var lines: [OCRLine] = []
+    for observation in observations {
+        guard let candidate = observation.topCandidates(1).first else { continue }
+        let box = observation.boundingBox
+        let clean = candidate.string.trimmingCharacters(in: .whitespacesAndNewlines)
+        if clean.isEmpty { continue }
+        lines.append(OCRLine(
+            text: clean,
+            x: Double(box.minX) * width,
+            y: (1.0 - Double(box.maxY)) * height,
+            width: Double(box.width) * width,
+            height: Double(box.height) * height,
+            confidence: Double(candidate.confidence)
+        ))
+    }
+    lines.sort { left, right in
+        if abs(left.y - right.y) > 4 { return left.y < right.y }
+        return left.x < right.x
+    }
+    return OCROutput(ok: true, width: width, height: height, lines: lines, error: nil)
+}
+
 func handleArguments(_ arguments: [String]) -> Int32 {
     var pid: Int32 = 0
     var pidFilter: Int32 = 0
@@ -507,6 +569,7 @@ func handleArguments(_ arguments: [String]) -> Int32 {
     var maxDepth = 12
     var listWindowsMode = false
     var hitTestMode = false
+    var ocrPath: String? = nil
     var hitTestX: Double = 0
     var hitTestY: Double = 0
     var pressIndex: Int? = nil
@@ -556,6 +619,9 @@ func handleArguments(_ arguments: [String]) -> Int32 {
         case "--set-value":
             index += 1
             setValueIndex = Int(arguments[index])
+        case "--ocr":
+            index += 1
+            if index < arguments.count { ocrPath = arguments[index] }
         case "--set-frame":
             index += 1
             setFrameText = arguments[index]
@@ -587,6 +653,17 @@ func handleArguments(_ arguments: [String]) -> Int32 {
 
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.withoutEscapingSlashes]
+
+    if let path = ocrPath {
+        let output = ocrImage(path: path)
+        guard let data = try? encoder.encode(output) else {
+            FileHandle.standardError.write(Data("ax-snapshot: failed to encode ocr\n".utf8))
+            return 4
+        }
+        emit(data)
+        emit(Data("\n".utf8))
+        return output.ok ? 0 : 5
+    }
 
     if hitTestMode {
         let output = hitTest(x: hitTestX, y: hitTestY)

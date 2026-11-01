@@ -52,7 +52,7 @@ dsh plugin --profile desktop add --save-exact "file:$HOME/projects/dsh-operator"
 
 | 类别 | 工具 |
 | --- | --- |
-| 观察 | `screenshot`（截图+前台信息）、`wait` / `long_wait`、`cu_observe`（按窗口读 AX/截图）、`screenshot_window`、`list_windows`、`zoom_region`（局部原生分辨率放大） |
+| 观察 | `screenshot`（截图+前台信息）、`wait` / `long_wait`、`cu_observe`（按窗口读 AX/截图）、`screenshot_window`、`list_windows`、`zoom_region`（局部原生分辨率放大）、`ocr`（Vision 文本兜底：AX 拿不到时读截图，返回带坐标的文本行） |
 | 鼠标 / 键盘 | `click`、`drag`、`scroll`、`input_text`、`hotkey`、`long_press`、`cu_act`（后台动作） |
 | AX 动作 | `ax_press`、`ax_set_value`、`ax_scroll`、`ax_menu`、`ax_batch`（2–12 个动作一批） |
 | 窗口 / 应用 | `list_apps`、`open_app`（前台激活）、`cua_launch`（后台启动，不置顶）、`open_in_browser`、`open_in_finder`、`window_move`（含 left/right-half 等预设） |
@@ -181,6 +181,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.31.0** OCR 兜底：新增 `ocr` 工具（macOS Vision，返回 0–1000 坐标的文本行，低置信度行过滤、可按 query 过滤）。AX 树缺失/canvas/自绘界面时用它拿文本再点。
 - **0.30.0** token 压缩 + 批量动作扩展：AX/窗口树在连续观察未变化时折叠成一行 `<tree_unchanged>`（最多连折两次，第三次回全文）；`ax_batch` 新增 `double_click` / `drag` / `long_press` / `wait`。
 - **0.29.0** 剪贴板 + 浏览器对话框/下载/文件上传：新增 `clipboard_read` / `clipboard_write`（文本/图片/文件，读文本有上限）；`browser_dialog`（alert/confirm/prompt 检查与确认）、`browser_download`（按 ref 下载到指定目录，需 `confirm:true`）、`browser_set_input_files`（绕过原生选择器上传文件）。
 - **0.28.0** AX 助手常驻通道：helper 新增 `--rpc`（stdin JSON 行），客户端 `lib/ax-rpc.js` 复用同一进程，实测后续 AX 快照/hit-test 从 ~90ms 降到 ~1ms；进程随 stdin EOF 退出，二进制被替换时自动重建，异常/超时一律回退一次性 spawn。`DSH_OPERATOR_AX_RPC=0` 可关闭。
