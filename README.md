@@ -180,6 +180,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.24.1** 修复客户端插件启动失败：`client/client.js` 的模块导出补 `inject: ["slots"]`——宿主 client ctx 默认不注入 slots，直接读 `ctx.slots` 会抛 `cannot get property "slots" without inject`，App 启动即报 `web boot: 1 entry did not activate / dsh-operator: failed`；新增对应 bundle 断言。
 - **0.23.0** toolview P0 落地真客户端：中文活动卡片（第 n/N 步、实时耗时、执行模式/确认门徽标）、分段进度、逐步行、结果缩略图+灯箱、失败原因与建议、完成折叠；新增渲染测试 `test/client-render.test.mjs`。
 - **0.24.0** 浏览器自动化（真实 profile）：新增 `browser_state/prepare/open/click/type/pointer/select`，经 cua-driver 绑定用户正在用的 Chrome，ref 快照 + 受信任输入；`browser_dom_*`（AppleScript）保留为第二通道。
 - **0.23.3** toolview 回退为一行状态「DSH 正在操作电脑」：去掉步骤行/缩略图/进度轨/日志块/确认门徽标，只保留状态点、工具名、状态词与可展开的调用详情；客户端从 862 行降到 ~210 行，测试同步收敛。

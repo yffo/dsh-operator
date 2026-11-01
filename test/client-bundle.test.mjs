@@ -48,6 +48,7 @@ test("client/client.js 是语法正确的经典脚本（非 ESM 入口）", () =
 
 test("client/client.js 为每个 operator 工具注册 keyed toolview 行", () => {
 	assert.ok(source.includes("tool.call.toolview"), "必须注册 tool.call.toolview");
+	assert.ok(source.includes('inject: ["slots"]'), "必须声明 inject: [\"slots\"]（否则宿主 ctx 不注入 slots，启动即失败）");
 	for (const tool of ROW_TOOLS) {
 		assert.ok(source.includes(`${tool}:`), `缺少 ${tool} 的行标签`);
 	}

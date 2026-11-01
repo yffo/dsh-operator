@@ -154,6 +154,12 @@ window.__ModuleLoader__.load({
 		}
 
 		return {
+			/**
+			 * 客户端插件必须显式声明依赖的服务：宿主 ctx 默认不注入 slots，
+			 * 直接读 ctx.slots 会抛 cannot get property "slots" without inject，
+			 * 表现为启动时 "web boot: 1 entry did not activate / dsh-operator: failed"。
+			 */
+			inject: ["slots"],
 			apply(ctx) {
 				for (const key of KEYS) {
 					ctx.slots.inject("tool.call.toolview", () =>
