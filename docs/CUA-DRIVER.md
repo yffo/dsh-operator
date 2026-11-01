@@ -57,7 +57,7 @@ cua_observe({window_id:42})                  → 拿 element_token（如 s000000
 cua_act({window_id:42, action:"click", element_token:"s00000004:12"})
 ```
 
-`element_token` 只在**同一次快照**里有效；窗口变化后重新 `cua_observe`。给 `x/y` 时是窗口局部像素（不是全局屏幕坐标），窗口必须可见。
+`element_token` 只在**同一次快照**里有效；窗口变化后重新 `cua_observe`。跨进程（例如先 `cua_observe`、隔一会儿再单独 `cua_act`）token 会失效——`cua_act` 遇到 stale 会自动重新 observe 并重试一次（结果里标 `retried="true"`），但**优先用 `role/name` 或 `x/y`** 更稳。给 `x/y` 时是窗口局部像素（不是全局屏幕坐标），窗口必须可见。
 
 ## 环境变量
 

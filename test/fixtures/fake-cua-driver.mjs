@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 测试用假 cua-driver：实现 status / call <tool> <json> 两个子命令，输出固定 fixture。
 // 通过环境变量控制行为，方便单测覆盖失败分支。
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, writeFileSync } from "node:fs";
 
 const JPEG_1X1 = Buffer.from(
 	"/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==",
@@ -65,6 +65,25 @@ function windowsFixture() {
 
 /** 读 run_steps 的 fixture，或从 env 覆盖。 */
 function runStepsFixture(payload) {
+	if (process.env.FAKE_CUA_STALE_ONCE === "1") {
+		const marker = process.env.FAKE_CUA_STALE_MARKER;
+		if (typeof marker === "string" && marker.length > 0 && existsSync(marker) === false) {
+			writeFileSync(marker, "1");
+			return {
+				ok: false,
+				executed: 0,
+				failed_step: 0,
+				steps: [
+					{
+						ok: false,
+						step_index: 0,
+						tool: Array.isArray(payload?.steps) ? String(payload.steps[0]?.tool ?? "click") : "click",
+						error: "element_token is stale; call get_window_state again to refresh; pid 4242 has no current snapshot"
+					}
+				]
+			};
+		}
+	}
 	const override = process.env.FAKE_CUA_RUN_STEPS;
 	if (typeof override === "string" && override.length > 0) {
 		const parsed = JSON.parse(override);
@@ -87,20 +106,20 @@ function windowStateFixture(payload) {
 	if (wantShot && !blocked && typeof payload?.screenshot_out_file === "string") {
 		writeFileSync(payload.screenshot_out_file, process.env.FAKE_CUA_PNG === "1" ? PNG_1X1 : JPEG_1X1);
 	}
-	if (process.env.FAKE_CUA_TREE_FORMAT_ELEMENTS === "1") {
+	if (process.env.FAKE_CUA_TREE_FORMAT_ELEMENTS === "1" || payload?.tree_format === "elements") {
 		return {
 			app_name: "FakeApp",
 			pid: payload?.pid ?? 4242,
 			window_id: payload?.window_id ?? 7,
-			snapshot_id: "s00000004",
+			snapshot_id: "s00000002",
 			element_count: 2,
 			returned_element_count: 2,
 			total_element_count: 2,
 			elements_complete: false,
 			tree_format: "elements",
 			elements: [
-				{ element_index: 0, role: "AXWindow", label: "Fake Report" },
-				{ element_index: 1, role: "AXButton", label: "Done" }
+				{ element_index: 0, element_token: "s00000002:0", role: "AXWindow", label: "Fake Report" },
+				{ element_index: 1, element_token: "s00000002:1", role: "AXButton", label: "Done" }
 			]
 		};
 	}

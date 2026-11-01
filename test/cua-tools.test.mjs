@@ -64,6 +64,8 @@ function cleanup(dir) {
 	delete process.env.FAKE_CUA_LOG;
 	delete process.env.FAKE_CUA_RUN_STEPS;
 	delete process.env.FAKE_CUA_GWS_FAIL;
+	delete process.env.FAKE_CUA_STALE_ONCE;
+	delete process.env.FAKE_CUA_STALE_MARKER;
 }
 
 test("找不到 cua-driver 时不注册任何工具（静默降级）", () => {
@@ -234,3 +236,24 @@ test("未知 window_id 报错并提示先 cua_windows", async () => {
 	await assert.rejects(() => tool.execute({ window_id: 999, action: "click", element_token: "x:1" }, {}), /先调用 cua_windows/);
 	cleanup(dir);
 });
+
+test("cua_act：element_token 过期时自动 re-observe 并重试一次", async () => {
+	const { definitions, dir, logPath } = setup();
+	const marker = join(dir, "stale-marker");
+	process.env.FAKE_CUA_STALE_ONCE = "1";
+	process.env.FAKE_CUA_STALE_MARKER = marker;
+	const tool = definitions.get("cua_act");
+	const output = await tool.execute({ window_id: 7, action: "click", element_token: "s00000001:1" }, {});
+	const entries = calls(logPath);
+	cleanup(dir);
+	assert.equal(output.ok, true);
+	assert.match(output.text, /ok="true"/);
+	assert.match(output.text, /retried="true"/);
+	const runSteps = entries.filter((entry) => entry.command === "call" && entry.tool === "run_steps");
+	assert.equal(runSteps.length, 2);
+	assert.equal(runSteps[0].payload.steps[0].args.element_token, "s00000001:1");
+	assert.equal(runSteps[1].payload.steps[0].args.element_token, "s00000002:1");
+	const relook = entries.filter((entry) => entry.command === "call" && entry.tool === "get_window_state");
+	assert.ok(relook.some((entry) => entry.payload.tree_format === "elements"));
+});
+

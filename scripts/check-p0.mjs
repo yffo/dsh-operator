@@ -83,6 +83,8 @@ check(cuaTools.includes("export function registerCuaTools"), "导出 registerCua
 check(cuaTools.includes("cua_windows") && cuaTools.includes("cua_observe") && cuaTools.includes("cua_act"), "注册 cua_windows/cua_observe/cua_act 三个工具");
 check(cuaDriver.includes("ensureCuaDaemon") && cuaDriver.includes("DSH_OPERATOR_CUA_BIN"), "cua-driver 客户端含 daemon 懒启动与二进制解析");
 check(src.includes("registerCuaTools(ctx, resolvedConfig"), "apply 里注册 cua 工具面");
+check(backend.includes("resolveBundleId"), "open_app 本地化名回退 bundle id（0.22.4）");
+check(cuaTools.includes("cua_act_token_retry"), "cua_act stale token 自动重试（0.22.4）");
 check(existsSync(join(root, "lib", "seam-provider.js")), "lib/seam-provider.js 在");
 
 if (failures.length > 0) {
