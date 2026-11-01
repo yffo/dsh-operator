@@ -93,21 +93,21 @@
   @keyframes barComet{0%{transform:translateX(-140%);opacity:0}10%{opacity:1}82%{opacity:.95}100%{transform:translateX(150%);opacity:0}}
   @keyframes barDone{0%{filter:brightness(2.4);transform:scaleY(2)}100%{filter:none;transform:scaleY(1)}}
   @keyframes rowSweep{0%{background-position:130% 0;opacity:0}18%{opacity:1}100%{background-position:-30% 0;opacity:0}}
-  @keyframes idxPop{0%{transform:scale(.66);box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 62%,transparent)}52%{transform:scale(1.2)}74%{transform:scale(.96)}100%{transform:scale(1);box-shadow:0 0 0 16px transparent}}
+  @keyframes idxPop{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 56%,transparent),0 0 0 0 color-mix(in srgb,var(--warn) 24%,transparent)}60%{box-shadow:0 0 0 4px color-mix(in srgb,var(--warn) 30%,transparent)}100%{box-shadow:0 0 0 10px transparent,0 0 0 0 transparent}}
   @keyframes idxCheck{0%{transform:scale(.5) rotate(-10deg);opacity:.35}62%{transform:scale(1.16) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0)}}
   @keyframes drawCheck{to{stroke-dashoffset:0}}
   @keyframes hudNumIn{0%{opacity:0;transform:translateY(7px) scale(.96)}100%{opacity:1;transform:none}}
   @keyframes headSheen{0%{transform:translateX(-115%)}100%{transform:translateX(125%)}}
-  .progress span.active.flow{animation:barFlow .55s cubic-bezier(.22,.9,.24,1) both;transform-origin:left;overflow:visible}
-  .progress span.active.flow::after{content:"";position:absolute;top:-2px;bottom:-2px;left:0;width:58%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent);mix-blend-mode:screen;animation:barComet .72s .05s cubic-bezier(.3,.8,.25,1) both}
+  .progress span.active.flow{animation:barFlow 1.0s cubic-bezier(.22,.9,.24,1) both;transform-origin:left;overflow:visible}
+  .progress span.active.flow::after{content:"";position:absolute;top:-2px;bottom:-2px;left:0;width:58%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent);mix-blend-mode:screen;animation:barComet 1.15s .05s cubic-bezier(.3,.8,.25,1) both}
   .progress span.done.justdone{animation:barDone .42s ease both}
-  .step.advance::after{content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;background:linear-gradient(102deg,transparent 12%,color-mix(in srgb,var(--warn) 28%,transparent) 46%,transparent 80%);background-size:220% 100%;background-position:130% 0;animation:rowSweep .85s cubic-bezier(.2,.7,.25,1) both}
+  .step.advance::after{content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;background:linear-gradient(102deg,transparent 12%,color-mix(in srgb,var(--warn) 28%,transparent) 46%,transparent 80%);background-size:220% 100%;background-position:130% 0;animation:rowSweep 1.8s cubic-bezier(.2,.7,.25,1) both}
   .step[data-state="running"] .idx{animation:idxPop .55s cubic-bezier(.3,1.5,.5,1) both}
   .step[data-state="done"] .idx{animation:idxCheck .48s cubic-bezier(.25,.9,.3,1) both}
   .step[data-state="done"] .idx svg path{stroke-dasharray:26;stroke-dashoffset:26;animation:drawCheck .42s .1s ease forwards}
   #actTitle.pop,#hudTitle.pop{animation:hudNumIn .34s cubic-bezier(.2,.8,.25,1) both}
   .card-head{position:relative;overflow:hidden}
-  @keyframes cardLift{0%{transform:translateY(2px) scale(.997)}55%{transform:translateY(-2px) scale(1.003)}100%{transform:none}}
+  @keyframes cardLift{0%{transform:translateY(2px)}55%{transform:translateY(-2px)}100%{transform:none}}
   @keyframes thumbGlow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 60%,transparent);border-color:var(--warn)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
   @keyframes doneBurst{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 48%,transparent)}55%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
   .card.jolt{animation:cardLift .5s cubic-bezier(.2,.8,.25,1) both}
@@ -192,6 +192,30 @@
   .hud{position:fixed;right:18px;bottom:18px;z-index:50;width:308px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(14px) saturate(1.2);box-shadow:var(--shadow);padding:10px 12px 9px;display:none}
   .hud.show{display:block;animation:hudIn .32s cubic-bezier(.2,.7,.3,1) both}
   @keyframes hudIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  .hud-body{display:flex;gap:9px;align-items:center;margin-top:7px}
+  .hud-thumb{flex:none;width:64px;height:41px;border-radius:8px;border:1px solid var(--line);overflow:hidden;background:var(--panel-2);position:relative}
+  .hud-thumb .mini{width:100%;height:100%}
+  .hud-thumb:empty::after{content:"缩略图";position:absolute;inset:0;display:grid;place-items:center;font-size:10px;color:var(--muted)}
+  .hud-thumb.running{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 14%,transparent)}
+  .hud-info{flex:1;min-width:0}
+  .hud-info .s{margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hud-live{display:flex;align-items:center;gap:5px;margin-top:3px;color:var(--muted);font-size:11px}
+  .hud-live .sep{opacity:.45}
+  .hud-rail{display:flex;gap:4px;margin-top:9px}
+  .hud-rail span{height:4px;flex:1;border-radius:999px;background:var(--idle-soft);position:relative;overflow:hidden}
+  .hud-rail span.done{background:var(--ok)}
+  .hud-rail span.active{background:color-mix(in srgb,var(--warn) 58%,var(--idle-soft))}
+  .hud-rail span.err{background:var(--err)}
+  .hud-rail span.active.working::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-120%);animation:longFlow 3.2s ease-in-out .9s infinite}
+  .hud.flash{animation:hudFlash .7s ease-out both}
+  @keyframes hudFlash{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 40%,transparent)}100%{box-shadow:var(--shadow)}}
+  .hud[data-state="done"] .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 20%,transparent)}
+  .hud[data-state="run"] .dot{animation:hudBreath 3.2s ease-in-out infinite}
+  @keyframes hudBreath{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--warn) 7%,transparent)}}
+  @keyframes longFlow{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+  @keyframes idxBreath{0%,100%{opacity:.28}50%{opacity:.7}}
+  .step[data-state="running"] .idx{position:relative}
+  .step[data-state="running"] .idx::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid color-mix(in srgb,var(--warn) 38%,transparent);animation:idxBreath 3.2s ease-in-out infinite;pointer-events:none}
   .hud .row{display:flex;gap:8px;align-items:center}
   .hud .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent);flex:none}
   .hud .t{font-weight:620;font-size:12.5px}
@@ -303,7 +327,14 @@
 
   <aside class="hud" id="hud" data-state="run" aria-live="polite" aria-label="桌面悬浮窗概念预览">
     <div class="row"><span class="dot"></span><div class="t" id="hudTitle">正在操作 · 第 1/5 步</div><span class="badge" id="hudBadge" hidden>需要你确认</span></div>
-    <div class="s" id="hudSub">目标：系统设置 › 显示器</div>
+    <div class="hud-body">
+      <div class="hud-thumb" id="hudThumb" aria-hidden="true"></div>
+      <div class="hud-info">
+        <div class="s" id="hudSub">目标：系统设置 › 显示器</div>
+        <div class="hud-live"><span class="mono" id="hudTime">0.0s</span><span class="sep">·</span><span id="hudStep">第 1/5 步</span><span class="sep">·</span><span id="hudEffect">AXPress</span></div>
+      </div>
+    </div>
+    <div class="hud-rail" id="hudRail" aria-hidden="true"></div>
     <div class="bar" id="hudBar" aria-hidden="true"></div>
     <div class="hint"><span class="badge">桌面 HUD 概念</span> 悬浮在任意窗口上方 · 不抢焦点 <button class="btn tiny ghost" id="hudFocus">回到卡片</button></div>
   </aside>
@@ -465,7 +496,12 @@
   function elapsedMs(){ return elapsedBase + (running ? (Date.now()-startedAt) : 0); }
   function tick(){
     if(!running) return;
-    actTimer.textContent = fmt(elapsedMs()/1000);
+    var totalSec = fmt(elapsedMs()/1000);
+    actTimer.textContent = totalSec;
+    var stepSec = fmt((Date.now() - (stepStartedAt || Date.now()))/1000);
+    var le = document.querySelectorAll(".live-elapsed");
+    for(var k=0;k<le.length;k++) le[k].textContent = "已耗时 "+stepSec;
+    if(hudTime) hudTime.textContent = stepSec;
     rafId = requestAnimationFrame(tick);
   }
   function freezeTimer(){
@@ -485,6 +521,7 @@
       else if(i === currentIdx) s.className = STEPS[i].state==="warn"||STEPS[i].state==="error" ? "err" : "active";
       if(i===currentIdx-1 && s.className==="done") s.classList.add("justdone");
       if(s.className==="active") s.classList.add("flow");
+      if(s.className==="active" && STEPS[i].state==="running") s.classList.add("working");
       actProgress.appendChild(s);
     }
   }
@@ -516,6 +553,7 @@
     (st.meta||[]).forEach(function(m){
       var s = el("span","mono",m); meta.appendChild(s);
     });
+    if(st.state==="running") meta.appendChild(el("span","mono live-elapsed","已耗时 0.0s"));
     body.appendChild(meta);
 
     if(st.state==="running" && st.thumb){
@@ -589,8 +627,10 @@
     return "idle";
   }
 
+  var stepStartedAt = 0;
   function setStep(i, state, patch){
     STEPS[i].state = state;
+    if(state==="running") stepStartedAt = Date.now();
     if(patch) Object.keys(patch).forEach(function(k){ STEPS[i][k]=patch[k]; });
     if(stepNodes[i]) renderAll(i); else renderAll();
     if(i>0 && stepNodes[i-1]){ STEPS[i-1].state="done"; renderAll(i-1); }
@@ -639,11 +679,17 @@
   var hudSub = document.getElementById("hudSub");
   var hudBar = document.getElementById("hudBar");
   var hudBadge = document.getElementById("hudBadge");
+  var hudThumb = document.getElementById("hudThumb");
+  var hudRail = document.getElementById("hudRail");
+  var hudTime = document.getElementById("hudTime");
+  var hudStep = document.getElementById("hudStep");
+  var hudEffect = document.getElementById("hudEffect");
   var toastEl = document.getElementById("toast");
   var lbEl = document.getElementById("lightbox");
   var lbHead = document.getElementById("lbHead");
   var toastTimer = null;
   var lastHudKey = "";
+  var lastHudState = "";
   var lastAllDone = false;
   var HUD_TARGETS = ["系统设置","系统设置 › 显示器","系统设置 › 显示器 › 排列","系统设置 › 外观 › 对比度","访达 › 下载窗口"];
 
@@ -679,13 +725,40 @@
     if(done && !lastAllDone){ actCard.classList.remove("complete"); void actCard.offsetWidth; actCard.classList.add("complete"); }
     lastAllDone = done;
     var n = Math.min(currentIdx+1, total);
-    hudEl.dataset.state = done ? "done" : (takeover ? "takeover" : ((needs||failed) ? "warn" : "run"));
-    var hudText = done ? "已完成 · 5/5 步" : (takeover ? "你接管中 · 第 "+n+"/5 步" : "正在操作 · 第 "+n+"/5 步");
+    var hudState = done ? "done" : (takeover ? "takeover" : ((needs||failed) ? "warn" : "run"));
+    hudEl.dataset.state = hudState;
+    if(hudState !== lastHudState){
+      hudEl.classList.remove("flash"); void hudEl.offsetWidth; hudEl.classList.add("flash");
+      lastHudState = hudState;
+    }
+    var hudText = done ? "已完成 · "+total+"/"+total+" 步" : (takeover ? "你接管中 · 第 "+n+"/"+total+" 步" : "正在操作 · 第 "+n+"/"+total+" 步");
     if(hudTitle.textContent !== hudText){
       hudTitle.textContent = hudText;
       hudTitle.classList.remove("pop"); void hudTitle.offsetWidth; hudTitle.classList.add("pop");
     }
     hudSub.textContent = "目标：" + (HUD_TARGETS[Math.min(currentIdx,total-1)] || "此 Mac");
+    if(hudStep) hudStep.textContent = "第 "+n+"/"+total+" 步";
+    if(hudEffect){
+      var cur = STEPS[Math.min(currentIdx,total-1)] || {};
+      hudEffect.textContent = cur.targetTag || (cur.meta && cur.meta[0]) || (takeover ? "等待你操作" : "—");
+    }
+    if(hudThumb){
+      var _i = Math.min(currentIdx,total-1), _thumb = "";
+      for(var _k=_i; _k>=0 && !_thumb; _k--){ if(STEPS[_k] && STEPS[_k].thumb) _thumb = STEPS[_k].thumb; }
+      for(var _k2=_i+1; _k2<STEPS.length && !_thumb; _k2++){ if(STEPS[_k2] && STEPS[_k2].thumb) _thumb = STEPS[_k2].thumb; }
+      hudThumb.innerHTML = _thumb;
+      hudThumb.classList.toggle("running", !done && !takeover && !needs && !failed);
+    }
+    if(hudRail){
+      hudRail.innerHTML = "";
+      STEPS.forEach(function(st, si){
+        var sp = document.createElement("span");
+        var cls = st.state==="done" ? "done" : ((st.state==="warn"||st.state==="error") ? "err" : (si===currentIdx ? "active" : ""));
+        if(cls) sp.className = cls;
+        if(cls==="active" && st.state==="running") sp.classList.add("working");
+        hudRail.appendChild(sp);
+      });
+    }
     hudBadge.hidden = !(needs || failed || takeover);
     hudBadge.textContent = takeover ? "等你操作" : (needs ? "需要你确认" : "需要处理");
     if(hudBar){
@@ -737,6 +810,8 @@
     failureDone = false;
     lastAllDone = false;
     lastHeadStep = -1;
+    lastHudState = "";
+    stepStartedAt = Date.now();
     actCard.classList.remove("complete","jolt");
     currentIdx = 0;
     elapsedBase = 0;
