@@ -108,7 +108,8 @@ test("cua_observe：纯 AX 树输出 element_token 行", async () => {
 	cleanup(dir);
 	assert.match(output.text, /snapshot_id="s00000004"/);
 	assert.match(output.text, /AXButton "Done"/);
-	assert.equal(output.image, void 0);
+	assert.ok(!("image" in output), "无截图时不应出现 image 字段（lossless JSON）");
+	assert.ok(!("note" in output), "无 note 时不应出现 note 字段（lossless JSON）");
 	assert.equal(saved.length, 0);
 });
 
@@ -134,7 +135,7 @@ test("cua_observe：TCC 挡住截图时退回纯 AX 并给提示", async () => {
 	const output = await tool.execute({ window_id: 7, include_screenshot: true }, {});
 	cleanup(dir);
 	assert.match(output.note ?? "", /permissions grant/);
-	assert.equal(output.image, void 0);
+	assert.ok(!("image" in output), "TCC 退回时不应出现 image 字段（lossless JSON）");
 	assert.match(output.text, /AXButton "Done"/);
 });
 
