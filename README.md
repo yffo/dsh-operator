@@ -181,6 +181,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.30.0** token 压缩 + 批量动作扩展：AX/窗口树在连续观察未变化时折叠成一行 `<tree_unchanged>`（最多连折两次，第三次回全文）；`ax_batch` 新增 `double_click` / `drag` / `long_press` / `wait`。
 - **0.29.0** 剪贴板 + 浏览器对话框/下载/文件上传：新增 `clipboard_read` / `clipboard_write`（文本/图片/文件，读文本有上限）；`browser_dialog`（alert/confirm/prompt 检查与确认）、`browser_download`（按 ref 下载到指定目录，需 `confirm:true`）、`browser_set_input_files`（绕过原生选择器上传文件）。
 - **0.28.0** AX 助手常驻通道：helper 新增 `--rpc`（stdin JSON 行），客户端 `lib/ax-rpc.js` 复用同一进程，实测后续 AX 快照/hit-test 从 ~90ms 降到 ~1ms；进程随 stdin EOF 退出，二进制被替换时自动重建，异常/超时一律回退一次性 spawn。`DSH_OPERATOR_AX_RPC=0` 可关闭。
 - **0.27.0** 坐标点击 guard：`click`/`input_text` 先在落点做 AX hit-test，命中危险词（删除/支付/发送…）或安全输入框时拒绝执行并提示 `confirm: true`；AX 不可用时保持原行为。`lib/bin/ax-snapshot` 新增 `--hit-test x y`（仍是 arm64+x86_64 通用二进制）；新增 `test/guard-point.test.mjs`（5 项），227 测试。
