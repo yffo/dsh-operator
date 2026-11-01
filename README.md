@@ -337,6 +337,8 @@ node scripts/test-shrink.mjs
 
 - **0.21.10** — 失败样本归纳报告（PLAN 0.11-5 完整版）：`lib/failure-store.js` 新增 `KIND_SUGGESTIONS` / `suggestForKind()` / `renderFailureReport()`——把失败计数升级为 markdown 报告（总条数、按 kind、**策略与下一步**、按工具/消息/天、最近样本），每类失败带可执行建议（guard 拦截怎么办、超时先 recapture、定位失败如何刷新 AX/改 expect_role、能力不可用查权限等）；`scripts/failures.mjs` 增 `--report`（打印 markdown）与 `--write [path]`（默认 `~/.dsh/dsh-operator/failure-report.md`），可接 cron 定期留档。`npm test` 177 项。
 
+- **0.21.11** — 结构债 A4：13 个 GUI 工具输出统一带 `schemaVersion`（在 `registerComputerUseTool` 集中包一层：schema 补字段、execute 结果补 `schemaVersion: 1`，不改 13 处定义）。注意 DSH schema 编译器不允许 output 属性上写 `required: true`（`schema.properties.schemaVersion.required is not supported`），故该字段在 schema 里是可选、由包装层保证实际返回；`check-p0` 增加对应静态守卫。同时修 CI：fork 化后补丁器已移除，ci 的「Vendor patch idempotency」步骤改为 `check-p0`（原命令会 404）。`npm test` 177 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图

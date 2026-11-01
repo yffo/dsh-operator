@@ -71,6 +71,8 @@ check(axObserver.includes("MAX_ANONYMOUS_NODES"), "匿名节点裁剪上限在")
 check(axObserver.includes("export async function setAxValue"), "setAxValue 包装在");
 check(axObserver.includes("export async function pressAxMenu"), "pressAxMenu 包装在");
 check(axObserver.includes("MAX_TEXT_CHARS"), "AX 文本字符预算在");
+check(src.includes("PATCH(computer-use): tool output schemaVersion"), "GUI 工具输出 schemaVersion 注入在（0.21.11 / PLAN A4）");
+check(src.includes('schemaVersion: { type: "integer" }'), "schemaVersion 字段声明在");
 
 if (failures.length > 0) {
 	console.error(`\n✗ P0 检查失败 ${failures.length} 项`);
