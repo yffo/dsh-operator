@@ -94,3 +94,23 @@ test("executor：summarizeValue 只保留短文本，不展开对象", () => {
 	assert.match(summarizeValue({ a: 1, b: 2 }), /a,b/);
 	assert.equal(summarizeValue({ image: { base64: "AAAA" } }), "");
 });
+
+test("fallback 可以执行宿主 GUI 动作", async () => {
+	const handlers = new Map([["operator_status", { execute: async () => ({ text: "ok" }) }]]);
+	const calls = [];
+	const fallback = new Map([["click", async (args) => {
+		calls.push(args);
+		return { ok: true };
+	}]]);
+	const run = await executeSteps([{ id: "a", tool: "click", args: { x: 1, y: 2 } }], { handlers, fallback });
+	assert.equal(run.ok, true);
+	assert.equal(run.executed, 1);
+	assert.deepEqual(calls[0], { x: 1, y: 2 });
+});
+
+test("不在 fallback 也不在 handlers 的工具依然拒绝", async () => {
+	const handlers = new Map();
+	const run = await executeSteps([{ id: "a", tool: "nope" }], { handlers, fallback: new Map() });
+	assert.equal(run.ok, false);
+	assert.match(run.results[0].error, /unsupported tool/);
+});

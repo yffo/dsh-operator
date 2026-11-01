@@ -181,6 +181,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.31.1** 技能/计划回放支持宿主 GUI 动作：`skill_run` / `plan_run` 现在能回放 `click` / `input_text` / `hotkey` / `scroll` / `drag` / `wait` 等基础动作（之前只跑插件自有工具，录制下来的序列回放不了）。
 - **0.31.0** OCR 兜底：新增 `ocr` 工具（macOS Vision，返回 0–1000 坐标的文本行，低置信度行过滤、可按 query 过滤）。AX 树缺失/canvas/自绘界面时用它拿文本再点。
 - **0.30.0** token 压缩 + 批量动作扩展：AX/窗口树在连续观察未变化时折叠成一行 `<tree_unchanged>`（最多连折两次，第三次回全文）；`ax_batch` 新增 `double_click` / `drag` / `long_press` / `wait`。
 - **0.29.0** 剪贴板 + 浏览器对话框/下载/文件上传：新增 `clipboard_read` / `clipboard_write`（文本/图片/文件，读文本有上限）；`browser_dialog`（alert/confirm/prompt 检查与确认）、`browser_download`（按 ref 下载到指定目录，需 `confirm:true`）、`browser_set_input_files`（绕过原生选择器上传文件）。
