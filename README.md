@@ -57,7 +57,7 @@ dsh plugin --profile desktop add --save-exact "file:$HOME/projects/dsh-operator"
 | AX 动作 | `ax_press`、`ax_set_value`、`ax_scroll`、`ax_menu`、`ax_batch`（2–12 个动作一批） |
 | 窗口 / 应用 | `list_apps`、`open_app`（前台激活）、`cua_launch`（后台启动，不置顶）、`open_in_browser`、`open_in_finder`、`window_move`（含 left/right-half 等预设） |
 | 浏览器 DOM | `browser_dom_snapshot`、`browser_dom_click`、`browser_dom_fill`、`browser_dom_probe`（Chrome/Safari，AppleScript 优先，CDP 回退） |
-| 浏览器自动化 | `browser_state`、`browser_prepare`、`browser_open`、`browser_click`、`browser_type`、`browser_pointer`、`browser_select`（经 cua-driver：真实 profile、语义 ref、受信任输入） |
+| 浏览器自动化 | `browser_state`、`browser_prepare`、`browser_open`、`browser_click`、`browser_type`、`browser_pointer`、`browser_select`、`browser_key`（经 cua-driver：真实 profile、语义 ref、受信任输入） |
 | 浏览器 CDP | `browser_wait`、`browser_console`、`browser_network`（需 `browserCdpPort` + Chrome `--remote-debugging-port`：等网络空闲、看控制台错误、看失败请求） |
 | 任务 / 技能 | `task_profile`、`plan_create/list/update/run/delete`、`skill_save/list/show/run/delete` |
 | 后台会话 | `code_agent`（另起标准会话执行代码/长任务） |
@@ -181,6 +181,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.26.0** 键盘输入：新增 `browser_key`（return/tab/escape/方向键/修饰键组合，绑定后复用 pid，默认后台投递）；文档补「风控清单」与「profile 姿态」两节；测试 220→222。
 - **0.25.0** CDP 后端：新增 `browser_wait` / `browser_console` / `browser_network`（只连显式开启的调试端口，受 `browserCdpPort` 门控；`reload:true` 时重载页面抓加载期错误）；新增 `lib/browser-cdp.js` 与 `test/browser-cdp.test.mjs`，测试 213→220。
 - **0.24.5** 插件拉起 cua-driver 时带 `--grant existing-profile`（`DSH_OPERATOR_CUA_GRANT=0` 可关）：否则手动/自动重启 daemon 后，`browser_prepare` 会以 `browser_consent_required` 拒绝接真实 Chrome。
 - **0.24.4** `browser_state` 输出元素 `refs`（`p2:2 a href=…`），支持 `snapshot_format` 与 `query`：之前只列 tabs，`browser_click` 拿不到 ref；本轮真机验证已能点到真实链接。

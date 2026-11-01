@@ -39,12 +39,39 @@
 - 后台姿态不可用（例如窗口在别的 Space）时返回 `background_unavailable`；`delivery_mode:"foreground"` 接受短暂前置，结束后会把原来的前台 App 还回去。
 - 隔离模式（`allow_launch:true` + `profile.mode:"isolated_new"`）会给一个一次性的干净 Chrome，不碰用户 profile。
 
+## 风控清单（P3）
+
+- **节奏**：两次动作之间留 300–800ms（`browser_wait` 之后再点），不要毫秒级连点同一元素；
+- **顺序**：先 `browser_state` 拿 ref，再 click/type；ref 过期就重新取，不要猜坐标；
+- **环境**：用真实 profile、真实 UA/语言/时区；不 headless、不加 `--enable-automation`、不注入伪装脚本；
+- **输入**：能逐字就 `mode:"keystrokes"`，批量 `insert_text` 只在确实需要时用；
+- **并发**：同一站点不要多标签并行刷；
+- **遇挑战**：验证码/风控页直接停手交人，不尝试绕过；
+- **CDP**：只连自己起的调试实例，不把远程调试端口暴露到公网。
+
+## profile 姿态
+
+| 姿态 | 怎么来 | 适合 | 代价 |
+| --- | --- | --- | --- |
+| 现有 Chrome | `browser_prepare` 绑 `pid+window_id` | 需要真实登录态、真实扩展 | 会短暂抢占前台；窗口在别的 Space 时后台不可用 |
+| 隔离 Chrome | `browser_prepare {allow_launch:true, profile:{mode:"isolated_new"}}` | 冒烟、不需要登录的流程 | 没有登录态，每次都是干净浏览器 |
+| 专用调试 Chrome | `--remote-debugging-port=9222 --user-data-dir=…` + `browserCdpPort` | 需要 console/network/等网络空闲 | 要自己维护这个实例；不要用日常主 profile |
+
 ## 反爬立场
 
 - 不注入伪装脚本、不改 `navigator`、不用 headless、不加 `--enable-automation`；
 - 输入走受信任事件，点击带真实坐标，滚动/输入节奏由调用方控制（需要更像人时用 `mode:"keystrokes"` 和分步滚动）；
 - 不读 Cookie/密码，不尝试绕过验证码；遇到挑战返回明确提示，交给人接管；
 - 审计只记录工具名、ref、结果类别，不记录页面内容与输入文本。
+
+## 键盘输入（0.26.0）
+
+`browser_key` 把按键补上：`return` 提交搜索、`tab` 换焦点、`escape` 关弹层、`cmd+l` 聚焦地址栏。
+
+- 需要浏览器 pid：`browser_state(pid, window_id)` 绑定后会记住，也可以显式传；
+- 按键走 `press_key`/`hotkey`，默认 `background`（不动前台），必要时 `delivery_mode:"foreground"`；
+- 焦点要在页面里：先 `browser_click` 点一下输入框，再 `browser_key(return)`；
+- 按键不可回读，`effect` 只是投递结果，必要时 `browser_state` 复核。
 
 ## 失败码与下一步
 

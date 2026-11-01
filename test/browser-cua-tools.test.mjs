@@ -148,3 +148,17 @@ test("CDP 工具在端口连不上时返回失败而不是抛错", async () => {
 	assert.equal(value.ok, false);
 	assert.match(value.text, /browser_wait 失败|CDP 后端不可用/);
 });
+
+test("browser_key 未绑定 pid 时给出绑定指引", async () => {
+	const { tools } = setup({});
+	const value = await tools.browser_key.execute({ key: "return" });
+	assert.equal(value.ok, false);
+	assert.match(value.text, /browser_state/);
+});
+
+test("browser_key 缺 key 时直接拒绝", async () => {
+	const { tools } = setup({});
+	const value = await tools.browser_key.execute({ pid: 123 });
+	assert.equal(value.ok, false);
+	assert.match(value.text, /需要 key/);
+});
