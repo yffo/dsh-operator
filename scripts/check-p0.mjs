@@ -73,6 +73,9 @@ check(axObserver.includes("export async function pressAxMenu"), "pressAxMenu 包
 check(axObserver.includes("MAX_TEXT_CHARS"), "AX 文本字符预算在");
 check(src.includes("PATCH(computer-use): tool output schemaVersion"), "GUI 工具输出 schemaVersion 注入在（0.21.11 / PLAN A4）");
 check(src.includes('schemaVersion: { type: "integer" }'), "schemaVersion 字段声明在");
+check(src.includes("PATCH(computer-use): computer-use seam provider"), "seam provider 接入在（0.21.12 / PLAN 0.11-4）");
+check(src.includes("claimSeamProvider(ctx, SEAM_PROVIDER_NAME)"), "apply 启动时占用 seam 槽位");
+check(existsSync(join(root, "lib", "seam-provider.js")), "lib/seam-provider.js 在");
 
 if (failures.length > 0) {
 	console.error(`\n✗ P0 检查失败 ${failures.length} 项`);

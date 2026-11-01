@@ -339,6 +339,8 @@ node scripts/test-shrink.mjs
 
 - **0.21.11** — 结构债 A4：13 个 GUI 工具输出统一带 `schemaVersion`（在 `registerComputerUseTool` 集中包一层：schema 补字段、execute 结果补 `schemaVersion: 1`，不改 13 处定义）。注意 DSH schema 编译器不允许 output 属性上写 `required: true`（`schema.properties.schemaVersion.required is not supported`），故该字段在 schema 里是可选、由包装层保证实际返回；`check-p0` 增加对应静态守卫。同时修 CI：fork 化后补丁器已移除，ci 的「Vendor patch idempotency」步骤改为 `check-p0`（原命令会 404）。`npm test` 177 项。
 
+- **0.21.12** — 官方 computer-use seam provider 适配（PLAN 0.11-4）：研究确认 seam 只是「单 provider 独占注册表」（无工具目录/ActionResult 契约），因此新增 `lib/seam-provider.js`——`ctx.get("computerUse")` 探测：seam 未挂载时保持原有全局挂载；已挂载时以 `dsh-operator` 注册为官方 provider 并随插件生命周期释放；槽位被其它 provider 占用时 fail-fast（避免两套 computer-use 抢桌面）。`operator_status` 增 `seamProvider` 字段与文本行；不用 cordis 必需注入以兼容没装 seam 的用户；`brand` 运行时恒等、零依赖。文档见 [docs/SEAM-PROVIDER.md](docs/SEAM-PROVIDER.md)。`npm test` 182 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图
@@ -354,7 +356,7 @@ node scripts/test-shrink.mjs
 - 用 5 类真实任务（Finder、系统设置、浏览器、办公 App、多步跨应用）记录成功率 / token / 耗时的基线。
 - zoom 局部放大、历史截图轮转、多屏 DPI 修正（`list_windows` 已给出显示器 bounds/scale，剩下是截图侧）。
 - Windows 侧验证与做厚（当前仅 vendored 基础工具；`list_windows` / `screenshot_window` / `verify_state` / `ax_press` 只在 macOS 注册）。
-- 可选：官方 seam provider 适配层（把本插件的能力包成 provider，供只用官方 seam 的组合选择）。
+- 官方 seam provider（已完成，0.21.12）：seam 挂载时本包自动以 provider 形态加入，未挂载保持全局挂载；用法与二选一语义见 [docs/SEAM-PROVIDER.md](docs/SEAM-PROVIDER.md)。
 
 ## 上游与许可
 
