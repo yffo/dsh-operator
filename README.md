@@ -181,6 +181,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.27.0** 坐标点击 guard：`click`/`input_text` 先在落点做 AX hit-test，命中危险词（删除/支付/发送…）或安全输入框时拒绝执行并提示 `confirm: true`；AX 不可用时保持原行为。`lib/bin/ax-snapshot` 新增 `--hit-test x y`（仍是 arm64+x86_64 通用二进制）；新增 `test/guard-point.test.mjs`（5 项），227 测试。
 - **0.26.1** 驱动会话自动重建：cua-driver 空闲/重启后会回收会话，工具遇 `session has ended` 先 `start_session` 再重试一次（`browser_key` 也改走统一 `call()`）。
 - **0.26.0** 键盘输入：新增 `browser_key`（return/tab/escape/方向键/修饰键组合，绑定后复用 pid，默认后台投递）；文档补「风控清单」与「profile 姿态」两节；测试 220→222。
 - **0.25.0** CDP 后端：新增 `browser_wait` / `browser_console` / `browser_network`（只连显式开启的调试端口，受 `browserCdpPort` 门控；`reload:true` 时重载页面抓加载期错误）；新增 `lib/browser-cdp.js` 与 `test/browser-cdp.test.mjs`，测试 213→220。

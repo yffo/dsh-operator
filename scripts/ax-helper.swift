@@ -3,6 +3,8 @@
 // 两个模式：
 //   ax-snapshot --pid <pid> [--max-nodes N] [--max-depth N]
 //       读一份“最小取证”的 AX 树，输出 JSON（节点上限/深度由参数控制）。
+//   ax-snapshot --hit-test <x> <y>
+//       按全局屏幕坐标（左上原点，逻辑点）做 AX hit-test，返回命中的角色/标题/描述。
 //   ax-snapshot --list-windows [--pid <pid>]
 //       输出显示器列表 + 可视窗口列表（CGWindowList）+ 前台 App。用于 list_windows 工具。
 //   ax-snapshot --pid <pid> --press <index> [--expect-role R] [--expect-title T]
@@ -68,6 +70,17 @@ struct WindowListOutput: Codable {
     let truncated: Bool
 }
 
+struct HitTestOutput: Codable {
+    let ok: Bool
+    let role: String?
+    let title: String?
+    let description: String?
+    let secure: Bool
+    let pid: Int32
+    let bounds: Frame?
+    let error: String?
+}
+
 struct PressOutput: Codable {
     let pressed: Bool
     let index: Int
@@ -126,6 +139,28 @@ func valueAttribute(_ element: AXUIElement, role: String) -> String? {
     guard !trimmed.isEmpty else { return nil }
     if trimmed.count > 80 { return String(trimmed.prefix(80)) + "…" }
     return trimmed
+}
+
+// MARK: - 命中测试（坐标点击前的语义核对）
+
+/// 按全局屏幕坐标（左上原点，逻辑点）取 AX 元素；只回角色/标题/描述，不回内容。
+func hitTest(x: Double, y: Double) -> HitTestOutput {
+    if AXIsProcessTrusted() == false {
+        return HitTestOutput(ok: false, role: nil, title: nil, description: nil, secure: false, pid: 0, bounds: nil, error: "accessibility permission is not granted")
+    }
+    let system = AXUIElementCreateSystemWide()
+    var element: AXUIElement?
+    let lookup = AXUIElementCopyElementAtPosition(system, Float(x), Float(y), &element)
+    guard lookup == .success, let target = element else {
+        return HitTestOutput(ok: false, role: nil, title: nil, description: nil, secure: false, pid: 0, bounds: nil, error: "no element at point (\(lookup.rawValue))")
+    }
+    var pid: pid_t = 0
+    AXUIElementGetPid(target, &pid)
+    let role = stringAttribute(target, kAXRoleAttribute) ?? ""
+    let title = stringAttribute(target, kAXTitleAttribute)
+    let description = stringAttribute(target, kAXDescriptionAttribute)
+    let secure = role == "AXSecureTextField"
+    return HitTestOutput(ok: true, role: role, title: title, description: description, secure: secure, pid: pid, bounds: frameAttribute(target), error: nil)
 }
 
 // MARK: - 窗口 / 显示器
@@ -453,6 +488,9 @@ func main() -> Int32 {
     var maxNodes = 120
     var maxDepth = 12
     var listWindowsMode = false
+    var hitTestMode = false
+    var hitTestX: Double = 0
+    var hitTestY: Double = 0
     var pressIndex: Int? = nil
     var scrollIndex: Int? = nil
     var scrollDirection = "down"
@@ -480,6 +518,12 @@ func main() -> Int32 {
             maxDepth = max(1, Int(arguments[index]) ?? 12)
         case "--list-windows":
             listWindowsMode = true
+        case "--hit-test":
+            index += 1
+            hitTestMode = true
+            hitTestX = Double(arguments[index]) ?? 0
+            index += 1
+            hitTestY = Double(arguments[index]) ?? 0
         case "--press":
             index += 1
             pressIndex = Int(arguments[index])
@@ -525,6 +569,17 @@ func main() -> Int32 {
 
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.withoutEscapingSlashes]
+
+    if hitTestMode {
+        let output = hitTest(x: hitTestX, y: hitTestY)
+        guard let data = try? encoder.encode(output) else {
+            FileHandle.standardError.write(Data("ax-snapshot: failed to encode hit-test\n".utf8))
+            return 4
+        }
+        FileHandle.standardOutput.write(data)
+        FileHandle.standardOutput.write(Data("\n".utf8))
+        return 0
+    }
 
     if listWindowsMode {
         let output = windowList(pidFilter: pidFilter, limit: 200)

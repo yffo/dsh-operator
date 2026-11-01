@@ -15,7 +15,7 @@
 
 | 文件 | hunks | 变更行 | 内容 |
 | --- | --- | --- | --- |
-| `index.js` | 20 | 240 | 配置扩展、截图降 token、图片准入降级、clipped 元数据、结构化 actionEffect、AX 文本观察、区域坐标归一化、扩展工具接线、审计、前台缓存、懒观察、noop 不附图、hotkey guard |
+| `index.js` | 20 | 240 | 配置扩展、截图降 token、图片准入降级、clipped 元数据、结构化 actionEffect、AX 文本观察、区域坐标归一化、扩展工具接线、审计、前台缓存、懒观察、noop 不附图、hotkey guard、坐标点击 guard（AX hit-test） |
 | `backend-xLwiz83E.js` | 12 | 43 | 截图参数、裁切元数据、JXA 字段修复（activationPolicy 字符串 / open -b / pid）、前台缓存、裁剪区域来源 |
 | `index.d.ts` | 1 | 10 | 配置 / 返回值类型补字段 |
 | 另外 9 个文件 | 0 | 0 | 与上游一致 |
