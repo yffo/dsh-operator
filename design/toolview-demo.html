@@ -88,6 +88,26 @@
   .progress span.done{background:var(--ok)}
   .progress span.active{background:linear-gradient(90deg,var(--warn),color-mix(in srgb,var(--warn) 35%, var(--idle-soft)))}
   .progress span.err{background:var(--err)}
+  /* 一次性高冲击过渡（非循环、不闪烁） */
+  @keyframes barFlow{0%{transform:scaleX(.18);filter:brightness(1.6)}55%{transform:scaleX(1.03);filter:brightness(1.18)}100%{transform:scaleX(1);filter:none}}
+  @keyframes barComet{0%{transform:translateX(-140%);opacity:0}10%{opacity:1}82%{opacity:.95}100%{transform:translateX(150%);opacity:0}}
+  @keyframes barDone{0%{filter:brightness(2.4);transform:scaleY(2)}100%{filter:none;transform:scaleY(1)}}
+  @keyframes rowSweep{0%{background-position:130% 0;opacity:0}18%{opacity:1}100%{background-position:-30% 0;opacity:0}}
+  @keyframes idxPop{0%{transform:scale(.66);box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 62%,transparent)}52%{transform:scale(1.2)}74%{transform:scale(.96)}100%{transform:scale(1);box-shadow:0 0 0 16px transparent}}
+  @keyframes idxCheck{0%{transform:scale(.5) rotate(-10deg);opacity:.35}62%{transform:scale(1.16) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+  @keyframes drawCheck{to{stroke-dashoffset:0}}
+  @keyframes hudNumIn{0%{opacity:0;transform:translateY(7px) scale(.96)}100%{opacity:1;transform:none}}
+  @keyframes headSheen{0%{transform:translateX(-115%)}100%{transform:translateX(125%)}}
+  .progress span.active.flow{animation:barFlow .55s cubic-bezier(.22,.9,.24,1) both;transform-origin:left;overflow:visible}
+  .progress span.active.flow::after{content:"";position:absolute;top:-2px;bottom:-2px;left:0;width:58%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent);mix-blend-mode:screen;animation:barComet .72s .05s cubic-bezier(.3,.8,.25,1) both}
+  .progress span.done.justdone{animation:barDone .42s ease both}
+  .step.advance::after{content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;background:linear-gradient(102deg,transparent 12%,color-mix(in srgb,var(--warn) 28%,transparent) 46%,transparent 80%);background-size:220% 100%;background-position:130% 0;animation:rowSweep .85s cubic-bezier(.2,.7,.25,1) both}
+  .step[data-state="running"] .idx{animation:idxPop .55s cubic-bezier(.3,1.5,.5,1) both}
+  .step[data-state="done"] .idx{animation:idxCheck .48s cubic-bezier(.25,.9,.3,1) both}
+  .step[data-state="done"] .idx svg path{stroke-dasharray:26;stroke-dashoffset:26;animation:drawCheck .42s .1s ease forwards}
+  #actTitle.pop,#hudTitle.pop{animation:hudNumIn .34s cubic-bezier(.2,.8,.25,1) both}
+  .card-head{position:relative;overflow:hidden}
+  .card-head.advance::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--warn),transparent);animation:headSheen .8s cubic-bezier(.3,.8,.25,1) both}
   .steps{padding:2px 8px 8px;display:flex;flex-direction:column}
   .card[data-open="false"] .steps, .card[data-open="false"] .card-foot, .card[data-open="false"] .progress{display:none}
   .step{display:flex;gap:10px;padding:8px 6px;border-radius:12px;position:relative;align-items:flex-start}
@@ -418,6 +438,7 @@
   var failureDone = false;
 
   var actCard = document.getElementById("variantA");
+  var actHead = document.querySelector("#variantA .card-head");
   var actDot = document.getElementById("actDot");
   var actTitle = document.getElementById("actTitle");
   var actSub = document.getElementById("actSub");
@@ -456,6 +477,8 @@
       var s = el("span");
       if(i < currentIdx) s.className="done";
       else if(i === currentIdx) s.className = STEPS[i].state==="warn"||STEPS[i].state==="error" ? "err" : "active";
+      if(i===currentIdx-1 && s.className==="done") s.classList.add("justdone");
+      if(s.className==="active") s.classList.add("flow");
       actProgress.appendChild(s);
     }
   }
@@ -464,6 +487,7 @@
     var st = STEPS[i];
     var step = el("div","step");
     step.dataset.state = st.state;
+    if(st.state==="running") step.classList.add("advance");
     var idx = el("div","idx");
     idx.textContent = st.state==="done" ? "✓" : (st.state==="warn"||st.state==="error" ? "!" : String(i+1));
     if(st.state==="done") idx.innerHTML = '<span style="display:flex;align-items:center;justify-content:center">'+ICONS.check+'</span>';
@@ -567,12 +591,22 @@
     buildProgress();
   }
 
+  var lastHeadStep = -1;
+  function setTitlePop(el, txt){
+    if(!el || el.textContent === txt) return;
+    el.textContent = txt;
+    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+  }
   function setHeader(kind){
     syncHud();
     actDot.className = "dot "+kind;
-    if(kind==="run") actTitle.textContent = "正在操作 · 第 "+(Math.min(currentIdx+1,STEPS.length)) +"/"+STEPS.length+" 步";
-    else if(kind==="ok") actTitle.textContent = "操作完成 · 共 "+STEPS.length+" 步";
-    else if(kind==="warn"||kind==="err") actTitle.textContent = "操作需要你决定 · 第 "+(Math.min(currentIdx+1,STEPS.length))+" 步卡住了";
+    var n = Math.min(currentIdx+1,STEPS.length);
+    var txt = kind==="run" ? "正在操作 · 第 "+n+"/"+STEPS.length+" 步" : kind==="ok" ? "操作完成 · 共 "+STEPS.length+" 步" : "操作需要你决定 · 第 "+n+" 步卡住了";
+    setTitlePop(actTitle, txt);
+    if(kind==="run" && actHead && lastHeadStep !== currentIdx){
+      lastHeadStep = currentIdx;
+      actHead.classList.remove("advance"); void actHead.offsetWidth; actHead.classList.add("advance");
+    }
   }
 
   function setSub(){
@@ -602,6 +636,7 @@
   var lbEl = document.getElementById("lightbox");
   var lbHead = document.getElementById("lbHead");
   var toastTimer = null;
+  var lastHudKey = "";
   var HUD_TARGETS = ["系统设置","系统设置 › 显示器","系统设置 › 显示器 › 排列","系统设置 › 外观 › 对比度","访达 › 下载窗口"];
 
   function showToast(text){
@@ -635,7 +670,11 @@
     var takeover = actCard.dataset.takeover === "true";
     var n = Math.min(currentIdx+1, total);
     hudEl.dataset.state = done ? "done" : (takeover ? "takeover" : ((needs||failed) ? "warn" : "run"));
-    hudTitle.textContent = done ? "已完成 · 5/5 步" : (takeover ? "你接管中 · 第 "+n+"/5 步" : "正在操作 · 第 "+n+"/5 步");
+    var hudText = done ? "已完成 · 5/5 步" : (takeover ? "你接管中 · 第 "+n+"/5 步" : "正在操作 · 第 "+n+"/5 步");
+    if(hudTitle.textContent !== hudText){
+      hudTitle.textContent = hudText;
+      hudTitle.classList.remove("pop"); void hudTitle.offsetWidth; hudTitle.classList.add("pop");
+    }
     hudSub.textContent = "目标：" + (HUD_TARGETS[Math.min(currentIdx,total-1)] || "此 Mac");
     hudBadge.hidden = !(needs || failed || takeover);
     hudBadge.textContent = takeover ? "等你操作" : (needs ? "需要你确认" : "需要处理");
@@ -647,6 +686,14 @@
         if(cls) i.className = cls;
         hudBar.appendChild(i);
       });
+      var key = STEPS.map(function(s){return s.state;}).join(",");
+      if(key !== lastHudKey){
+        lastHudKey = key;
+        var a = hudBar.children[Math.min(currentIdx,hudBar.children.length-1)];
+        if(a && a.className==="active") a.classList.add("flow");
+        var d = hudBar.children[currentIdx-1];
+        if(d && d.className==="done") d.classList.add("justdone");
+      }
     }
   }
 
