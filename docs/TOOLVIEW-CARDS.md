@@ -1,6 +1,6 @@
 # 工具卡片（toolview）设计：从「一行日志」到「活动卡片」
 
-> 状态：设计稿 + 可交互 demo v3（`design/toolview-demo.html`）；**P0 已落地 `client/client.js`（0.23.0）**，可按 `design/toolview-preview.html` 看真实卡片，宿主契约与验证方式见 [`docs/TOOLVIEW-P0-HANDOFF.md`](TOOLVIEW-P0-HANDOFF.md)。
+> 状态：设计稿 + 可交互 demo v3（`design/toolview-demo.html`）；**P0 已落地 `client/client.js`（0.23.0）**，真实卡片的渲染验收见 `test/client-render.test.mjs`；宿主契约与验证方式见 [`docs/TOOLVIEW-P0-HANDOFF.md`](TOOLVIEW-P0-HANDOFF.md)。
 > 交互稿截图：[确认门 + 桌面 HUD](design/screenshots/demo-hud-gate.jpg)、[失败与恢复 + HUD 需要处理](design/screenshots/demo-hud-failure.jpg)、[接管 + HUD 等你操作](design/screenshots/demo-hud-takeover.jpg)。
 > m08916 拍板结论已并入本文（见 §7），HUD 作为 P2 概念的可行性评估见 §9。
 
@@ -168,10 +168,11 @@ open "$(git -C ~/projects/dsh-operator rev-parse --show-toplevel)/design/toolvie
 
 ### 9.3 其他动效（已收敛）
 
-一次性动效（v3，m09182 后）：卡片入场；进入下一步时**卡片只轻微上抬（去掉缩放）+ 当前缩略图一圈辉光**；完成时**卡片绿光脉冲一次**；确认门滑入；失败抖动（420ms 一次）；灯箱。步骤推进的横向扫光放慢到 **1.8s**、进度充能放慢到 **1.0s**（`rowSweep .85s→1.8s`、`barFlow .55s→1.0s`、`barComet .72s→1.15s`）。**不做**：缩放类动画、无限扫光/无限脉冲/整行淡入。原则：单次播放、不阻塞点击、同一元素不重复播放；`prefers-reduced-motion` 全部关闭。
+一次性动效（v3，m09182 后）：卡片入场；进入下一步时**只有当前缩略图一圈辉光**（卡片本身不做位移、不做缩放）；完成时**卡片绿光脉冲一次**；确认门滑入；失败抖动（420ms 一次）；灯箱。步骤推进的横向扫光放慢到 **1.8s**、进度充能放慢到 **1.0s**（`rowSweep .85s→1.8s`、`barFlow .55s→1.0s`、`barComet .72s→1.15s`）。**不做**：缩放类动画、无限扫光/无限脉冲/整行淡入。原则：单次播放、不阻塞点击、同一元素不重复播放；`prefers-reduced-motion` 全部关闭。
 
 ### 9.4 长任务与 HUD 增强（m09182 后）
 
 - 长任务表达：进入下一步超过约 1s 后，进度条活动段改为 **3.2s 低幅流光**（`longFlow`，delay 0.9s），运行中步骤序号 **3.2s 呼吸**（`idxBreath`），当前步骤显示实时「已耗时 X.Xs」；不再用循环闪动暗示「还在跑」。
-- HUD 结构：缩略图（当前步骤无图时回退到最近有图的步骤）+ 目标 + 实时耗时 + `第 n/N 步` + 效果标签；底部按步骤数生成浅色进度轨（`#hudRail`）。
+- 长耗时三件套（demo `#longCard` 实测，12s 样例）：① **ETA** 胶囊「预计剩余 ~Ns」随剩余时间倒数，完成后变绿「已完成」；② **日志行滚动**：每 0.68s 追加一行工具日志（时间戳 + CGEvent/AX/fs/verify），只留最近 5 行，顶部用 mask 淡出，避免整块刷新；③ **光标脉冲**：缩略图里 1.8s 一圈扩散环（`cursorPulse`），表达「正在这个位置操作」。三件只在长步骤出现，短步骤不占位。
+- HUD 结构：缩略图（当前步骤无图时回退到最近有图的步骤）+ 目标 + 实时耗时 + `第 n/N 步` + 效果标签；底部**只保留一条**按步骤数生成的进度轨（`#hudRail`）——早期并行渲染的 `.hud .bar` 双轨已删除，避免两条进度互相打架。
 - HUD 状态：运行 / 需要处理 / 等你接管 / 已完成换色；状态切换时 HUD 轻微闪一次（`hudFlash`，非循环）；运行点 1.8s 呼吸。

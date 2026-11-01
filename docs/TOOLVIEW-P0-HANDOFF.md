@@ -65,7 +65,7 @@ npm run test:node
 
 - 卡片实现：`client/client.js`（810 行）+ 样式注入 `<style id="dsh-operator-toolview-css">`。
 - 渲染测试：`test/client-render.test.mjs` 8 项（运行中/确认门/前台/缩略图/失败建议/进度段/中断/card error 兜底）。
-- 浏览器预览页：`design/toolview-preview.html`，直接加载真实 `client/client.js`（迷你 React 兼容层）出 7 个用例，明暗主题可切、灯箱可点。
+- 渲染验收测试：`test/client-render.test.mjs`，用极小 React 兼容层 + `vm` 直接加载真实 `client/client.js`，覆盖 8 项断言。
 - 验证：`node --check client/client.js` OK；`npm run test:node` 207/207（原 199 + 新增 8）。
 
 ## 7. 之后（不在 P0）

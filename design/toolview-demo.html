@@ -107,10 +107,8 @@
   .step[data-state="done"] .idx svg path{stroke-dasharray:26;stroke-dashoffset:26;animation:drawCheck .42s .1s ease forwards}
   #actTitle.pop,#hudTitle.pop{animation:hudNumIn .34s cubic-bezier(.2,.8,.25,1) both}
   .card-head{position:relative;overflow:hidden}
-  @keyframes cardLift{0%{transform:translateY(2px)}55%{transform:translateY(-2px)}100%{transform:none}}
   @keyframes thumbGlow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 60%,transparent);border-color:var(--warn)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
   @keyframes doneBurst{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 48%,transparent)}55%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
-  .card.jolt{animation:cardLift .5s cubic-bezier(.2,.8,.25,1) both}
   .step[data-state="running"] .thumb{animation:thumbGlow .9s ease-out both;border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
   .card.complete{animation:doneBurst 1.1s ease-out both}
   .card-head.advance::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--warn),transparent);animation:headSheen .8s cubic-bezier(.3,.8,.25,1) both}
@@ -221,21 +219,34 @@
   .hud .t{font-weight:620;font-size:12.5px}
   .hud .badge{font-size:10.5px;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn);margin-left:auto;white-space:nowrap}
   .hud .s{font-size:11.5px;color:var(--muted);margin-top:3px}
-  .hud .bar{margin-top:8px;height:4px;border-radius:2px;display:flex;gap:2px}
-  .hud .bar i{flex:1;background:var(--line-strong);border-radius:2px;opacity:.8}
-  .hud .bar i.done{background:var(--ok)}.hud .bar i.active{background:var(--warn)}.hud .bar i.err{background:var(--err)}
   .hud .hint{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
   .hud .hint .badge{margin-left:0;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
   .hud[data-state="warn"] .dot{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent)}
   .hud[data-state="takeover"] .dot{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
   .hud[data-state="takeover"] .t{color:var(--accent)}
   .hud[data-state="done"] .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+  /* ===== 长耗时样例：ETA / 日志流 / 光标脉冲 ===== */
+  .pill.eta{background:var(--warn-soft);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 26%,transparent)}
+  .pill.eta.done{background:var(--ok-soft);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 24%,transparent)}
+  .logfeed{margin-top:8px;height:78px;overflow:hidden;position:relative;display:flex;flex-direction:column;justify-content:flex-end;
+    padding:6px 9px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);
+    font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--muted);
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 36%);mask-image:linear-gradient(to bottom,transparent 0,#000 36%)}
+  .logfeed .ln{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:logIn .26s ease both}
+  .logfeed .ln .t{color:var(--idle);margin-right:6px}
+  .logfeed .ln b{color:var(--ink);font-weight:600}
+  @keyframes logIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .mini .agent{position:absolute;right:16%;top:34%;width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent)}
+  .mini .agent::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px solid var(--accent);animation:cursorPulse 1.8s ease-out infinite}
+  @keyframes cursorPulse{0%{transform:scale(.35);opacity:.85}100%{transform:scale(1.9);opacity:0}}
+
   /* ===== 动效增强 ===== */
   .card{animation:cardIn .34s cubic-bezier(.2,.7,.3,1) both}
   @keyframes cardIn{from{opacity:0;transform:translateY(6px) scale(.996)}to{opacity:1;transform:none}}
   .mini{position:relative}
-  .thumb{position:relative;transition:transform .18s ease, box-shadow .18s ease}
-  .thumb:hover{transform:scale(1.06);box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:2}
+  .thumb{position:relative;transition:box-shadow .18s ease}
+  .thumb:hover{box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:2}
   .mini .flash{display:none}
   .mini.drag .dotA,.mini.drag .dotB{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
   .mini.drag .dotA{left:7%;top:66%}.mini.drag .dotB{right:7%;top:42%}
@@ -318,6 +329,49 @@
       </div>
     </section>
 
+
+    <!-- ===== 长耗时样例：ETA + 日志流 + 光标脉冲 ===== -->
+    <section id="longCard" class="card" data-open="true" aria-label="长耗时任务样例">
+      <div class="card-head">
+        <span class="dot run" id="longDot" aria-hidden="true"></span>
+        <div>
+          <div class="card-title" id="longTitle">正在操作 · 第 2/3 步</div>
+          <div class="card-sub" id="longSub">目标：访达 › 下载 › 按类型归档 412 个文件</div>
+        </div>
+        <div class="card-meta">
+          <span class="pill time" id="longTimer">0.0s</span>
+          <span class="pill eta" id="longEta">预计剩余 ~12s</span>
+          <span class="pill bg" title="后台执行，不抢占你的鼠标键盘">后台执行 · 不影响你</span>
+        </div>
+      </div>
+      <div class="progress" id="longProgress" aria-hidden="true"></div>
+      <div class="steps">
+        <div class="step" data-state="done">
+          <div class="idx"><span style="display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></div>
+          <div class="body">
+            <div class="title"><span>读取「下载」目录清单</span><span class="state-tag">已完成</span></div>
+            <div class="meta"><span class="mono">0.8s</span><span class="mono">412 个文件 · 4.2 GB</span></div>
+          </div>
+        </div>
+        <div class="step advance" data-state="running" id="longStep">
+          <div class="idx">2</div>
+          <div class="body">
+            <div class="title"><span>按类型归档 412 个文件</span><span class="state-tag">进行中</span></div>
+            <div class="meta"><span class="mono live-elapsed" id="longElapsed">已用时 0.0s</span><span class="mono" id="longMetaEta">剩余 ~12s</span></div>
+            <div class="logfeed" id="longLog" aria-hidden="true"></div>
+          </div>
+          <div class="thumb"><div class="mini"><div class="side"><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="main"><i class="t"></i><i></i><i></i><span class="agent"></span></div></div></div>
+        </div>
+        <div class="step" data-state="idle">
+          <div class="idx">3</div>
+          <div class="body">
+            <div class="title"><span>生成归档报告与截图</span><span class="state-tag">等待</span></div>
+            <div class="meta"><span class="mono">等待中</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card-foot"><span class="grow" id="longFoot">已扫描 0 / 412 个文件</span><button class="btn tiny ghost" id="longReplay">重播长任务</button></div>
+    </section>
     <!-- ===== 方案 B：行内卡 ===== -->
     <section id="variantB" hidden>
       <div class="rowlist" id="rowList"></div>
@@ -335,7 +389,6 @@
       </div>
     </div>
     <div class="hud-rail" id="hudRail" aria-hidden="true"></div>
-    <div class="bar" id="hudBar" aria-hidden="true"></div>
     <div class="hint"><span class="badge">桌面 HUD 概念</span> 悬浮在任意窗口上方 · 不抢焦点 <button class="btn tiny ghost" id="hudFocus">回到卡片</button></div>
   </aside>
 
@@ -499,7 +552,7 @@
     var totalSec = fmt(elapsedMs()/1000);
     actTimer.textContent = totalSec;
     var stepSec = fmt((Date.now() - (stepStartedAt || Date.now()))/1000);
-    var le = document.querySelectorAll(".live-elapsed");
+    var le = actSteps.querySelectorAll(".live-elapsed");
     for(var k=0;k<le.length;k++) le[k].textContent = "已耗时 "+stepSec;
     if(hudTime) hudTime.textContent = stepSec;
     rafId = requestAnimationFrame(tick);
@@ -652,7 +705,6 @@
     if(kind==="run" && actHead && lastHeadStep !== currentIdx){
       lastHeadStep = currentIdx;
       actHead.classList.remove("advance"); void actHead.offsetWidth; actHead.classList.add("advance");
-      actCard.classList.remove("jolt"); void actCard.offsetWidth; actCard.classList.add("jolt");
     }
   }
 
@@ -677,7 +729,6 @@
   var hudEl = document.getElementById("hud");
   var hudTitle = document.getElementById("hudTitle");
   var hudSub = document.getElementById("hudSub");
-  var hudBar = document.getElementById("hudBar");
   var hudBadge = document.getElementById("hudBadge");
   var hudThumb = document.getElementById("hudThumb");
   var hudRail = document.getElementById("hudRail");
@@ -688,7 +739,6 @@
   var lbEl = document.getElementById("lightbox");
   var lbHead = document.getElementById("lbHead");
   var toastTimer = null;
-  var lastHudKey = "";
   var lastHudState = "";
   var lastAllDone = false;
   var HUD_TARGETS = ["系统设置","系统设置 › 显示器","系统设置 › 显示器 › 排列","系统设置 › 外观 › 对比度","访达 › 下载窗口"];
@@ -761,23 +811,6 @@
     }
     hudBadge.hidden = !(needs || failed || takeover);
     hudBadge.textContent = takeover ? "等你操作" : (needs ? "需要你确认" : "需要处理");
-    if(hudBar){
-      hudBar.innerHTML = "";
-      STEPS.forEach(function(st){
-        var i = document.createElement("i");
-        var cls = st.state==="done" ? "done" : ((st.state==="running"||st.state==="gate") ? "active" : ((st.state==="warn"||st.state==="error") ? "err" : ""));
-        if(cls) i.className = cls;
-        hudBar.appendChild(i);
-      });
-      var key = STEPS.map(function(s){return s.state;}).join(",");
-      if(key !== lastHudKey){
-        lastHudKey = key;
-        var a = hudBar.children[Math.min(currentIdx,hudBar.children.length-1)];
-        if(a && a.className==="active") a.classList.add("flow");
-        var d = hudBar.children[currentIdx-1];
-        if(d && d.className==="done") d.classList.add("justdone");
-      }
-    }
   }
 
   function openLightbox(i){
@@ -812,7 +845,7 @@
     lastHeadStep = -1;
     lastHudState = "";
     stepStartedAt = Date.now();
-    actCard.classList.remove("complete","jolt");
+    actCard.classList.remove("complete");
     currentIdx = 0;
     elapsedBase = 0;
     startedAt = Date.now();
@@ -912,6 +945,117 @@
   function takeOverCurrent(){ takeOver(4); }
 
   /* ---------- compact row variant ---------- */
+  /* ---------- 长耗时样例：ETA + 日志流 + 光标脉冲 ---------- */
+  var longCard = document.getElementById("longCard");
+  var longDot = document.getElementById("longDot");
+  var longTitle = document.getElementById("longTitle");
+  var longTimer = document.getElementById("longTimer");
+  var longEta = document.getElementById("longEta");
+  var longElapsed = document.getElementById("longElapsed");
+  var longMetaEta = document.getElementById("longMetaEta");
+  var longLog = document.getElementById("longLog");
+  var longFoot = document.getElementById("longFoot");
+  var longProgress = document.getElementById("longProgress");
+  var LONG_TOTAL = 12000;
+  var LONG_LOG = [
+    ["CGEvent", "scroll 下载窗口 → 顶部"],
+    ["AX", "读取 AXOutline · 412 个子项"],
+    ["plan", "按扩展名聚类：pdf 96 / png 141 / mov 23"],
+    ["fs", "mkdir Archive/PDF（已存在，跳过）"],
+    ["fs", "move 12 个 pdf → Archive/PDF"],
+    ["CGEvent", "scroll 下一页可见行 8 行"],
+    ["AX", "读取 AXOutline · 168 / 412"],
+    ["fs", "move 9 个 png → Archive/PNG"],
+    ["verify", "抽查 3 个文件，哈希一致"],
+    ["CGEvent", "hover 目标行：Archive 目录"],
+    ["plan", "剩余 244 个，预计 8s"],
+    ["AX", "读取 AXOutline · 301 / 412"],
+    ["fs", "move 27 个 mov → Archive/MOV"],
+    ["verify", "目录大小 4.2 GB，无冲突"],
+    ["fs", "写入归档清单 archive.json"]
+  ];
+  var longT0 = 0, longInterval = null, longLastLog = 0, longNext = 1, longDone = false;
+
+  function longSegments(){
+    if(!longProgress) return;
+    longProgress.innerHTML = "";
+    for(var i=0;i<3;i++){
+      var sp = el("span", longDone ? "done" : (i===1 ? "active working" : ""));
+      longProgress.appendChild(sp);
+    }
+  }
+  function pushLog(line, ms){
+    if(!longLog) return;
+    var ln = el("div","ln");
+    ln.innerHTML = '<span class="t">'+fmt(ms/1000)+'</span><b>'+line[0]+'</b> '+line[1];
+    longLog.appendChild(ln);
+    while(longLog.children.length > 5) longLog.removeChild(longLog.firstChild);
+  }
+  function longFinish(){
+    longDone = true;
+    if(longInterval){ clearInterval(longInterval); longInterval = null; }
+    if(longDot) longDot.className = "dot ok";
+    if(longTitle) longTitle.textContent = "操作完成 · 共 3 步";
+    if(longTimer) longTimer.textContent = fmt(LONG_TOTAL/1000);
+    if(longEta){ longEta.textContent = "已完成"; longEta.className = "pill eta done"; }
+    if(longMetaEta) longMetaEta.textContent = "已完成";
+    if(longElapsed) longElapsed.textContent = "已用时 "+fmt(LONG_TOTAL/1000);
+    if(longFoot) longFoot.innerHTML = "<strong>完成</strong> · 412 个文件 · "+fmt(LONG_TOTAL/1000);
+    if(longCard){
+      var steps = longCard.querySelectorAll(".step");
+      if(steps[1]){ steps[1].dataset.state="done"; steps[1].classList.remove("advance"); steps[1].querySelector(".idx").textContent="✓"; steps[1].querySelector(".state-tag").textContent="已完成"; }
+      if(steps[2]){ steps[2].dataset.state="done"; steps[2].querySelector(".state-tag").textContent="已完成"; steps[2].querySelector(".idx").textContent="✓"; var m=steps[2].querySelector(".meta .mono"); if(m) m.textContent="0.6s"; }
+    }
+    longSegments();
+  }
+  function longStepTick(){
+    var ms = Date.now() - longT0;
+    var remain = Math.max(0, LONG_TOTAL - ms);
+    if(longTimer) longTimer.textContent = fmt(ms/1000);
+    if(longElapsed) longElapsed.textContent = "已用时 "+fmt(ms/1000);
+    if(longEta) longEta.textContent = "预计剩余 ~"+Math.max(1, Math.ceil(remain/1000))+"s";
+    if(longMetaEta) longMetaEta.textContent = "剩余 ~"+Math.max(1, Math.ceil(remain/1000))+"s";
+    if(longFoot) longFoot.textContent = "已扫描 "+Math.min(412, Math.round(412*ms/LONG_TOTAL))+" / 412 个文件";
+    if(ms >= LONG_TOTAL){ longFinish(); return; }
+    if(longNext < LONG_LOG.length && ms - longLastLog > 680){
+      longLastLog = ms; pushLog(LONG_LOG[longNext++], ms);
+    }
+  }
+  function startLong(){
+    longDone = false;
+    if(longInterval){ clearInterval(longInterval); longInterval = null; }
+    if(longDot) longDot.className = "dot run";
+    if(longTitle) longTitle.textContent = "正在操作 · 第 2/3 步";
+    if(longTimer) longTimer.textContent = "0.0s";
+    if(longEta){ longEta.textContent = "预计剩余 ~12s"; longEta.className = "pill eta"; }
+    if(longFoot) longFoot.textContent = "已扫描 0 / 412 个文件";
+    if(longLog) longLog.innerHTML = "";
+    if(longCard){
+      var steps = longCard.querySelectorAll(".step");
+      if(steps[1]){
+        steps[1].dataset.state="running"; steps[1].classList.add("advance");
+        steps[1].querySelector(".idx").textContent="2";
+        steps[1].querySelector(".state-tag").textContent="进行中";
+        var monos = steps[1].querySelectorAll(".meta .mono");
+        if(monos[0]){ monos[0].textContent="已用时 0.0s"; monos[0].id="longElapsed"; longElapsed=monos[0]; }
+        if(monos[1]){ monos[1].textContent="剩余 ~12s"; monos[1].id="longMetaEta"; longMetaEta=monos[1]; }
+      }
+      if(steps[2]){
+        steps[2].dataset.state="idle";
+        steps[2].querySelector(".state-tag").textContent="等待";
+        steps[2].querySelector(".idx").textContent="3";
+        var m2 = steps[2].querySelector(".meta .mono"); if(m2) m2.textContent="等待中";
+      }
+    }
+    longSegments();
+    if(reduce){ longFinish(); return; }
+    longT0 = Date.now(); longNext = 1; longLastLog = 0;
+    pushLog(LONG_LOG[0], 0);
+    longInterval = setInterval(longStepTick, 100);
+  }
+  var longReplay = document.getElementById("longReplay");
+  if(longReplay) longReplay.addEventListener("click", startLong);
+
   var rowList = document.getElementById("rowList");
   function renderRows(){
     rowList.innerHTML = "";
@@ -1004,7 +1148,7 @@
   document.getElementById("replayBtn").addEventListener("click", start);
 
   if(hudEl) hudEl.classList.add("show");
-  renderAll(); start(); syncHud();
+  renderAll(); start(); syncHud(); startLong();
 })();
 </script>
 </body>

@@ -146,7 +146,7 @@ npm test            # 207 项测试
 - [兼容性与平台边界](docs/COMPATIBILITY.md)
 - [cua-driver 人机并行](docs/CUA-DRIVER.md)
 - [第三方许可（NOTICE）](NOTICE)
-- [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html) · [真实客户端预览页](design/toolview-preview.html) · [P0 进度与交接](docs/TOOLVIEW-P0-HANDOFF.md)
+- [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html) · [P0 进度与交接](docs/TOOLVIEW-P0-HANDOFF.md)
 - [发布与版本](docs/RELEASE.md)
 - [场景/验收矩阵](docs/SCENARIOS-2026-11.md)
 - [seam provider 适配说明](docs/SEAM-PROVIDER.md)
@@ -156,7 +156,7 @@ npm test            # 207 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
-- **0.23.0** toolview P0 落地真客户端：中文活动卡片（第 n/N 步、实时耗时、执行模式/确认门徽标）、分段进度、逐步行、结果缩略图+灯箱、失败原因与建议、完成折叠；新增渲染测试与 `design/toolview-preview.html` 预览页。
+- **0.23.0** toolview P0 落地真客户端：中文活动卡片（第 n/N 步、实时耗时、执行模式/确认门徽标）、分段进度、逐步行、结果缩略图+灯箱、失败原因与建议、完成折叠；新增渲染测试 `test/client-render.test.mjs`。
 - **0.22.6** 新增 `cua_launch`（后台启动 App 不置顶）；`open_app` 文档明确为前台激活。
 - **0.22.5** `cua_act` 失败信息聚合（message/stdout/stderr/steps），stale token 自动重试更可靠。
 - **0.22.4** `open_app` 中文名回退 bundle id；`cua_act` 过期 token 自动重新观察并重试。
