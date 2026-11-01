@@ -67,18 +67,18 @@ window.__ModuleLoader__.load({
 		const STYLE_ID = "dsh-operator-toolview-css";
 
 		const CSS = [
-			".dop-card{position:relative;margin:6px 0;padding:10px 12px 8px;border:1px solid var(--dop-line);border-radius:14px;",
+			".dop-card{position:relative;margin:8px 0;padding:14px 16px 12px;border:1px solid var(--dop-line);border-radius:16px;",
 			"--dop-line:color-mix(in srgb,currentColor 15%,transparent);",
 			"--dop-line-soft:color-mix(in srgb,currentColor 9%,transparent);",
 			"--dop-soft:color-mix(in srgb,currentColor 5%,transparent);",
 			"--dop-ok:#16a34a;--dop-warn:#b46a00;--dop-err:#dc2626;--dop-accent:#3b5bdb;",
 			"font-size:0.94em;line-height:1.5;color:inherit;font-variant-numeric:tabular-nums}",
-			".dop-head{display:flex;align-items:flex-start;gap:9px}",
+			".dop-head{display:flex;align-items:flex-start;gap:10px}",
 			".dop-main{flex:1;min-width:0}",
-			".dop-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-weight:620;letter-spacing:.1px}",
-			".dop-title .dop-tool{font-weight:400;font-size:11.5px;color:color-mix(in srgb,currentColor 55%,transparent)}",
-			".dop-sub{margin-top:1px;font-size:12.5px;color:color-mix(in srgb,currentColor 62%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-			".dop-meta{display:flex;align-items:center;gap:5px;flex:none}",
+			".dop-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;font-weight:620;letter-spacing:.1px}",
+			".dop-title .dop-tool{font-weight:400;font-size:12.5px;color:color-mix(in srgb,currentColor 55%,transparent)}",
+			".dop-sub{margin-top:2px;font-size:12.5px;color:color-mix(in srgb,currentColor 62%,transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+			".dop-meta{display:flex;align-items:center;gap:6px;flex:none}",
 			".dop-pill{border:1px solid var(--dop-line);border-radius:999px;padding:2px 7px;font-size:11px;white-space:nowrap;color:color-mix(in srgb,currentColor 70%,transparent)}",
 			".dop-pill.dop-mode{color:var(--dop-accent);border-color:color-mix(in srgb,var(--dop-accent) 28%,transparent);background:color-mix(in srgb,var(--dop-accent) 8%,transparent)}",
 			".dop-pill.dop-gate{color:#fff;background:var(--dop-warn);border-color:transparent;font-weight:600}",
@@ -91,31 +91,38 @@ window.__ModuleLoader__.load({
 			".dop-card[data-state=\"ok\"] .dop-dot{background:var(--dop-ok)}",
 			".dop-card[data-state=\"error\"] .dop-dot{background:var(--dop-err);box-shadow:0 0 0 3px color-mix(in srgb,var(--dop-err) 16%,transparent)}",
 			".dop-card[data-state=\"stopped\"] .dop-dot{background:#64748b}",
-			".dop-progress{display:flex;gap:4px;margin:8px 0 2px}",
-			".dop-progress i{position:relative;height:4px;flex:1;border-radius:999px;background:var(--dop-line-soft);overflow:hidden}",
+			".dop-progress{display:flex;gap:6px;margin:11px 0 6px}",
+			".dop-progress i{position:relative;height:5px;flex:1;border-radius:999px;background:var(--dop-line-soft);overflow:hidden}",
 			".dop-progress i.done{background:var(--dop-ok)}",
 			".dop-progress i.active{background:linear-gradient(90deg,var(--dop-warn),color-mix(in srgb,var(--dop-warn) 40%,var(--dop-line-soft)));transform-origin:left;animation:dopFlow 1s cubic-bezier(.22,.9,.24,1) both}",
 			".dop-progress i.active::after{content:\"\";position:absolute;top:-2px;bottom:-2px;left:0;width:58%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);mix-blend-mode:screen;animation:dopComet 1.15s .05s cubic-bezier(.3,.8,.25,1) both}",
 			".dop-progress i.active.long::after{animation:dopLong 3.2s ease-in-out .9s infinite}",
 			".dop-progress i.err{background:var(--dop-err)}",
-			".dop-steps{display:flex;flex-direction:column;gap:2px;margin:6px 0 2px}",
-			".dop-step{position:relative;display:flex;align-items:flex-start;gap:9px;padding:6px 4px;border-radius:10px}",
+			".dop-steps{display:flex;flex-direction:column;gap:4px;margin:6px 0 2px}",
+			".dop-step + .dop-step::before{content:\"\";position:absolute;left:17px;top:-5px;height:5px;width:1px;background:var(--dop-line)}",
+			".dop-step{position:relative;display:flex;align-items:flex-start;gap:10px;padding:7px 6px;border-radius:10px}",
 			".dop-step:hover{background:var(--dop-soft)}",
-			".dop-step .dop-idx{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;border:1px solid var(--dop-line);background:var(--dop-soft);color:color-mix(in srgb,currentColor 70%,transparent)}",
+			".dop-step .dop-idx{flex:none;width:24px;height:24px;font-size:11.5px;border-radius:50%;display:grid;place-items:center;font-size:11px;border:1px solid var(--dop-line);background:var(--dop-soft);color:color-mix(in srgb,currentColor 70%,transparent)}",
 			".dop-step[data-state=\"done\"] .dop-idx{color:var(--dop-ok);border-color:color-mix(in srgb,var(--dop-ok) 35%,transparent);background:color-mix(in srgb,var(--dop-ok) 12%,transparent)}",
 			".dop-step[data-state=\"running\"] .dop-idx{color:var(--dop-warn);border-color:color-mix(in srgb,var(--dop-warn) 40%,transparent);background:color-mix(in srgb,var(--dop-warn) 12%,transparent);animation:dopIdx .55s cubic-bezier(.3,1.5,.5,1) both}",
 			".dop-step[data-state=\"error\"] .dop-idx,.dop-step[data-state=\"warn\"] .dop-idx{color:var(--dop-err);border-color:color-mix(in srgb,var(--dop-err) 35%,transparent);background:color-mix(in srgb,var(--dop-err) 12%,transparent)}",
 			".dop-step .dop-idx{position:relative}",
 			".dop-step[data-state=\"running\"] .dop-idx::after{content:\"\";position:absolute;inset:-3px;border-radius:50%;border:1px solid color-mix(in srgb,var(--dop-warn) 55%,transparent);animation:dopPulse 1.8s ease-out infinite}",
-			".dop-long{margin:6px 0 0;font-size:12px;color:color-mix(in srgb,currentColor 62%,transparent)}",
+			".dop-long{display:flex;align-items:center;gap:7px;margin:9px 0 0;font-size:12.5px;color:color-mix(in srgb,currentColor 62%,transparent)}",
+			".dop-long::before{content:\"\";width:6px;height:6px;border-radius:50%;background:var(--dop-warn);animation:dopBreath 1.8s ease-in-out infinite}",
 			".dop-long[hidden]{display:none}",
 			".dop-step .dop-body{flex:1;min-width:0}",
-			".dop-step .dop-step-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:560}",
+			".dop-step .dop-step-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:560}",
 			".dop-step .dop-tag{font-size:11px;font-weight:400;color:color-mix(in srgb,currentColor 58%,transparent)}",
 			".dop-step[data-state=\"running\"] .dop-tag{color:var(--dop-warn)}",
 			".dop-step[data-state=\"error\"] .dop-tag,.dop-step[data-state=\"warn\"] .dop-tag{color:var(--dop-err)}",
-			".dop-step .dop-note{margin-top:1px;font-size:12px;color:color-mix(in srgb,currentColor 60%,transparent);word-break:break-word}",
+			".dop-step .dop-note{margin-top:2px;font-size:12.5px;color:color-mix(in srgb,currentColor 60%,transparent);word-break:break-word}",
 			".dop-step[data-state=\"running\"].dop-advance::after{content:\"\";position:absolute;inset:0;border-radius:10px;pointer-events:none;background:linear-gradient(102deg,transparent 12%,color-mix(in srgb,var(--dop-warn) 26%,transparent) 46%,transparent 80%);background-size:220% 100%;background-position:130% 0;animation:dopSweep 1.8s cubic-bezier(.2,.7,.25,1) both}",
+			".dop-ph{flex:none;width:74px;height:48px;border:1px solid var(--dop-line);border-radius:8px;background:var(--dop-soft);display:grid;gap:4px;align-content:center;padding:9px 10px;overflow:hidden}",
+			".dop-ph i{display:block;height:3px;border-radius:2px;background:color-mix(in srgb,currentColor 12%,transparent)}",
+			".dop-ph i:nth-child(1){width:56%}",
+			".dop-ph i:nth-child(3){width:38%}",
+			".dop-step[data-state=\"running\"] .dop-ph i{animation:dopBreath 1.8s ease-in-out infinite}",
 			".dop-thumb{flex:none;width:74px;height:48px;border:1px solid var(--dop-line);border-radius:8px;overflow:hidden;background:var(--dop-soft);cursor:zoom-in}",
 			".dop-thumb:hover{border-color:var(--dop-accent)}",
 			".dop-thumb img{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s ease}",
@@ -126,6 +133,8 @@ window.__ModuleLoader__.load({
 			".dop-details{margin-top:6px}",
 			".dop-details summary{cursor:pointer;font-size:12px;color:color-mix(in srgb,currentColor 55%,transparent)}",
 			".dop-pre{margin:6px 0 0;padding:6px 8px;border-radius:8px;background:var(--dop-soft);overflow:auto;max-height:220px;font-size:11.5px;white-space:pre-wrap;word-break:break-word}",
+			".dop-log{margin:8px 0 0;padding:9px 11px;border-radius:10px;background:var(--dop-soft);border:1px solid var(--dop-line-soft);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.65;color:color-mix(in srgb,currentColor 68%,transparent);white-space:pre;overflow:auto;max-height:150px}",
+			".dop-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px -16px -12px;padding:9px 16px;border-top:1px solid var(--dop-line-soft);font-size:12px;color:color-mix(in srgb,currentColor 60%,transparent)}",
 			".dop-extra{margin-top:4px;font-size:11.5px;color:color-mix(in srgb,currentColor 60%,transparent);display:grid;gap:2px}",
 			".dop-card[data-open=\"false\"] .dop-collapsible{display:none}",
 			".dop-card[data-tone=\"warn\"]{border-color:color-mix(in srgb,var(--dop-warn) 30%,var(--dop-line))}",
@@ -369,7 +378,8 @@ window.__ModuleLoader__.load({
 		};
 
 		function actionLabel(action) {
-			return ACTION_LABELS[action] ?? action;
+			const key = String(action ?? "");
+			return ACTION_LABELS[key] ?? ACTION_LABELS[key.replace(/^ax_/, "")] ?? key;
 		}
 
 		const STEP_STATES = {
@@ -386,25 +396,30 @@ window.__ModuleLoader__.load({
 		 */
 		function stepsOf(tool, args, output, state) {
 			const rows = [];
+			const declared = args !== null && Array.isArray(args.steps) ? args.steps : [];
 			if (tool === "ax_batch" && output !== null) {
 				for (const line of output.split("\n")) {
 					const match = /^\s*(\d+)\.\s+([A-Za-z_]+)\s+(ok|FAILED)(?:\s+—\s+(.*))?$/.exec(line);
 					if (match === null) continue;
 					const ok = match[3] === "ok";
+					const index = Number(match[1]) - 1;
 					rows.push({
-						index: Number(match[1]),
-						title: actionLabel(match[2]),
+						index,
+						title: describeStep(declared[index]) || actionLabel(match[2]),
+						action: actionLabel(match[2]),
 						note: match[4] ?? (ok ? "" : "失败"),
 						state: ok ? "done" : "error"
 					});
 				}
 			}
-			if (rows.length === 0 && tool === "ax_batch" && args !== null && Array.isArray(args.steps)) {
-				for (let i = 0; i < args.steps.length; i += 1) {
+			if (rows.length === 0 && tool === "ax_batch" && declared.length > 0) {
+				for (let i = 0; i < declared.length; i += 1) {
+					const action = String(declared[i]?.action ?? "");
 					rows.push({
-						index: i + 1,
-						title: actionLabel(String(args.steps[i]?.action ?? `步骤 ${i + 1}`)),
-						note: describeStep(args.steps[i]),
+						index: i,
+						title: describeStep(declared[i]) || actionLabel(action || `第 ${i + 1} 步`),
+						action: action === "" ? "" : actionLabel(action),
+						note: "",
 						state: state === "running" ? (i === 0 ? "running" : "pending") : "pending"
 					});
 				}
@@ -556,10 +571,16 @@ window.__ModuleLoader__.load({
 			return h("div", { className: "dop-progress", "aria-hidden": "true" }, ...segments);
 		}
 
-		function StepRow({ step, index, total, attachment, loadImage }) {
+		function StepRow({ step, index, total, attachment, loadImage, multi }) {
 			const done = step.state === "done";
 			const failed = step.state === "error" || step.state === "warn";
 			const mark = done ? "✓" : failed ? "!" : String(index + 1);
+			const thumb =
+				attachment === void 0 || attachment === null
+					? multi === true
+						? h("span", { className: "dop-ph", "aria-hidden": "true" }, h("i"), h("i"), h("i"))
+						: null
+					: h(Thumb, { attachment, index, loadImage, label: step.title || "步骤截图" });
 			return h(
 				"div",
 				{
@@ -567,6 +588,7 @@ window.__ModuleLoader__.load({
 					"data-state": step.state
 				},
 				h("span", { className: "dop-idx", "aria-hidden": "true" }, mark),
+				thumb,
 				h(
 					"div",
 					{ className: "dop-body" },
@@ -574,13 +596,10 @@ window.__ModuleLoader__.load({
 						"div",
 						{ className: "dop-step-title" },
 						h("span", null, step.title || `第 ${index + 1} 步`),
-						h("span", { className: "dop-tag" }, STEP_STATES[step.state] ?? step.state)
+						h("span", { className: "dop-tag" }, `${STEP_STATES[step.state] ?? step.state}${step.action ? ` · ${step.action}` : ""}`)
 					),
 					step.note === "" ? null : h("div", { className: "dop-note" }, step.note)
-				),
-				attachment === void 0 || attachment === null
-					? null
-					: h(Thumb, { attachment, index, loadImage, label: step.title || "步骤截图" })
+				)
 			);
 		}
 
@@ -627,7 +646,9 @@ window.__ModuleLoader__.load({
 			const rich = richSummary(tool, output);
 			const summary = rich === null ? summaryOf(tool, block, args, output) : rich.summary;
 			const running = state === "running";
-			const target = running === true ? targetOf(args) : summary;
+			const declared = Array.isArray(args?.steps) ? args.steps : null;
+			const firstStep = declared === null ? "" : describeStep(declared[0]);
+			const target = running === true ? targetOf(args) || firstStep : firstStep !== "" ? firstStep : summary;
 			const steps = stepsOf(tool, args, output, state);
 			const multi = steps.length > 1;
 			const images = imagesOf(block);
@@ -638,7 +659,7 @@ window.__ModuleLoader__.load({
 			const mode = modeOf(tool, args);
 			const reason = reasonOf(block, output, state);
 			const total = formatMs(durationMs(block));
-			const defaultOpen = running || state === "error";
+			const defaultOpen = running || state === "error" || multi;
 			const elapsedStart = typeof block.time === "number" ? block.time : Date.now();
 
 			let titleText = stateLabel(state);
@@ -706,7 +727,7 @@ window.__ModuleLoader__.load({
 						h("span", null, titleText),
 						h("span", { className: "dop-tool" }, label)
 					),
-					target === "" ? null : h("div", { className: "dop-sub", title: target }, `${running ? "目标" : "结果"}：${target}`)
+					target === "" ? null : h("div", { className: "dop-sub", title: target }, `${running === true || firstStep !== "" ? "目标" : "结果"}：${target}`)
 				),
 				h("div", { className: "dop-meta" }, ...metaNodes)
 			);
@@ -723,7 +744,8 @@ window.__ModuleLoader__.load({
 							index,
 							total: steps.length,
 							attachment: images[index],
-							loadImage: props?.loadImage
+							loadImage: props?.loadImage,
+							multi
 						})
 					)
 				)
@@ -764,16 +786,22 @@ window.__ModuleLoader__.load({
 					);
 
 			const longHint = running
-				? h("div", { className: "dop-long", "data-dop-long": "", hidden: true })
+				? h("div", { className: "dop-long", "data-dop-long": "", hidden: true }, "正在执行…你仍然可以继续做别的事")
 				: null;
+			const logLines = output === null ? [] : output.split("\n").filter((line) => line.trim() !== "");
+			const logFeed =
+				settled === true && multi === true && logLines.length >= 3
+					? h("pre", { className: "dop-log" }, logLines.slice(0, 6).join("\n"))
+					: null;
 			const body = h(
 				"div",
 				{ className: "dop-collapsible" },
 				stepNodes,
 				longHint,
+				logFeed,
 				reason === null ? null : h(Reason, { reason }),
 				bodyNote(summary, multi, target),
-				extras,
+				logFeed === null ? extras : null,
 				gallery,
 				details
 			);
@@ -802,11 +830,7 @@ window.__ModuleLoader__.load({
 							const holder = node.querySelector("[data-dop-elapsed]");
 							if (holder !== null) holder.textContent = formatMs(elapsed) || "0.0s";
 							const hint = node.querySelector("[data-dop-long]");
-							if (hint !== null) {
-								const long = elapsed >= 10000;
-								hint.hidden = long === false;
-								if (long) hint.textContent = `已耗时 ${formatMs(elapsed)}，仍在执行；你可以继续做别的事`;
-							}
+							if (hint !== null) hint.hidden = elapsed < 10000;
 						};
 						update();
 						if (ticker !== null) clearInterval(ticker);

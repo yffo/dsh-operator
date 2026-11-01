@@ -1,6 +1,6 @@
 {
   "name": "dsh-operator",
-  "version": "0.23.1",
+  "version": "0.23.2",
   "description": "给每个 DSH 会话一双手：全局 Computer Use 插件——整套桌面 GUI 工具与后台 code_agent，截图降 token、AX 文本观察、动作结果结构化校验，可选 cua-driver 后台人机并行",
   "type": "module",
   "main": "index.js",
