@@ -30,6 +30,7 @@ window.__ModuleLoader__.load({
 			skill_list: "List skills",
 			operator_status: "Operator status",
 			failure_list: "Failures",
+			ax_batch: "AX batch",
 			browser_dom_probe: "Browser channels",
 			browser_dom_snapshot: "DOM snapshot",
 			browser_dom_click: "DOM click",
@@ -128,6 +129,20 @@ window.__ModuleLoader__.load({
 					summary: `${skills.length} skill(s)${skills.length === 0 ? "" : ` · ${skills.join(", ")}`}`,
 					extra: skills.length === 0 ? [] : [`skills: ${skills.join(", ")}`],
 					tone: "ok"
+				};
+			}
+			if (tool === "ax_batch") {
+				const head = /^ax_batch: (\d+)\/(\d+) ok(?: \(failed at step (\d+)\))?/m.exec(output);
+				const okCount = Number(head?.[1] ?? "0");
+				const total = Number(head?.[2] ?? "0");
+				const failedStep = head?.[3];
+				return {
+					summary: `${okCount}/${total} step(s) ok${failedStep === void 0 ? "" : ` · failed at step ${failedStep}`}`,
+					extra: output
+						.split("\n")
+						.filter((line) => /^\s+\d+\.\s/.test(line))
+						.slice(0, 3),
+					tone: okCount === total ? "ok" : "warn"
 				};
 			}
 			if (tool === "failure_list") {

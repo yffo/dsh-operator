@@ -331,6 +331,8 @@ node scripts/test-shrink.mjs
 
 - **0.21.7** — 失败样本查询闭环（PLAN 0.11-5 最小版）：新增 `failure_list` 工具——只读列出 `~/.dsh/dsh-operator/failures/` 的脱敏失败样本，返回总数、按 kind/tool 汇总、最近记录（tool/kind/message/时间）与每条 kind 的下一步提示；args 只保留长度、不落原文。`operator_status` 的 `failureFiles/failureRecords` 计数不变；客户端为 `failure_list` 加卡片（`N failure(s) · by kind …`，零样本显示 `no failures`）。`scripts/test-operator.mjs` 补脱敏/归类/提示断言。`npm test` 174 项。
 
+- **0.21.8** — 多动作批处理（PLAN 0.11-1 最小版）：新增 `ax_batch` 工具，一次调用执行 2–12 个标量 AX 动作（`ax_press`/`ax_set_value`/`ax_menu`/`ax_scroll`），首错即停（异常、`pressed:false`、`ok:false` 都算失败），丢弃中间截图只回每步摘要（`N/M ok`、失败步号、逐步 note），适合「一次观察后回放已知点击序列」；客户端加「AX batch」卡片（`N/M step(s) ok`，失败附 `failed at step K`）。风控说明：`steps` 是 array-of-object，靠 `npm test` 与 preflight 双重验证 DSH 参数 DSL 是否接受；若未来 DSL 收紧则回退为逐动作调用。`npm test` 175 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图

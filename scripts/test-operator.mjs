@@ -80,9 +80,10 @@ const fakeCtx = {
 };
 registerOperatorTools(fakeCtx, { axMaxNodes: 120, failureSamples: false }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
-check(registered.length === 26, "注册二十六个扩展工具");
+check(registered.length === 27, "注册二十七个扩展工具");
 check(
-	names.includes("failure_list") &&
+	names.includes("ax_batch") &&
+		names.includes("failure_list") &&
 		names.includes("list_windows") &&
 		names.includes("screenshot_window") &&
 		names.includes("verify_state") &&
@@ -93,6 +94,11 @@ check(
 		names.includes("window_move") &&
 		names.includes("zoom_region"),
 	"工具名齐全"
+);
+const batch = registered.find((tool) => tool.name === "ax_batch");
+check(
+	batch !== undefined && Array.isArray(batch.parameters.steps.items.properties.action.enum) && batch.parameters.steps.items.properties.action.enum.length === 4,
+	"ax_batch 参数面完整（action 枚举 4 种）"
 );
 const verify = registered.find((tool) => tool.name === "verify_state");
 check(

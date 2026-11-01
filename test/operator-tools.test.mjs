@@ -44,7 +44,13 @@ function collectTools() {
 	registerOperatorTools(ctx, { axMaxNodes: 120, guard: true, failureSamples: false }, {
 		backend: { listScreens: async () => [] },
 		defineTool: (definition) => definition,
-		AttachmentId: (value) => value
+		AttachmentId: (value) => value,
+		computerUseToolDefs: new Map([
+			["ax_press", { execute: async (args) => ({ pressed: args.index !== 9, index: args.index, role: "AXButton", title: "Mock" }) }],
+			["ax_set_value", { execute: async () => ({ set: true }) }],
+			["ax_menu", { execute: async () => ({ ok: true }) }],
+			["ax_scroll", { execute: async () => ({ ok: true, scrolled: true }) }]
+		])
 	});
 	return registered;
 }
@@ -95,7 +101,7 @@ function assertSchemaShape(schema, path) {
 	}
 }
 
-test("registerOperatorTools：仅 darwin 注册二十六个扩展工具", (t) => {
+test("registerOperatorTools：仅 darwin 注册二十七个扩展工具", (t) => {
 	const tools = collectTools();
 	if (process.platform !== "darwin") {
 		assert.equal(tools.length, 0);
@@ -104,7 +110,7 @@ test("registerOperatorTools：仅 darwin 注册二十六个扩展工具", (t) =>
 	}
 	assert.deepEqual(
 		tools.map((tool) => tool.name).sort(),
-		["ax_menu", "ax_press", "ax_scroll", "ax_set_value", "browser_dom_click", "browser_dom_fill", "browser_dom_probe", "browser_dom_snapshot", "failure_list", "list_windows", "operator_status", "plan_create", "plan_delete", "plan_list", "plan_run", "plan_update", "screenshot_window", "skill_delete", "skill_list", "skill_run", "skill_save", "skill_show", "task_profile", "verify_state", "window_move", "zoom_region"]
+		["ax_batch", "ax_menu", "ax_press", "ax_scroll", "ax_set_value", "browser_dom_click", "browser_dom_fill", "browser_dom_probe", "browser_dom_snapshot", "failure_list", "list_windows", "operator_status", "plan_create", "plan_delete", "plan_list", "plan_run", "plan_update", "screenshot_window", "skill_delete", "skill_list", "skill_run", "skill_save", "skill_show", "task_profile", "verify_state", "window_move", "zoom_region"]
 	);
 	for (const tool of tools) {
 		assert.equal(typeof tool.description, "string");
@@ -175,6 +181,7 @@ test("operator_status / plan_list：返回字段全部在 output schema 声明�
 		const cases = [
 			["operator_status", {}],
 			["failure_list", { limit: 5 }],
+			["ax_batch", { steps: [{ action: "ax_press", index: 1 }, { action: "ax_menu", path: "文件/关闭" }] }],
 			["plan_list", {}],
 			["plan_run", { id: planId, dryRun: true }],
 			["plan_delete", { id: planId }]
@@ -192,4 +199,18 @@ test("operator_status / plan_list：返回字段全部在 output schema 声明�
 		else process.env.DSH_HOME = previous;
 		rmSync(home, { recursive: true, force: true });
 	}
+});
+
+test("ax_batch：顺序执行 2 步、失败即停并回显步骤摘要", async () => {
+	const tools = collectTools();
+	const batch = tools.find((tool) => tool.name === "ax_batch");
+	assert.ok(batch, "ax_batch 已注册");
+	const ok = await batch.execute({ steps: [{ action: "ax_press", index: 1 }, { action: "ax_menu", path: "文件/关闭" }] });
+	assert.equal(ok.steps.length, 2);
+	assert.equal(ok.failedAt, undefined);
+	assert.match(ok.text, /2\/2 ok/);
+	const failed = await batch.execute({ steps: [{ action: "ax_press", index: 9 }, { action: "ax_menu", path: "文件/关闭" }] });
+	assert.equal(failed.failedAt, 0);
+	assert.equal(failed.steps.length, 1);
+	assert.match(failed.text, /failed at step 1/);
 });

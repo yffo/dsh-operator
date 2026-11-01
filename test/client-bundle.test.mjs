@@ -21,6 +21,7 @@ const ROW_TOOLS = [
 	"skill_list",
 	"operator_status",
 	"failure_list",
+	"ax_batch",
 	"browser_dom_probe",
 	"browser_dom_snapshot",
 	"browser_dom_click",
@@ -80,6 +81,8 @@ test("client/client.js 为失败样本/浏览器通道/技能列表提供富卡�
 	assert.ok(source.includes("/failures?[^\\n]*/i"), "operator_status 应抽取失败样本计数");
 	assert.ok(source.includes("failure(s)"), "failure_list 应汇总失败数");
 	assert.ok(source.includes("no failures"), "failure_list 空样本应有零失败文案");
+	assert.ok(source.includes("ax_batch: "), "ax_batch 应解析步数摘要");
+	assert.ok(source.includes("failed at step"), "ax_batch 失败时应显示失败步号");
 	assert.ok(source.includes("data-tone"), "富卡片应带 data-tone 供样式区分");
 	assert.ok(source.includes("extra-"), "富卡片应有 extra 明细行");
 });
