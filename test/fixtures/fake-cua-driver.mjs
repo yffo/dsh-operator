@@ -8,6 +8,11 @@ const JPEG_1X1 = Buffer.from(
 	"base64"
 );
 
+const PNG_1X1 = Buffer.from(
+	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+	"base64"
+);
+
 /** 去掉 cli 全局选项，返回子命令与参数。 */
 function parseArgv(argv) {
 	let socket;
@@ -80,7 +85,7 @@ function windowStateFixture(payload) {
 	const wantShot = payload?.include_screenshot === true;
 	const blocked = wantShot && process.env.FAKE_CUA_GWS_FAIL === "direct_capture_consent_required";
 	if (wantShot && !blocked && typeof payload?.screenshot_out_file === "string") {
-		writeFileSync(payload.screenshot_out_file, JPEG_1X1);
+		writeFileSync(payload.screenshot_out_file, process.env.FAKE_CUA_PNG === "1" ? PNG_1X1 : JPEG_1X1);
 	}
 	if (process.env.FAKE_CUA_TREE_FORMAT_ELEMENTS === "1") {
 		return {

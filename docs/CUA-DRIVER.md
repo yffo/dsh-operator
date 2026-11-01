@@ -100,3 +100,13 @@ cua-driver call list_windows '{}'
 - 官方文档：<https://cua.ai/docs/cua-driver>
 - 官方安装脚本：<https://cua.ai/driver/install.sh>
 - 实现在 `lib/cua-driver.js`（CLI/daemon 客户端）与 `lib/cua-tools.js`（三个工具的注册与映射）。
+
+
+## 截图授权（Direct Capture）
+
+`get_window_state` 的截图走 macOS「直接捕获」（Direct Capture）授权，与辅助功能/屏幕录制分开：
+
+- 首次 `cua_observe` 带截图时，插件拉起的 daemon 会自动请求授权弹窗（内部默认设 `CUA_DRIVER_ALLOW_CAPTURE_CONSENT_ALERT=1`），点一次 **Allow** 即可；
+- 也可以提前手动跑 `cua-driver permissions grant` 并点 Allow；
+- 未授权时 `cua_observe` 仍返回完整 AX 树，并给出 `note` 提示（不阻塞其他工具）；
+- 驱动实际写出的截图文件是 **PNG**（即使文件名以 `.jpg` 结尾），插件按 magic bytes 判定并正确声明 `image/png`。

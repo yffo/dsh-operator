@@ -357,7 +357,8 @@ node scripts/test-shrink.mjs
 
 - **0.22.0** — cua-driver 可选后端（人机并行）：新增 `lib/cua-driver.js`（bin 探测 / daemon 懒启动 / `call` 封装）与 `lib/cua-tools.js`（`cua_windows` 列窗口、`cua_observe` 取 AX 树+可选截图、`cua_act` 后台执行 click/type_text/press_key/hotkey/scroll/drag/set_value），动作走 cua-driver 的 background 投递，不移动用户鼠标/不前置窗口，用户可同时操作同一台 Mac。原 13 个 GUI 工具与 AX 系列保持不变；未安装 cua-driver 时三个工具自动跳过。截图被 TCC 挡住时 `cua_observe` 自动退回纯 AX 并提示 `cua-driver permissions grant`。环境变量 `DSH_OPERATOR_CUA / _BIN / _SOCKET`；文档见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。`npm test` 新增 12 项（假驱动，共 194 项）。
 
-- **0.22.2** — 修 `cua_observe`：AX 树请求改为默认 `tree_format=markdown`（之前 `elements` 模式没有 `tree_markdown`，树文本为空）；截图失败时从驱动的 `screenshot_error` 读取原因并提示 Direct Capture 授权（不再抛 ENOENT）；`tree_format=elements` 时用 `elements` 数组兜底渲染，`elements_complete=false` 标 `<tree_partial>`；单测补到 13 项。
+- **0.22.3** — `cua_observe` 截图链路修复：驱动写出的截图实际是 PNG（文件名后缀不可信），改为按 magic bytes 判定 `image/png` / `image/jpeg` 并以正确 mediaType 保存；插件拉起 cua-driver daemon 时默认带 `CUA_DRIVER_ALLOW_CAPTURE_CONSENT_ALERT=1`，首次截图会弹一次 macOS「直接捕获」授权（点 Allow 即可，也可先跑 `cua-driver permissions grant`）；假驱动补 PNG fixture 与测试（14 项）。
+**0.22.2** — 修 `cua_observe`：AX 树请求改为默认 `tree_format=markdown`（之前 `elements` 模式没有 `tree_markdown`，树文本为空）；截图失败时从驱动的 `screenshot_error` 读取原因并提示 Direct Capture 授权（不再抛 ENOENT）；`tree_format=elements` 时用 `elements` 数组兜底渲染，`elements_complete=false` 标 `<tree_partial>`；单测补到 13 项。
 
 - **0.22.1** — 修 `cua_observe` 输出校验：返回值里 `note`/`image` 为 `undefined` 时不再原样返回（DSH 要求 lossless JSON，之前会报 `value is not lossless JSON`），改为有值才出现；单测补对应断言。行为与工具面不变。
 

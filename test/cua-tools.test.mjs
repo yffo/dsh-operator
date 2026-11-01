@@ -129,6 +129,19 @@ test("cua_observe：截图附件走 saveImage，并写 screenshot_out_file", asy
 	assert.equal(gws.payload.tree_format, "markdown", "默认请求 markdown 树（elements 数组无树文本）");
 });
 
+test("cua_observe：驱动写 PNG 时按真实格式保存", async () => {
+	process.env.FAKE_CUA_PNG = "1";
+	const { definitions, dir, saved } = setup();
+	const tool = definitions.get("cua_observe");
+	const output = await tool.execute({ window_id: 7, include_screenshot: true }, {});
+	delete process.env.FAKE_CUA_PNG;
+	cleanup(dir);
+	assert.equal(output.image.mediaType, "image/png");
+	assert.equal(output.image.width, 1);
+	assert.equal(output.image.height, 1);
+	assert.equal(saved[0].mediaType, "image/png");
+});
+
 test("cua_observe：tree_format=elements 时用数组兜底渲染", async () => {
 	process.env.FAKE_CUA_TREE_FORMAT_ELEMENTS = "1";
 	const { definitions, dir } = setup();
