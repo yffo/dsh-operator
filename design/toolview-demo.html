@@ -107,6 +107,12 @@
   .step[data-state="done"] .idx svg path{stroke-dasharray:26;stroke-dashoffset:26;animation:drawCheck .42s .1s ease forwards}
   #actTitle.pop,#hudTitle.pop{animation:hudNumIn .34s cubic-bezier(.2,.8,.25,1) both}
   .card-head{position:relative;overflow:hidden}
+  @keyframes cardLift{0%{transform:translateY(2px) scale(.997)}55%{transform:translateY(-2px) scale(1.003)}100%{transform:none}}
+  @keyframes thumbGlow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 60%,transparent);border-color:var(--warn)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  @keyframes doneBurst{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 48%,transparent)}55%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  .card.jolt{animation:cardLift .5s cubic-bezier(.2,.8,.25,1) both}
+  .step[data-state="running"] .thumb{animation:thumbGlow .9s ease-out both;border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+  .card.complete{animation:doneBurst 1.1s ease-out both}
   .card-head.advance::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--warn),transparent);animation:headSheen .8s cubic-bezier(.3,.8,.25,1) both}
   .steps{padding:2px 8px 8px;display:flex;flex-direction:column}
   .card[data-open="false"] .steps, .card[data-open="false"] .card-foot, .card[data-open="false"] .progress{display:none}
@@ -606,6 +612,7 @@
     if(kind==="run" && actHead && lastHeadStep !== currentIdx){
       lastHeadStep = currentIdx;
       actHead.classList.remove("advance"); void actHead.offsetWidth; actHead.classList.add("advance");
+      actCard.classList.remove("jolt"); void actCard.offsetWidth; actCard.classList.add("jolt");
     }
   }
 
@@ -637,6 +644,7 @@
   var lbHead = document.getElementById("lbHead");
   var toastTimer = null;
   var lastHudKey = "";
+  var lastAllDone = false;
   var HUD_TARGETS = ["系统设置","系统设置 › 显示器","系统设置 › 显示器 › 排列","系统设置 › 外观 › 对比度","访达 › 下载窗口"];
 
   function showToast(text){
@@ -668,6 +676,8 @@
     var failed = STEPS.some(function(s){ return s.state==="warn" || s.state==="error"; });
     var done = STEPS.every(function(s){ return s.state==="done"; });
     var takeover = actCard.dataset.takeover === "true";
+    if(done && !lastAllDone){ actCard.classList.remove("complete"); void actCard.offsetWidth; actCard.classList.add("complete"); }
+    lastAllDone = done;
     var n = Math.min(currentIdx+1, total);
     hudEl.dataset.state = done ? "done" : (takeover ? "takeover" : ((needs||failed) ? "warn" : "run"));
     var hudText = done ? "已完成 · 5/5 步" : (takeover ? "你接管中 · 第 "+n+"/5 步" : "正在操作 · 第 "+n+"/5 步");
@@ -725,6 +735,9 @@
     clearTimers();
     running = true;
     failureDone = false;
+    lastAllDone = false;
+    lastHeadStep = -1;
+    actCard.classList.remove("complete","jolt");
     currentIdx = 0;
     elapsedBase = 0;
     startedAt = Date.now();
