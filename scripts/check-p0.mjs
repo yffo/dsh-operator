@@ -20,6 +20,8 @@ const src = await readFile(join(root, "lib/computer-use/index.js"), "utf8");
 const backend = await readFile(join(root, "lib/computer-use/backend-xLwiz83E.js"), "utf8");
 const operatorTools = await readFile(join(root, "lib/operator-tools.js"), "utf8");
 const axObserver = await readFile(join(root, "lib/ax-observer.js"), "utf8");
+const cuaTools = await readFile(join(root, "lib", "cua-tools.js"), "utf8");
+const cuaDriver = await readFile(join(root, "lib", "cua-driver.js"), "utf8");
 
 const failures = [];
 function check(ok, label) {
@@ -75,6 +77,12 @@ check(src.includes("PATCH(computer-use): tool output schemaVersion"), "GUI 工�
 check(src.includes('schemaVersion: { type: "integer" }'), "schemaVersion 字段声明在");
 check(src.includes("PATCH(computer-use): computer-use seam provider"), "seam provider 接入在（0.21.12 / PLAN 0.11-4）");
 check(src.includes("claimSeamProvider(ctx, SEAM_PROVIDER_NAME)"), "apply 启动时占用 seam 槽位");
+check(existsSync(join(root, "lib", "cua-tools.js")), "lib/cua-tools.js 在（0.22.0 cua-driver 工具面）");
+check(existsSync(join(root, "lib", "cua-driver.js")), "lib/cua-driver.js 在（daemon/CLI 客户端）");
+check(cuaTools.includes("export function registerCuaTools"), "导出 registerCuaTools");
+check(cuaTools.includes("cua_windows") && cuaTools.includes("cua_observe") && cuaTools.includes("cua_act"), "注册 cua_windows/cua_observe/cua_act 三个工具");
+check(cuaDriver.includes("ensureCuaDaemon") && cuaDriver.includes("DSH_OPERATOR_CUA_BIN"), "cua-driver 客户端含 daemon 懒启动与二进制解析");
+check(src.includes("registerCuaTools(ctx, resolvedConfig"), "apply 里注册 cua 工具面");
 check(existsSync(join(root, "lib", "seam-provider.js")), "lib/seam-provider.js 在");
 
 if (failures.length > 0) {

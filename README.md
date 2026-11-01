@@ -36,6 +36,7 @@
 | 应用 / 文件 | `list_apps`、`open_app`、`open_in_browser`、`open_in_finder` |
 | 查询 / 验证 | `list_windows`（窗口 + 显示器 + 前台 App，含 window_id）、`screenshot_window`（只截指定窗口）、`verify_state`（轮询状态谓词，只报事实、不带图）、`ax_press` / `ax_set_value`（按 AX 快照 index 后台点按/写入）、`ax_scroll`（AX 滚动区域，可给 index 或按 role/title 自动选容器；原生动作优先、不支持时提窗滚轮回退）、`ax_menu`（菜单路径触发）、`window_move`（按 pid/标题后台移动/缩放窗口，AXPosition/AXSize）、`zoom_region`（局部原生放大） |
 | 后台会话 | `code_agent`、`code_agent_status`、`code_agent_stop` |
+| 人机并行（0.22.0 可选） | `cua_windows`、`cua_observe`、`cua_act`（走 cua-driver 后台投递，不移动用户鼠标；需另装 cua-driver，见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)） |
 
 每次工具调用后自动附带新的前台窗口截图，坐标用 0–1000 归一化（Retina / 多倍屏都按比例，不是像素）。
 
@@ -130,6 +131,16 @@ cd ~/.dsh && dsh plugin --profile desktop remove dsh-operator
 | `legacyToolNames` | `true` | 被 v2 强工具覆盖的 14 个旧工具名是否仍直接暴露；`false` 时只保留 `cu_observe`/`cu_act`（registry 内仍保留供分派/回放） |
 | `failureSamples` | `true` | 工具失败时把诊断写进 `~/.dsh/dsh-operator/failures/<日期>.jsonl`（工具/分类/错误/脱敏参数，5MB 轮转、最多 20 个文件，绝不外传） |
 
+### cua-driver（0.22.0，可选）
+
+| 环境变量 | 说明 |
+| --- | --- |
+| `DSH_OPERATOR_CUA=0` | 关闭 `cua_*` 工具（不注册、不拉 daemon） |
+| `DSH_OPERATOR_CUA_BIN` | 指定 `cua-driver` 可执行文件路径 |
+| `DSH_OPERATOR_CUA_SOCKET` | 指定 daemon socket 路径 |
+
+不设置时：自动探测 `PATH` / `~/.local/bin` / `/opt/homebrew/bin` / `/usr/local/bin`；首次调用 `cua_*` 会自动拉起 `cua-driver serve`（约 1–2s）。截图需要 `cua-driver permissions grant` 授权，未授权时 `cua_observe` 自动退回纯 AX 树并提示。
+
 ## 排障与失败样本
 
 ```bash
@@ -159,6 +170,9 @@ npm run failures            # 失败样本汇总（--json / --files / --dir / --
 - **`ax_scroll` 可以不给 index**：滚动容器常被匿名节点过滤或排在 120 节点之外；此时传 `expect_role`（可选 `expect_title`），工具会在新鲜树里自动选面积最大的匹配滚动容器（输出带 `resolved` 标记）。给 index 时仍以快照为准，必要时把 `axMaxNodes` 调大（如 400）。
 - **`window_move` 的 Finder 尺寸限制**：实测部分 Finder 窗口接受 AXPosition 但拒绝 AXSize（位置成功、尺寸保持原值，例如「下载」窗口 920x436 不变）；需要精确并排时优先选择接受 resize 的窗口，或让用户手动调整。AX frame 位置读回以 AX frame 为准，CGWindow bounds 与其有系统性偏移。
 - **多窗口拖拽前先把目标窗口置顶**：其他 App 窗口（如 Harness）可能盖住目标 Finder 窗口，拖拽落点会交给最上层窗口（实测掉进 Harness 聊天框变成附件）。用 `ax_menu` 的「窗口/<标题>」或 `open_app` 后点击目标窗口，再执行跨窗拖拽。
+- **cua_* 需要额外安装 cua-driver**：未安装时三个工具不注册（启动 warn 一条），其余功能不受影响；截图还需 TCC 屏幕录制授权（不授权也能用 AX 树 + 后台点按）。
+- **cua_* 的后台 type_text 在 Electron/Chromium 可能回退前台**：这类 App 会拒无焦点投递，cua-driver 回退 CGEvent；原生 App 拖放无法后台（`background_unavailable`），需 `fallback_foreground`。
+- **`element_token` 只对当次快照有效**：窗口/界面变化后要重新 `cua_observe`；`x/y` 路径要求窗口可见（不用置顶，但不能最小化或在别的 Space）。
 
 - **平台**：以 macOS 为主；Windows 上 vendored 代码有 koffi 后端，但本仓库未验证。Windows/Linux 上扩展工具（`list_windows` / `screenshot_window` / `verify_state` / AX 系列）不注册，启动时会打印一条 `extended tools are macOS-only` 警告；截图降 token 管线（sips）也会跳过、原样返回。Linux 不提供 GUI 操作。AX 助手是通用二进制（arm64 + x86_64），Intel Mac 也可用。
 - **多屏 / 混合 DPI**：坐标与点击换算按全局逻辑点、与显示器 scale 无关；观察截图按捕获矩形的逻辑点区域取像素，混合 DPI 下不同屏的截图像素密度不同、跨屏 union 仍可能裁错（上游 dsh-orb issue #38，单屏机无法真机验证）。`list_windows` 会显式列出每个显示器的 bounds/scale 和每个窗口的归属，可用 `screenshot_window` 按窗口截图规避。
@@ -341,6 +355,8 @@ node scripts/test-shrink.mjs
 
 - **0.21.12** — 官方 computer-use seam provider 适配（PLAN 0.11-4）：研究确认 seam 只是「单 provider 独占注册表」（无工具目录/ActionResult 契约），因此新增 `lib/seam-provider.js`——`ctx.get("computerUse")` 探测：seam 未挂载时保持原有全局挂载；已挂载时以 `dsh-operator` 注册为官方 provider 并随插件生命周期释放；槽位被其它 provider 占用时 fail-fast（避免两套 computer-use 抢桌面）。`operator_status` 增 `seamProvider` 字段与文本行；不用 cordis 必需注入以兼容没装 seam 的用户；`brand` 运行时恒等、零依赖。文档见 [docs/SEAM-PROVIDER.md](docs/SEAM-PROVIDER.md)。`npm test` 182 项。
 
+- **0.22.0** — cua-driver 可选后端（人机并行）：新增 `lib/cua-driver.js`（bin 探测 / daemon 懒启动 / `call` 封装）与 `lib/cua-tools.js`（`cua_windows` 列窗口、`cua_observe` 取 AX 树+可选截图、`cua_act` 后台执行 click/type_text/press_key/hotkey/scroll/drag/set_value），动作走 cua-driver 的 background 投递，不移动用户鼠标/不前置窗口，用户可同时操作同一台 Mac。原 13 个 GUI 工具与 AX 系列保持不变；未安装 cua-driver 时三个工具自动跳过。截图被 TCC 挡住时 `cua_observe` 自动退回纯 AX 并提示 `cua-driver permissions grant`。环境变量 `DSH_OPERATOR_CUA / _BIN / _SOCKET`；文档见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。`npm test` 新增 12 项（假驱动，共 194 项）。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图
@@ -357,6 +373,7 @@ node scripts/test-shrink.mjs
 - zoom 局部放大、历史截图轮转、多屏 DPI 修正（`list_windows` 已给出显示器 bounds/scale，剩下是截图侧）。
 - Windows 侧验证与做厚（当前仅 vendored 基础工具；`list_windows` / `screenshot_window` / `verify_state` / `ax_press` 只在 macOS 注册）。
 - 官方 seam provider（已完成，0.21.12）：seam 挂载时本包自动以 provider 形态加入，未挂载保持全局挂载；用法与二选一语义见 [docs/SEAM-PROVIDER.md](docs/SEAM-PROVIDER.md)。
+- cua-driver 可选后端（已完成，0.22.0）：`cua_windows/cua_observe/cua_act` 三工具走后台投递实现人机并行，见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。
 
 ## 上游与许可
 
