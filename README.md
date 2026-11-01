@@ -355,6 +355,7 @@ node scripts/test-shrink.mjs
 
 - **0.21.12** — 官方 computer-use seam provider 适配（PLAN 0.11-4）：研究确认 seam 只是「单 provider 独占注册表」（无工具目录/ActionResult 契约），因此新增 `lib/seam-provider.js`——`ctx.get("computerUse")` 探测：seam 未挂载时保持原有全局挂载；已挂载时以 `dsh-operator` 注册为官方 provider 并随插件生命周期释放；槽位被其它 provider 占用时 fail-fast（避免两套 computer-use 抢桌面）。`operator_status` 增 `seamProvider` 字段与文本行；不用 cordis 必需注入以兼容没装 seam 的用户；`brand` 运行时恒等、零依赖。文档见 [docs/SEAM-PROVIDER.md](docs/SEAM-PROVIDER.md)。`npm test` 182 项。
 
+- **0.22.5** — cua_act 的 stale token 自动重试修复：驱动失败时 stdout 里完整的 `element_token is stale…` 之前被 runRaw 只保留末 8 行截掉、failureText 又只读 error.message，导致重试分支不触发；现在 failureText 汇总 error.message + error.stdout + error.stderr + result.steps；fake 驱动对此路径改为非零退出做回归；单测 15 项、全量 197 项。
 - **0.22.4** — `open_app` 对本地化 App 显示名回退 bundle id（修 `open -a 系统设置` 失败：先 `id of app` 解析，再 `open -b`）；`cua_act` 遇到 `element_token` 过期自动重新 observe 并重试一次（结果标 `retried="true"`），并在文档中明确 token 只在同一次 observe→act 内有效、优先用 role/name 或 x/y；假驱动/单测补 1 项（15 项）。
 - **0.22.0** — cua-driver 可选后端（人机并行）：新增 `lib/cua-driver.js`（bin 探测 / daemon 懒启动 / `call` 封装）与 `lib/cua-tools.js`（`cua_windows` 列窗口、`cua_observe` 取 AX 树+可选截图、`cua_act` 后台执行 click/type_text/press_key/hotkey/scroll/drag/set_value），动作走 cua-driver 的 background 投递，不移动用户鼠标/不前置窗口，用户可同时操作同一台 Mac。原 13 个 GUI 工具与 AX 系列保持不变；未安装 cua-driver 时三个工具自动跳过。截图被 TCC 挡住时 `cua_observe` 自动退回纯 AX 并提示 `cua-driver permissions grant`。环境变量 `DSH_OPERATOR_CUA / _BIN / _SOCKET`；文档见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。`npm test` 新增 12 项（假驱动，共 194 项）。
 

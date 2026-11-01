@@ -63,12 +63,15 @@ function windowsFixture() {
 	};
 }
 
+let staleExitCode = 0;
+
 /** 读 run_steps 的 fixture，或从 env 覆盖。 */
 function runStepsFixture(payload) {
 	if (process.env.FAKE_CUA_STALE_ONCE === "1") {
 		const marker = process.env.FAKE_CUA_STALE_MARKER;
 		if (typeof marker === "string" && marker.length > 0 && existsSync(marker) === false) {
 			writeFileSync(marker, "1");
+			staleExitCode = 1;
 			return {
 				ok: false,
 				executed: 0,
@@ -176,8 +179,9 @@ if (command === "call") {
 		process.exit(0);
 	}
 	if (tool === "run_steps") {
-		console.log(JSON.stringify(runStepsFixture(payload)));
-		process.exit(0);
+		const fixture = runStepsFixture(payload);
+		console.log(JSON.stringify(fixture));
+		process.exit(staleExitCode);
 	}
 	console.log(JSON.stringify({ ok: true, tool }));
 	process.exit(0);
