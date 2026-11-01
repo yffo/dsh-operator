@@ -38,8 +38,8 @@ jobs:
       - name: Unit / schema / bench checks
         run: npm test
 
-      - name: Vendor patch idempotency
-        run: node scripts/apply-vendor-patches.mjs --check
+      - name: Fork guards (check-p0)
+        run: node scripts/check-p0.mjs
 
       - name: Doctor (informational on CI; 没有安装 DSH profile 时会有 ❌ 属正常)
         run: node scripts/doctor.mjs || true
