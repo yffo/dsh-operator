@@ -333,6 +333,8 @@ node scripts/test-shrink.mjs
 
 - **0.21.8** — 多动作批处理（PLAN 0.11-1 最小版）：新增 `ax_batch` 工具，一次调用执行 2–12 个标量 AX 动作（`ax_press`/`ax_set_value`/`ax_menu`/`ax_scroll`），首错即停（异常、`pressed:false`、`ok:false` 都算失败），丢弃中间截图只回每步摘要（`N/M ok`、失败步号、逐步 note），适合「一次观察后回放已知点击序列」；客户端加「AX batch」卡片（`N/M step(s) ok`，失败附 `failed at step K`）。风控说明：`steps` 是 array-of-object，靠 `npm test` 与 preflight 双重验证 DSH 参数 DSL 是否接受；若未来 DSL 收紧则回退为逐动作调用。`npm test` 175 项。
 
+- **0.21.9** — 多动作批处理正式版（PLAN 0.11-1）：`ax_batch` 动作面扩到 8 种（AX `ax_press`/`ax_set_value`/`ax_menu`/`ax_scroll` + fork `click`/`scroll`/`input`/`hotkey`，用 `x`/`y`/`text`/`keys`/`scroll_level` 等字段表达），失败判定沿用异常、`pressed:false`、`ok:false`。解析改为 **handlers 优先、`computerUseToolDefs` 兜底**（修 0.21.8 中自研 AX 工具不在 fork 工具表、运行时可能误报 `not registered` 的隐患）。「一次观察复用」语义明确：先 `cu_observe`/AX 快照观察一次，再用批处理回放已知序列，中间截图丢弃、只回逐步摘要。`npm test` 176 项。
+
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。
 
 ## 路线图

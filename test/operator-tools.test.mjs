@@ -49,7 +49,11 @@ function collectTools() {
 			["ax_press", { execute: async (args) => ({ pressed: args.index !== 9, index: args.index, role: "AXButton", title: "Mock" }) }],
 			["ax_set_value", { execute: async () => ({ set: true }) }],
 			["ax_menu", { execute: async () => ({ ok: true }) }],
-			["ax_scroll", { execute: async () => ({ ok: true, scrolled: true }) }]
+			["ax_scroll", { execute: async () => ({ ok: true, scrolled: true }) }],
+			["click", { execute: async (args) => (args.position[0] === 999 ? { ok: false, note: "decorated window blocked" } : { ok: true }) }],
+			["scroll", { execute: async () => ({ ok: true }) }],
+			["input_text", { execute: async () => ({ ok: true }) }],
+			["hotkey", { execute: async () => ({ ok: true }) }]
 		])
 	});
 	return registered;
@@ -201,16 +205,25 @@ test("operator_status / plan_list：返回字段全部在 output schema 声明�
 	}
 });
 
-test("ax_batch：顺序执行 2 步、失败即停并回显步骤摘要", async () => {
+test("ax_batch：fork 动作顺序执行、失败即停并回显步骤摘要", async () => {
 	const tools = collectTools();
 	const batch = tools.find((tool) => tool.name === "ax_batch");
 	assert.ok(batch, "ax_batch 已注册");
-	const ok = await batch.execute({ steps: [{ action: "ax_press", index: 1 }, { action: "ax_menu", path: "文件/关闭" }] });
+	const ok = await batch.execute({ steps: [{ action: "click", x: 10, y: 20 }, { action: "hotkey", keys: "cmd,4" }] });
 	assert.equal(ok.steps.length, 2);
 	assert.equal(ok.failedAt, undefined);
 	assert.match(ok.text, /2\/2 ok/);
-	const failed = await batch.execute({ steps: [{ action: "ax_press", index: 9 }, { action: "ax_menu", path: "文件/关闭" }] });
+	const failed = await batch.execute({ steps: [{ action: "click", x: 999, y: 20 }, { action: "hotkey", keys: "cmd,4" }] });
 	assert.equal(failed.failedAt, 0);
 	assert.equal(failed.steps.length, 1);
 	assert.match(failed.text, /failed at step 1/);
+});
+
+test("ax_batch：AX 步骤经 handlers 解析（不再报 not registered）", async () => {
+	const tools = collectTools();
+	const batch = tools.find((tool) => tool.name === "ax_batch");
+	assert.ok(batch, "ax_batch 已注册");
+	const result = await batch.execute({ steps: [{ action: "ax_press", index: 1 }, { action: "ax_press", index: 2 }] });
+	assert.ok(result.steps.length >= 1);
+	assert.notEqual(result.steps[0].note, "ax_press not registered", "ax_press 应从 handlers 解析");
 });

@@ -96,9 +96,23 @@ check(
 	"工具名齐全"
 );
 const batch = registered.find((tool) => tool.name === "ax_batch");
+const batchActions = batch?.parameters?.steps?.items?.properties?.action?.enum;
 check(
-	batch !== undefined && Array.isArray(batch.parameters.steps.items.properties.action.enum) && batch.parameters.steps.items.properties.action.enum.length === 4,
-	"ax_batch 参数面完整（action 枚举 4 种）"
+	batch !== undefined &&
+		Array.isArray(batchActions) &&
+		[
+			"ax_press",
+			"ax_set_value",
+			"ax_menu",
+			"ax_scroll",
+			"click",
+			"scroll",
+			"input",
+			"hotkey"
+		].every((action) => batchActions.includes(action)) &&
+		batch.parameters.steps.items.properties.text !== undefined &&
+		batch.parameters.steps.items.properties.keys !== undefined,
+	"ax_batch 参数面完整（8 种 GUI 动作 + fork 字段）"
 );
 const verify = registered.find((tool) => tool.name === "verify_state");
 check(
