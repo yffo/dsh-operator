@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-15]
-        node: [20, 22]
+        node: [22]
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +37,9 @@ jobs:
 
       - name: Unit / schema / bench checks
         run: npm test
+
+      - name: Vendor patch idempotency
+        run: node scripts/apply-vendor-patches.mjs --check
 
       - name: Doctor (informational on CI; 没有安装 DSH profile 时会有 ❌ 属正常)
         run: node scripts/doctor.mjs || true
