@@ -180,6 +180,7 @@ npm test            # 212 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.24.3** `browser_prepare` 同样显式传 `strategy: {kind:"existing_profile"}`：不带时驱动只做端点探测（`already_prepared`），`get_browser_state` 仍以 `browser_consent_required` 拒绝。
 - **0.24.2** `browser_state` 首次绑定补 `strategy: {kind:"existing_profile"}`：cua-driver 对 `pid+window_id` 形式的快照要求显式策略，缺了会以 `browser_consent_required` 拒绝。
 - **0.24.1** 修复客户端插件启动失败：`client/client.js` 的模块导出补 `inject: ["slots"]`——宿主 client ctx 默认不注入 slots，直接读 `ctx.slots` 会抛 `cannot get property "slots" without inject`，App 启动即报 `web boot: 1 entry did not activate / dsh-operator: failed`；新增对应 bundle 断言。
 - **0.23.0** toolview P0 落地真客户端：中文活动卡片（第 n/N 步、实时耗时、执行模式/确认门徽标）、分段进度、逐步行、结果缩略图+灯箱、失败原因与建议、完成折叠；新增渲染测试 `test/client-render.test.mjs`。
