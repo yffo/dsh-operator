@@ -97,6 +97,12 @@ test("summarizeState 兜底为紧凑 JSON", () => {
 	assert.match(summarizeState({ foo: "bar" }), /"foo":"bar"/);
 });
 
+test("summarizeState 输出元素 refs，供 browser_click 直接使用", () => {
+	const text = summarizeState({ target_id: "t1", tab_id: "tab1", refs: [{ ref: "p2:2", node: "a", label: "href=https://iana.org/help/example-domains" }] });
+	assert.match(text, /refs \(1\)/);
+	assert.match(text, /p2:2 a href=https:\/\/iana\.org/);
+});
+
 test("compactJson 超长时截断并提示", () => {
 	const text = compactJson({ blob: "x".repeat(50) }, 20);
 	assert.ok(text.length < 120);
