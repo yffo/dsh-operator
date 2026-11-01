@@ -8,7 +8,7 @@ import vm from "node:vm";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const source = readFileSync(join(root, "client", "client.js"), "utf8");
 
-// ---- 极小的 React 兼容层：createElement 记成对象树，不碰 DOM（卡片是纯函数组件） ----
+// ---- 极小的 React 兼容层：createElement 记成对象树，不碰 DOM ----
 const MiniReact = {
 	createElement(type, props, ...children) {
 		return { type, props: props ?? {}, children: children.flat(Infinity).filter((c) => c !== null && c !== undefined && c !== false && c !== true) };
@@ -17,12 +17,10 @@ const MiniReact = {
 
 function loadClient() {
 	let captured = null;
+	let registered = 0;
 	const sandbox = {
 		window: { __ModuleLoader__: { load: (def) => { captured = def; } } },
 		console,
-		setInterval,
-		clearInterval,
-		queueMicrotask,
 		Date,
 		JSON,
 		Math,
@@ -32,16 +30,14 @@ function loadClient() {
 		Number,
 		Boolean,
 		Error,
-		Promise,
-		encodeURIComponent
+		Promise
 	};
 	vm.runInNewContext(source, sandbox, { filename: "client/client.js" });
 	assert.ok(captured && typeof captured.factory === "function", "client.js 必须注册 factory");
-	const requireShim = (name) => {
+	const mod = captured.factory((name) => {
 		if (name === "react") return MiniReact;
 		throw new Error(`unexpected require: ${name}`);
-	};
-	const mod = captured.factory(requireShim);
+	});
 	let Component = null;
 	mod.apply({
 		slots: {
@@ -49,13 +45,14 @@ function loadClient() {
 				if (slot === "tool.call.toolview") fn();
 			},
 			register(_options, component) {
+				registered += 1;
 				Component = component;
 				return () => {};
 			}
 		}
 	});
 	assert.equal(typeof Component, "function", "apply() 必须注册 tool.call.toolview 视图");
-	return Component;
+	return { Component, registered };
 }
 
 /** 把函数组件展开成普通元素树（refs / 事件不执行）。 */
@@ -87,14 +84,11 @@ function inspect(tree) {
 	return { texts, text: texts.join("\n"), nodes };
 }
 
-const image = { type: "image", attachment: { attachmentId: "att-1", mediaType: "image/png", bytes: 2048, width: 800, height: 520, name: "shot.png" } };
-const loadImage = Object.assign(() => Promise.resolve("data:image/png;base64,"), { peek: () => "data:image/png;base64," });
-
 function startBlock(name, callId, args, time = Date.now()) {
 	return { phase: "start", callId, name, turn: 1, step: 1, time, subCalls: [], args, argsRaw: JSON.stringify(args) };
 }
 
-function resultBlock(name, callId, args, { text = "", isError = false, error, content, callTime = Date.now() - 1200 } = {}) {
+function resultBlock(name, callId, args, { text = "", isError = false, error, callTime = Date.now() - 1200 } = {}) {
 	return {
 		kind: "tool-result",
 		seq: 1,
@@ -104,102 +98,49 @@ function resultBlock(name, callId, args, { text = "", isError = false, error, co
 		callTime,
 		args,
 		call: { name, argsRaw: JSON.stringify(args) },
-		content: content ?? (text === "" ? [] : [{ type: "text", text }]),
+		content: text === "" ? [] : [{ type: "text", text }],
 		isError,
 		error,
 		subCalls: []
 	};
 }
 
-const view = loadClient();
-const render = (toolName, block) => inspect(expand(view({ toolName, block, loadImage })));
+const { Component: view, registered } = loadClient();
+const render = (toolName, block) => inspect(expand(view({ toolName, block })));
 
-test("运行中的 ax_batch 展示标题/步骤/实时耗时，且不把内部字段当目标", () => {
-	const { text, nodes } = render("ax_batch", startBlock("ax_batch", "c1", {
-		steps: [{ action: "press", role: "AXButton" }, { action: "set_value", title: "搜索框" }, { action: "press", title: "提交" }]
-	}));
-	assert.match(text, /正在操作 · 第 1\/3 步/);
-	assert.match(text, /按下控件/);
-	assert.match(text, /写入字段/);
-	assert.match(text, /后台执行 · 不影响你/);
-	assert.doesNotMatch(text, /目标：/);
-	assert.equal(nodes.filter((node) => node.props?.["data-dop-elapsed"] !== undefined).length, 1, "运行卡片要有实时耗时节点");
+test("每个 operator 工具都注册了行视图", () => {
+	assert.equal(registered, 18, "18 个工具的 keyed toolview");
 });
 
-test("运行中的卡片带长任务提示节点，结算后不带", () => {
-	const running = render("ax_batch", startBlock("ax_batch", "c-long", { steps: [{ action: "press" }, { action: "press" }] }));
-	assert.equal(running.nodes.filter((node) => node.props?.["data-dop-long"] !== undefined).length, 1, "运行卡片要有长耗时提示节点");
-	const settled = render("ax_batch", resultBlock("ax_batch", "c-done", { steps: [] }, { text: "ax_batch: 2/2 ok" }));
-	assert.equal(settled.nodes.filter((node) => node.props?.["data-dop-long"] !== undefined).length, 0, "结算后不再显示长耗时提示");
+test("运行中只显示一行「DSH 正在操作电脑」", () => {
+	const { text, nodes } = render("ax_batch", startBlock("ax_batch", "c1", { steps: [{ action: "press" }] }));
+	assert.match(text, /DSH 正在操作电脑/);
+	assert.match(text, /ax batch/);
+	assert.doesNotMatch(text, /第 1\/1 步|进度|截图/);
+	assert.equal(nodes.filter((node) => node.props?.["data-state"] === "running").length, 1);
 });
 
-test("需要确认的高危工具展示确认门与前台徽标", () => {
-	const { text } = render("ax_press", startBlock("ax_press", "c2", { role: "AXButton", title: "保存", delivery_mode: "foreground" }));
-	assert.match(text, /需要你确认/);
-	assert.match(text, /前台执行 · 短暂占用/);
-	assert.match(text, /目标：保存 › AXButton/);
-});
-
-test("已确认的高危工具不再显示确认门", () => {
-	const { text } = render("ax_press", startBlock("ax_press", "c3", { role: "AXButton", title: "保存", confirm: true }));
-	assert.doesNotMatch(text, /需要你确认/);
-});
-
-test("带截图的结果卡片展示缩略图与张数", () => {
-	const block = resultBlock("cu_observe", "c4", { action: "screenshot" }, {
-		text: "Safari › 天气 · 主窗口\n页面显示 26°C，晴。",
-		content: [{ type: "text", text: "Safari › 天气 · 主窗口\n页面显示 26°C，晴。" }, image]
-	});
-	const { text, nodes } = render("cu_observe", block);
+test("结算后同一行补状态与耗时", () => {
+	const { text } = render("ax_batch", resultBlock("ax_batch", "c2", {}, { text: "ax_batch: 2/2 ok", callTime: Date.now() - 1200 }));
+	assert.match(text, /DSH 正在操作电脑/);
 	assert.match(text, /已完成/);
-	assert.match(text, /1 张截图/);
-	const img = nodes.find((node) => node.type === "img");
-	assert.ok(img, "应渲染 img 缩略图");
-	assert.equal(img.props["data-dop-attach"], "0");
+	assert.match(text, /1\.[0-9]s/);
 });
 
-test("失败卡片给出原因与可执行建议", () => {
-	const block = resultBlock("browser_dom_click", "c5", { selector: "#submit" }, {
-		text: "Error: permission denied — AppleScript JavaScript channel is disabled (not allowed).",
-		isError: true,
-		error: { name: "Error", message: "permission denied" }
-	});
-	const { text } = render("browser_dom_click", block);
-	assert.match(text, /失败/);
-	assert.match(text, /权限没开/);
-	assert.match(text, /结果：/);
+test("失败与中断用状态词区分", () => {
+	const failed = render("browser_dom_click", resultBlock("browser_dom_click", "c3", {}, { text: "permission denied", isError: true, error: { message: "permission denied" } }));
+	assert.match(failed.text, /失败/);
+	const stopped = render("screenshot_window", resultBlock("screenshot_window", "c4", {}, { isError: true, error: { code: "interrupted", message: "调用被中断" } }));
+	assert.match(stopped.text, /已中断/);
+	assert.doesNotMatch(stopped.text, /失败/);
 });
 
-test("ax_batch 失败的第 2/2 步：进度条 + 失败行 + 建议", () => {
-	const block = resultBlock("ax_batch", "c6", { steps: [{ action: "press" }, { action: "press" }] }, {
-		text: "ax_batch: 1/2 ok (failed at step 2)\n  1. press ok — opened\n  2. press FAILED — element not found (stale token)",
-		isError: true,
-		error: { name: "Error", message: "failed at step 2" }
-	});
-	const { text, nodes } = render("ax_batch", block);
-	assert.match(text, /失败 · 第 2\/2 步/);
-	assert.match(text, /1\/2 step\(s\) ok · failed at step 2/);
-	assert.match(text, /重新观察窗口/);
-	const segments = nodes.filter((node) => node.props?.["data-state"] !== undefined && (node.props?.className === "done" || node.props?.className === "err"));
-	assert.equal(segments.length, 2, "两段进度条：done + err");
-});
-
-test("中断的调用显示已中断而不是失败", () => {
-	const block = resultBlock("screenshot_window", "c7", { window_id: 14397 }, {
-		isError: true,
-		error: { name: "InterruptedError", code: "interrupted", message: "调用被中断" }
-	});
-	const { text } = render("screenshot_window", block);
-	assert.match(text, /已中断/);
-	assert.doesNotMatch(text, /失败 ·/);
-});
-
-test("卡片渲染自身不会退化成 card error", () => {
+test("渲染自身不会退化成错误行", () => {
 	for (const [tool, block] of [
-		["ax_batch", startBlock("ax_batch", "c8", { steps: [{ action: "press" }] })],
-		["operator_status", resultBlock("operator_status", "c9", {}, { text: "dsh-operator 0.23.0 (darwin)\nskills: 0 · plans: 0" })]
+		["ax_batch", startBlock("ax_batch", "c5", { steps: [] })],
+		["operator_status", resultBlock("operator_status", "c6", {}, { text: "dsh-operator 0.23.3 (darwin)" })]
 	]) {
 		const { text } = render(tool, block);
-		assert.doesNotMatch(text, /card error/);
+		assert.doesNotMatch(text, /card error|dsh-operator ·/);
 	}
 });

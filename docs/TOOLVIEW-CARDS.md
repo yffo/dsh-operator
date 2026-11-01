@@ -1,6 +1,6 @@
 # 工具卡片（toolview）设计：从「一行日志」到「活动卡片」
 
-> 状态：设计稿 + 可交互 demo v3（`design/toolview-demo.html`）；**P0 已落地 `client/client.js`（0.23.0）**，真实卡片的渲染验收见 `test/client-render.test.mjs`；宿主契约与验证方式见 [`docs/TOOLVIEW-P0-HANDOFF.md`](TOOLVIEW-P0-HANDOFF.md)。
+> 状态：**方案已回退（2026-11-02，杨总拍板）——不做活动卡片，真客户端只留一行「DSH 正在操作电脑」**；本文与 demo 保留为设计存档，不再扩写。历史：设计稿 + demo v3（`design/toolview-demo.html`）；P0 曾落地 `client/client.js`（0.23.0），真实卡片的渲染验收见 `test/client-render.test.mjs`；宿主契约与验证方式见 [`docs/TOOLVIEW-P0-HANDOFF.md`](TOOLVIEW-P0-HANDOFF.md)。
 > 交互稿截图：[确认门 + 桌面 HUD](design/screenshots/demo-hud-gate.jpg)、[失败与恢复 + HUD 需要处理](design/screenshots/demo-hud-failure.jpg)、[接管 + HUD 等你操作](design/screenshots/demo-hud-takeover.jpg)。
 > m08916 拍板结论已并入本文（见 §7），HUD 作为 P2 概念的可行性评估见 §9。
 
