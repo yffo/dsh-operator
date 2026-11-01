@@ -3,6 +3,9 @@
 // 两个模式：
 //   ax-snapshot --pid <pid> [--max-nodes N] [--max-depth N]
 //       读一份“最小取证”的 AX 树，输出 JSON（节点上限/深度由参数控制）。
+//   ax-snapshot --rpc
+//       常驻模式：stdin 逐行读 {"id":1,"argv":["--pid","123"]}，stdout 回 {"id":1,"code":0,"output":"…"}。
+//       进程模型与一次性调用完全一致，只省掉每次 spawn 的启动成本。
 //   ax-snapshot --hit-test <x> <y>
 //       按全局屏幕坐标（左上原点，逻辑点）做 AX hit-test，返回命中的角色/标题/描述。
 //   ax-snapshot --list-windows [--pid <pid>]
@@ -19,6 +22,22 @@
 
 import AppKit
 import ApplicationServices
+
+/// RPC 模式下把 JSON 输出收进内存，而不是写 stdout。
+final class OutputSink {
+    var text = ""
+}
+
+var captureSink: OutputSink?
+
+/// 统一的 JSON 输出点：一次性调用写 stdout，RPC 模式收集到 sink。
+func emit(_ data: Data) {
+    if let sink = captureSink {
+        sink.text += String(decoding: data, as: UTF8.self)
+        return
+    }
+    FileHandle.standardOutput.write(data)
+}
 
 struct Frame: Codable {
     let x: Double
@@ -481,8 +500,7 @@ func cgScrollFallback(element: AXUIElement, app: AXUIElement, pid: Int32, direct
 
 // MARK: - 主入口
 
-func main() -> Int32 {
-    let arguments = CommandLine.arguments
+func handleArguments(_ arguments: [String]) -> Int32 {
     var pid: Int32 = 0
     var pidFilter: Int32 = 0
     var maxNodes = 120
@@ -576,8 +594,8 @@ func main() -> Int32 {
             FileHandle.standardError.write(Data("ax-snapshot: failed to encode hit-test\n".utf8))
             return 4
         }
-        FileHandle.standardOutput.write(data)
-        FileHandle.standardOutput.write(Data("\n".utf8))
+        emit(data)
+        emit(Data("\n".utf8))
         return 0
     }
 
@@ -587,8 +605,8 @@ func main() -> Int32 {
             FileHandle.standardError.write(Data("ax-snapshot: failed to encode window list\n".utf8))
             return 4
         }
-        FileHandle.standardOutput.write(data)
-        FileHandle.standardOutput.write(Data("\n".utf8))
+        emit(data)
+        emit(Data("\n".utf8))
         return 0
     }
 
@@ -795,8 +813,8 @@ func main() -> Int32 {
         FileHandle.standardError.write(Data("ax-snapshot: failed to encode output\n".utf8))
         return 4
     }
-    FileHandle.standardOutput.write(data)
-    FileHandle.standardOutput.write(Data("\n".utf8))
+    emit(data)
+    emit(Data("\n".utf8))
     return 0
 }
 
@@ -858,9 +876,47 @@ func emit<T: Codable>(_ encoder: JSONEncoder, _ value: T) -> Int32 {
         FileHandle.standardError.write(Data("ax-snapshot: failed to encode output\n".utf8))
         return 4
     }
-    FileHandle.standardOutput.write(data)
-    FileHandle.standardOutput.write(Data("\n".utf8))
+    emit(data)
+    emit(Data("\n".utf8))
     return 0
+}
+
+
+// MARK: - 常驻 RPC 模式
+
+/// 读 stdin 的 JSON 行（`{"id":N,"argv":[...]}`），回一行 JSON。
+/// 复用同一个进程模型，AX 权限与 AppKit 初始化只付一次。
+func rpcLoop() -> Int32 {
+    while let line = readLine(strippingNewline: true) {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty { continue }
+        guard let data = trimmed.data(using: .utf8),
+              let request = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            print("{\"id\":0,\"code\":2,\"error\":\"bad request\"}")
+            fflush(stdout)
+            continue
+        }
+        let id = request["id"] as? Int ?? 0
+        let argv = request["argv"] as? [String] ?? []
+        let sink = OutputSink()
+        captureSink = sink
+        let code = handleArguments([CommandLine.arguments.first ?? "ax-snapshot"] + argv)
+        captureSink = nil
+        let response: [String: Any] = ["id": id, "code": Int(code), "output": sink.text]
+        if let out = try? JSONSerialization.data(withJSONObject: response),
+           let text = String(data: out, encoding: .utf8) {
+            print(text)
+            fflush(stdout)
+        }
+    }
+    return 0
+}
+
+func main() -> Int32 {
+    if CommandLine.arguments.contains("--rpc") {
+        return rpcLoop()
+    }
+    return handleArguments(CommandLine.arguments)
 }
 
 exit(main())
