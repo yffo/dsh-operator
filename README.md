@@ -357,6 +357,8 @@ node scripts/test-shrink.mjs
 
 - **0.22.0** — cua-driver 可选后端（人机并行）：新增 `lib/cua-driver.js`（bin 探测 / daemon 懒启动 / `call` 封装）与 `lib/cua-tools.js`（`cua_windows` 列窗口、`cua_observe` 取 AX 树+可选截图、`cua_act` 后台执行 click/type_text/press_key/hotkey/scroll/drag/set_value），动作走 cua-driver 的 background 投递，不移动用户鼠标/不前置窗口，用户可同时操作同一台 Mac。原 13 个 GUI 工具与 AX 系列保持不变；未安装 cua-driver 时三个工具自动跳过。截图被 TCC 挡住时 `cua_observe` 自动退回纯 AX 并提示 `cua-driver permissions grant`。环境变量 `DSH_OPERATOR_CUA / _BIN / _SOCKET`；文档见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。`npm test` 新增 12 项（假驱动，共 194 项）。
 
+- **0.22.2** — 修 `cua_observe`：AX 树请求改为默认 `tree_format=markdown`（之前 `elements` 模式没有 `tree_markdown`，树文本为空）；截图失败时从驱动的 `screenshot_error` 读取原因并提示 Direct Capture 授权（不再抛 ENOENT）；`tree_format=elements` 时用 `elements` 数组兜底渲染，`elements_complete=false` 标 `<tree_partial>`；单测补到 13 项。
+
 - **0.22.1** — 修 `cua_observe` 输出校验：返回值里 `note`/`image` 为 `undefined` 时不再原样返回（DSH 要求 lossless JSON，之前会报 `value is not lossless JSON`），改为有值才出现；单测补对应断言。行为与工具面不变。
 
 - **0.19.0** — 旧工具名过渡开关：配置 `legacyToolNames`（默认 `true`）；设为 `false` 时被 v2 覆盖的 14 个旧工具不再直接出现在工具列表，但仍留在 registry 里供 `cu_observe`/`cu_act` 分派与 skill/plan 回放。被覆盖的旧名：`screenshot` `list_windows` `screenshot_window` `zoom_region` `verify_state` `click` `drag` `scroll` `input_text` `hotkey` `ax_press` `ax_set_value` `ax_menu` `ax_scroll`。`npm test` 161 项。

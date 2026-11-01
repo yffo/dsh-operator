@@ -77,8 +77,27 @@ function runStepsFixture(payload) {
 }
 
 function windowStateFixture(payload) {
-	if (payload?.include_screenshot === true && typeof payload?.screenshot_out_file === "string") {
+	const wantShot = payload?.include_screenshot === true;
+	const blocked = wantShot && process.env.FAKE_CUA_GWS_FAIL === "direct_capture_consent_required";
+	if (wantShot && !blocked && typeof payload?.screenshot_out_file === "string") {
 		writeFileSync(payload.screenshot_out_file, JPEG_1X1);
+	}
+	if (process.env.FAKE_CUA_TREE_FORMAT_ELEMENTS === "1") {
+		return {
+			app_name: "FakeApp",
+			pid: payload?.pid ?? 4242,
+			window_id: payload?.window_id ?? 7,
+			snapshot_id: "s00000004",
+			element_count: 2,
+			returned_element_count: 2,
+			total_element_count: 2,
+			elements_complete: false,
+			tree_format: "elements",
+			elements: [
+				{ element_index: 0, role: "AXWindow", label: "Fake Report" },
+				{ element_index: 1, role: "AXButton", label: "Done" }
+			]
+		};
 	}
 	return {
 		app_name: "FakeApp",
@@ -92,7 +111,16 @@ function windowStateFixture(payload) {
 		elements_complete: true,
 		tree_format: "markdown",
 		truncated: false,
-		tree_markdown: "- [0] AXWindow \"Fake Report\" [actions=[raise]]\n  - [1] AXButton \"Done\" [actions=[press]]"
+		tree_markdown: "- [0] AXWindow \"Fake Report\" [actions=[raise]]\n  - [1] AXButton \"Done\" [actions=[press]]",
+		...blocked
+			? {
+					screenshot_error: {
+						code: "px_capture_unavailable",
+						reason:
+							"direct_capture_consent_required: screen capture skipped. Ask the user to run `cua-driver permissions grant` and choose Allow once; the accessibility tree is unaffected."
+					}
+				}
+			: {}
 	};
 }
 
@@ -120,10 +148,6 @@ if (command === "call") {
 		process.exit(0);
 	}
 	if (tool === "get_window_state") {
-		if (payload.include_screenshot === true && process.env.FAKE_CUA_GWS_FAIL === "direct_capture_consent_required") {
-			console.error("Desktop screenshot failed: direct_capture_consent_required: screen capture skipped");
-			process.exit(1);
-		}
 		console.log(JSON.stringify(windowStateFixture(payload)));
 		process.exit(0);
 	}

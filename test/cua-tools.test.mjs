@@ -126,6 +126,18 @@ test("cua_observe：截图附件走 saveImage，并写 screenshot_out_file", asy
 	assert.equal(saved.length, 1);
 	assert.equal(saved[0].mediaType, "image/jpeg");
 	assert.ok(typeof gws.payload.screenshot_out_file === "string");
+	assert.equal(gws.payload.tree_format, "markdown", "默认请求 markdown 树（elements 数组无树文本）");
+});
+
+test("cua_observe：tree_format=elements 时用数组兜底渲染", async () => {
+	process.env.FAKE_CUA_TREE_FORMAT_ELEMENTS = "1";
+	const { definitions, dir } = setup();
+	const tool = definitions.get("cua_observe");
+	const output = await tool.execute({ window_id: 7, include_screenshot: false }, {});
+	delete process.env.FAKE_CUA_TREE_FORMAT_ELEMENTS;
+	cleanup(dir);
+	assert.match(output.text, /\[1\] AXButton \(Done\)/);
+	assert.match(output.text, /tree_partial reason="max_elements"/);
 });
 
 test("cua_observe：TCC 挡住截图时退回纯 AX 并给提示", async () => {
