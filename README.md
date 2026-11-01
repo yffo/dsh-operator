@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，207 项测试 + CI 全绿；欢迎自己改、自己发布。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，212 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -57,6 +57,7 @@ dsh plugin --profile desktop add --save-exact "file:$HOME/projects/dsh-operator"
 | AX 动作 | `ax_press`、`ax_set_value`、`ax_scroll`、`ax_menu`、`ax_batch`（2–12 个动作一批） |
 | 窗口 / 应用 | `list_apps`、`open_app`（前台激活）、`cua_launch`（后台启动，不置顶）、`open_in_browser`、`open_in_finder`、`window_move`（含 left/right-half 等预设） |
 | 浏览器 DOM | `browser_dom_snapshot`、`browser_dom_click`、`browser_dom_fill`、`browser_dom_probe`（Chrome/Safari，AppleScript 优先，CDP 回退） |
+| 浏览器自动化 | `browser_state`、`browser_prepare`、`browser_open`、`browser_click`、`browser_type`、`browser_pointer`、`browser_select`（经 cua-driver：真实 profile、语义 ref、受信任输入） |
 | 任务 / 技能 | `task_profile`、`plan_create/list/update/run/delete`、`skill_save/list/show/run/delete` |
 | 后台会话 | `code_agent`（另起标准会话执行代码/长任务） |
 | 查询 / 诊断 | `verify_state`（窗口标题/AX/前台等谓词轮询）、`operator_status`、`failure_list`（失败样本摘要） |
@@ -82,6 +83,29 @@ cua-driver permissions grant
 - `cua_launch bundle_id=com.apple.Safari`：后台启动 App 或打开文件/URL，不抢焦点。
 
 环境变量：`DSH_OPERATOR_CUA=0` 关闭 cua 工具；`DSH_OPERATOR_CUA_BIN` 指定 `cua-driver` 路径；`DSH_OPERATOR_CUA_SOCKET` 指定 daemon socket。完整参数与已知限制见 [docs/CUA-DRIVER.md](docs/CUA-DRIVER.md)。
+
+## 浏览器自动化（真实 profile）
+
+`browser_*` 走 cua-driver 的浏览器通道，直接操作**你正在用的 Chrome/Edge/Brave**（真实登录态、真实扩展、无自动化启动参数）：
+
+```bash
+# 1. 找到浏览器窗口
+cua_windows app_contains="Chrome"
+# 2. 绑定并拿语义快照（首次会要求授权；macOS Chrome 会弹一次它自己的调试确认）
+browser_prepare pid=… window_id=… delivery_mode="foreground"
+browser_state pid=… window_id=…        # 返回 target_id / tab_id / tabs / refs
+# 3. 操作（ref 形如 p1:12，导航后失效）
+browser_open url="https://example.com/"
+browser_state target_id=… tab_id=…
+browser_click ref="p1:2"
+browser_type  ref="p1:5" text="hello" replace=true
+browser_pointer action="scroll" delta_y=-600
+```
+
+- 输入默认走 `Input.dispatchMouseEvent`（受信任事件，不是 `element.click()`）；需要合成点击时才传 `input_route:"dom_event"`。
+- 绑定用户浏览器需要显式授权；`background_unavailable` 时用 `delivery_mode:"foreground"`。
+- 不读 Cookie/密码、不伪造指纹、不绕验证码；遇到挑战会停下并在提示里让你接管。
+- `DSH_OPERATOR_BROWSER=0` 关闭这组工具；cua-driver < 0.38 时自动跳过。细节见 [docs/BROWSER-AUTOMATION.md](docs/BROWSER-AUTOMATION.md)。
 
 ## 为什么省 token
 
@@ -135,7 +159,7 @@ cua-driver 相关：`DSH_OPERATOR_CUA`、`DSH_OPERATOR_CUA_BIN`、`DSH_OPERATOR_
 npm run doctor      # 安装/数据目录/权限/日志等 9 项体检
 npm run preflight   # 隔离环境里做一次 DSH 引导，抓插件加载错误
 npm run failures    # 失败样本摘要（按错误类别分组）
-npm test            # 207 项测试
+npm test            # 212 项测试
 ```
 
 会话里也可以直接问 `operator_status`（版本/工具面/审计行数），或列出失败样本（`failure_list`）。
@@ -157,6 +181,7 @@ npm test            # 207 项测试
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
 - **0.23.0** toolview P0 落地真客户端：中文活动卡片（第 n/N 步、实时耗时、执行模式/确认门徽标）、分段进度、逐步行、结果缩略图+灯箱、失败原因与建议、完成折叠；新增渲染测试 `test/client-render.test.mjs`。
+- **0.24.0** 浏览器自动化（真实 profile）：新增 `browser_state/prepare/open/click/type/pointer/select`，经 cua-driver 绑定用户正在用的 Chrome，ref 快照 + 受信任输入；`browser_dom_*`（AppleScript）保留为第二通道。
 - **0.23.3** toolview 回退为一行状态「DSH 正在操作电脑」：去掉步骤行/缩略图/进度轨/日志块/确认门徽标，只保留状态点、工具名、状态词与可展开的调用详情；客户端从 862 行降到 ~210 行，测试同步收敛。
 - **0.23.2** toolview 版式贴近设计稿：卡片间距/字号/圆角对齐 demo v3，步骤行改成「序号 → 缩略图位 → 中文动作」并带「状态 · 动作」标签；多步卡片默认展开；结算后用真实输出前 6 行做日志块；运行中超 10s 只给静态提示（不估算 ETA）。
 - **0.23.1** toolview 长任务表达：运行中步骤序号加一圈 1.8s 脉冲（`dopPulse`），超过 10s 在卡片里显示「已耗时 Xs，仍在执行；你可以继续做别的事」；结算后自动收起。
