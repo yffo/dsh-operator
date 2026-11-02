@@ -518,3 +518,15 @@ test("browser_wait expect_url：超时给出当前地址", async () => {
 	assert.match(bad.text, /等 URL 超时/);
 	assert.match(bad.text, /a\.example\/start/);
 });
+
+test("summarizeState：正文与结构树按上限截断（省 token）", () => {
+	const longText = "甲".repeat(3000);
+	const outline = Array.from({ length: 80 }, (_, i) => `- line ${i}`).join("\n");
+	const text = summarizeState({ refs: [], text: longText, outline });
+	assert.ok(text.length < 1700, `输出仍过长：${text.length}`);
+	assert.match(text, /正文已截断/);
+	assert.match(text, /结构树还有 50 行/);
+	const small = summarizeState({ refs: [], text: "短文本", outline: "- a\n- b" });
+	assert.match(small, /短文本/);
+	assert.match(small, /- a/);
+});
