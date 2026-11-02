@@ -4,7 +4,8 @@ import { CLIPBOARD_TOOL_NAMES, clampClipboardText, clipboardFileScript, register
 
 function harness(run) {
 	const tools = [];
-	registerClipboardTools({}, {}, { defineTool: (def) => tools.push(def), version: "test", run });
+	const ctx = { tools: { register: (def) => tools.push(def) } };
+	registerClipboardTools(ctx, {}, { defineTool: (def) => def, version: "test", run });
 	const byName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
 	return { tools, byName };
 }
@@ -60,4 +61,11 @@ test("clampClipboardText 上限", () => {
 	assert.deepEqual(clampClipboardText("abcdef", 4), { text: "abcd", truncated: true });
 	assert.deepEqual(clampClipboardText("abc", 4), { text: "abc", truncated: false });
 	assert.equal(clampClipboardText("abcdef", 999999).text.length, 6);
+});
+
+
+test("注册必须走宿主 ctx.tools.register（0.46.2 回归）", () => {
+	const registered = [];
+	registerClipboardTools({ tools: { register: (def) => registered.push(def) } }, {}, { defineTool: (def) => def, version: "test" });
+	assert.deepEqual(registered.map((def) => def.name).sort(), ["clipboard_read", "clipboard_write"]);
 });
