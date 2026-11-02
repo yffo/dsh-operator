@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, afterEach, before, test } from "node:test";
 
 import { configureAuditLog } from "../lib/audit-log.js";
+import { configureFailureStore, failureDir } from "../lib/failure-store.js";
 import {
 	BROWSER_TOOL_NAMES,
 	compactJson,
@@ -15,6 +16,9 @@ import {
 	shouldRecoverWithSnapshot,
 	summarizeState
 } from "../lib/browser-cua-tools.js";
+
+// 失败样本写临时目录，别污染真实 ~/.dsh/dsh-operator/failures。
+configureFailureStore({ dir: mkdtempSync(join(tmpdir(), "dsh-browser-fail-")) });
 
 let dir;
 let fakeBin;
@@ -266,4 +270,19 @@ test("browser_click text：唯一匹配直接点、歧义列候选、找不到�
 	const empty = await tools.browser_click.execute({}, {});
 	assert.equal(empty.ok, false);
 	assert.match(empty.text, /ref.*或 text|需要 ref/);
+});
+
+test("browser_* 失败会写入失败样本（browser_click）", async () => {
+	const call = async (tool) => (tool === "browser_click" ? { ok: false, error: "ref p9:9 is stale — the snapshot was superseded" } : { ok: true, result: { target_id: "t-fail", tab_id: "tab-fail" } });
+	const { tools } = setup({ failureSamples: true }, call);
+	await tools.browser_state.execute({ target_id: "t-fail", tab_id: "tab-fail" }, {});
+	const value = await tools.browser_click.execute({ ref: "p9:9" }, {});
+	assert.equal(value.ok, false);
+	const dir = failureDir();
+	const files = readdirSync(dir).filter((name) => name.endsWith(".jsonl"));
+	const rows = files.flatMap((name) => readFileSync(join(dir, name), "utf8").trim().split("\n").filter(Boolean)).map((line) => JSON.parse(line));
+	const hit = rows.find((row) => row.tool === "browser_click");
+	assert.ok(hit, "应有 browser_click 的失败样本");
+	assert.equal(hit.kind, "not_found");
+	assert.match(hit.message, /stale/);
 });
