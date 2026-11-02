@@ -447,3 +447,19 @@ test("browser_click refresh:true 时把点击后的快照一起返回", async ()
 	assert.match(refreshed.text, /p2:1/);
 	assert.equal(clicks, 2);
 });
+
+
+test("browser_type / browser_key refresh:true 也回报新快照", async () => {
+	const call = async (tool) => {
+		if (tool === "browser_type" || tool === "press_key") return { ok: true, result: { effect: "sent" } };
+		if (tool === "get_browser_state") return { ok: true, result: { target_id: "t-2", tab_id: "tab-2", refs: [{ ref: "p3:1", node: "a", label: "href=/ok" }] } };
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-2", tab_id: "tab-2" }, {});
+	const typed = await tools.browser_type.execute({ ref: "p1:0", text: "hi", refresh: true }, {});
+	assert.match(typed.text, /输入后的快照/);
+	assert.match(typed.text, /p3:1/);
+	const pressed = await tools.browser_key.execute({ key: "return", pid: 4242, refresh: true }, {});
+	assert.match(pressed.text, /按键后的快照/);
+});
