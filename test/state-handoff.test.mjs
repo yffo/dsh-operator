@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import { HANDOFF_MAX_RECENT, readHandoff, summarizeHandoff, writeHandoff } from "../lib/state-handoff.js";
 import { registerStateTools } from "../lib/state-tools.js";
+import { clearRecentActions, recordRecentAction } from "../lib/recent-actions.js";
 
 async function withHome(fn) {
 	const home = mkdtempSync(join(tmpdir(), "dsh-handoff-"));
@@ -68,5 +69,21 @@ test("registerStateTools：operator_brief 写、operator_resume 读", async () =
 		assert.match(value.text, /目标 接着干/);
 		assert.match(value.text, /未完成：写测试/);
 		assert.match(value.text, /待办：发版/);
+	});
+});
+
+
+test("operator_brief 自动带上最近动作；operator_resume 补充失败建议", async () => {
+	await withHome(async () => {
+		clearRecentActions();
+		recordRecentAction("browser_state", true);
+		recordRecentAction("browser_click", false, "ref stale");
+		const tools = new Map();
+		const ctx = { tools: { register: (definition) => tools.set(definition.name, definition) } };
+		registerStateTools(ctx, {}, { defineTool: (definition) => definition, version: "0.64.0" });
+		await tools.get("operator_brief").execute({ goal: "验证", todos: ["A"], open: [] });
+		const value = await tools.get("operator_resume").execute({});
+		assert.match(value.text, /最近动作：browser_state, browser_click\(失败\)/);
+		assert.match(value.text, /本次窗口最近：browser_state, browser_click\(失败\)/);
 	});
 });
