@@ -333,3 +333,13 @@ test("ax_press / ax_set_value 失败时附最新 AX 快照（省一次重新观�
 		resetOperatorToolsInternals();
 	}
 });
+
+
+test("AX 失败时 render 会把恢复快照附在文本里", () => {
+	const tools = collectTools();
+	for (const name of ["ax_press", "ax_set_value", "ax_scroll"]) {
+		const tool = tools.find((item) => item.name === name);
+		const text = tool.output.render({}, { schemaVersion: 1, ok: false, pressed: false, index: 9, error: "boom", recovery: "最新 AX 快照（前 2 个节点）" })[0].text;
+		assert.match(text, /最新 AX 快照/, `${name} 应附恢复快照`);
+	}
+});
