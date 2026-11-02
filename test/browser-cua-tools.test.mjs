@@ -376,3 +376,25 @@ test("registerBrowserTools：注册成功后 browserToolsStatus 反映注册结�
 	assert.equal(state.registered, true);
 	assert.equal(state.names.length, BROWSER_TOOL_NAMES.length);
 });
+
+
+test("cua-driver 的 status:refused 记成失败（browser_download 审批被拒）", async () => {
+	const call = async (tool) => {
+		if (tool === "get_browser_state") return { ok: true, result: { target_id: "t-ref", tab_id: "tab-ref", refs: [] } };
+		if (tool === "browser_download") {
+			return {
+				ok: true,
+				result: {
+					status: "refused",
+					refusal: { code: "browser_consent_required", message: "browser_download requires approval through the MCP host's destructive-tool confirmation flow" }
+				}
+			};
+		}
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-ref", tab_id: "tab-ref" }, {});
+	const download = await tools.browser_download.execute({ ref: "p1:0", destination_root: "/tmp", confirm: true }, {});
+	assert.equal(download.ok, false);
+	assert.match(download.text, /approval|确认|拒绝|consent/i);
+});
