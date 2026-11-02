@@ -183,6 +183,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.48.3** guard 拒绝时不再只说「不行」：附带三条替代路径（confirm 重调 / 原生控件用 `ax_press` / 网页控件用 `browser_click {text}`）。
 - **0.48.2** 恢复快照也会出现在工具输出的错误文本里（此前只进了结构化字段，模型看不到）。
 - **0.48.1** `ax_scroll` 失败时同样附带最新 AX 快照（与 `ax_press`/`ax_set_value` 一致）。
 - **0.48.0** `ax_press` / `ax_set_value` 失败时附带最新 AX 节点摘要（含新 index），省掉一次重新观察；快照拿不到就退回原错误。
