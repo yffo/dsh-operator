@@ -399,3 +399,20 @@ test("cua-driver 的 status:refused 记成失败（browser_download 审批被拒
 	assert.match(download.text, /approval|确认|拒绝|consent/i);
 	assert.match(download.text, /destructive-tool confirmation|宿主确认/);
 });
+
+
+test("browser_download / set_input_files 的 stale ref 也会自动补快照", async () => {
+	const call = async (tool) => {
+		if (tool === "get_browser_state") return { ok: true, result: { target_id: "t-x", tab_id: "tab-x", refs: [{ ref: "p9:1", node: "a", label: "x" }] } };
+		if (tool === "browser_download" || tool === "browser_set_input_files") return { ok: false, error: "ref p1:0 is stale — the page navigated" };
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-x", tab_id: "tab-x" }, {});
+	const dl = await tools.browser_download.execute({ ref: "p1:0", destination_root: "/tmp", confirm: true }, {});
+	assert.equal(dl.ok, false);
+	assert.match(dl.text, /已自动重新取快照/);
+	const files = await tools.browser_set_input_files.execute({ ref: "p1:1", files: ["/etc/hosts"] }, {});
+	assert.equal(files.ok, false);
+	assert.match(files.text, /已自动重新取快照/);
+});
