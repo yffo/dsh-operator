@@ -241,6 +241,39 @@ test("browser_open：导航后自动附最新快照，wait:false 时跳过", asy
 	assert.deepEqual(calls.map((item) => item.tool), ["browser_navigate"]);
 });
 
+test("browser_click text：优先 semantic_v2 的 name/role，取不到时回退 dom_refs_v1", async () => {
+	const seen = [];
+	const variants = [
+		{ snapshot_format: "semantic_v2", refs: [{ ref: "p2:1", role: "button", name: "保存草稿" }] },
+		{ refs: [{ ref: "p3:4", node: "link", label: "保存草稿" }] }
+	];
+	let round = 0;
+	const call = async (tool, args) => {
+		if (tool === "get_browser_state") {
+			const format = args.snapshot_format ?? "dom_refs_v1";
+			seen.push(format);
+			if (format === "semantic_v2" && seen.filter((item) => item === "semantic_v2").length > 1) {
+				return { ok: false, error: "semantic_v2 unsupported" };
+			}
+			const picked = format === "semantic_v2" ? variants[0] : variants[1];
+			round += 1;
+			return { ok: true, result: { target_id: "t-v2", tab_id: "tab-v2", refs: picked.refs } };
+		}
+		if (tool === "browser_click") return { ok: true, result: {} };
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-v2", tab_id: "tab-v2" }, {});
+	const v2 = await tools.browser_click.execute({ text: "保存" }, {});
+	assert.equal(v2.ok, true);
+	assert.match(v2.text, /已点击 p2:1/);
+	assert.ok(seen.includes("semantic_v2"));
+	const fallback = await tools.browser_click.execute({ text: "保存" }, {});
+	assert.equal(fallback.ok, true);
+	assert.match(fallback.text, /已点击 p3:4/);
+	assert.ok(seen.includes("dom_refs_v1"));
+});
+
 test("browser_click text：唯一匹配直接点、歧义列候选、找不到给提示", async () => {
 	const clicked = [];
 	const refs = [

@@ -33,6 +33,10 @@
 
 `target_id` / `tab_id` 会记住最近一次绑定值，所以第 4 步通常只用传 `ref`；显式传 `target_id`/`tab_id` 可以覆盖。
 
+## 按文案点击的格式说明（0.46.0）
+
+`browser_click text` 内部先取 `snapshot_format:"semantic_v2"`（`name`/`role` 才是人话）；`dom_refs_v1` 的 `label` 只给 `href=…`，匹配不到可见文案。驱动不支持 v2 时自动回退默认格式。
+
 ## 常用配方（可直接抄）
 
 ```jsonc
