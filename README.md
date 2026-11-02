@@ -181,6 +181,8 @@ npm test            # 291 项测试
 
 ## 更新记录
 
+- **0.57.1** 回退 0.57.0 的截图去重：`attachmentId` 不是逐帧唯一（切到 Chrome 后仍判「同一帧」），会把真实变化误判成重复而吞图；等能拿到像素哈希再重做。
+
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
 - **0.56.0** `browser_state` 输出瘦身：正文最多 1200 字符、结构树最多 30 行，超出给省略提示（细节用 `browser_read` / `query` 取）。
