@@ -181,6 +181,7 @@ npm test            # 291 项测试
 
 ## 更新记录
 
+- **0.58.0** `failure_list` 增 `repeat` 行：同一「工具·失败类型」累计 ≥3 次时明确提示「别再用同样参数重试」，并给该类型的换策略建议。
 - **0.57.1** 回退 0.57.0 的截图去重：`attachmentId` 不是逐帧唯一（切到 Chrome 后仍判「同一帧」），会把真实变化误判成重复而吞图；等能拿到像素哈希再重做。
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。

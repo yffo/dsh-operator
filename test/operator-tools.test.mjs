@@ -275,6 +275,7 @@ test("failure_list：给出 hot（工具·类型）一行摘要", async () => {
 		const value = await list.execute({ limit: 5 }, {});
 		assert.equal(value.total, 3);
 		assert.match(value.text, /hot: browser_click·not_found\(2\), click·guard_rejected\(1\)/);
+		assert.doesNotMatch(value.text, /repeat:/);
 		assert.equal(value.hot[0].key, "browser_click·not_found");
 	} finally {
 		configureFailureStore({});
@@ -341,5 +342,28 @@ test("AX 失败时 render 会把恢复快照附在文本里", () => {
 		const tool = tools.find((item) => item.name === name);
 		const text = tool.output.render({}, { schemaVersion: 1, ok: false, pressed: false, index: 9, error: "boom", recovery: "最新 AX 快照（前 2 个节点）" })[0].text;
 		assert.match(text, /最新 AX 快照/, `${name} 应附恢复快照`);
+	}
+});
+
+
+test("failure_list：同类失败 ≥3 次给 repeat 提示（别再重试）", async () => {
+	const home = mkdtempSync(join(tmpdir(), "dsh-fail-repeat-"));
+	const previous = process.env.DSH_HOME;
+	process.env.DSH_HOME = home;
+	try {
+		configureFailureStore({ dir: join(home, "dsh-operator", "failures") });
+		for (const index of [1, 2, 3]) {
+			recordFailure({ tool: "browser_click", error: new Error(`ref p1:${index} is stale`), kind: "not_found" });
+		}
+		const tools = collectTools();
+		const list = tools.find((tool) => tool.name === "failure_list");
+		const value = await list.execute({ limit: 3 }, {});
+		assert.match(value.text, /repeat: browser_click·not_found ×3/);
+		assert.match(value.text, /重新观察后再操作/);
+	} finally {
+		configureFailureStore({});
+		if (previous === undefined) delete process.env.DSH_HOME;
+		else process.env.DSH_HOME = previous;
+		configureAuditLog({ enabled: false });
 	}
 });
