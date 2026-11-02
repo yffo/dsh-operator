@@ -71,8 +71,12 @@ if (json) {
 	];
 	if (report.failures.total > 0) {
 		lines.push(`  hot: ${report.failures.byPair.map(([key, count]) => `${key}(${count})`).join(", ")}`);
-		const kinds = new Set(report.failures.byPair.map(([key]) => key.split("·")[1] ?? "error"));
-		for (const kind of kinds) lines.push(`  next: ${suggestForKind(kind)}`);
+		const suggestions = [];
+		for (const [key] of report.failures.byPair) {
+			const text = suggestForKind(key.split("·")[1] ?? "error");
+			if (suggestions.includes(text) === false) suggestions.push(text);
+		}
+		for (const text of suggestions.slice(0, 3)) lines.push(`  next: ${text}`);
 		const days = report.failures.byDay.filter(([, count]) => count > 0);
 		if (days.length > 0) lines.push(`  按天: ${days.map(([day, count]) => `${day}(${count})`).join(", ")}`);
 	} else {

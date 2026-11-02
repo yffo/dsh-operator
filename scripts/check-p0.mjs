@@ -9,7 +9,7 @@
  * 用法：node scripts/check-p0.mjs
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -90,6 +90,10 @@ check(cuaTools.includes("cua_act_token_retry"), "cua_act stale token 自动重�
 	check(cuaDriver.includes("cuaLaunchApp"), "cua-driver launch_app 封装（0.22.6）");
 	check(cuaTools.includes("error.stdout"), "stale 检测覆盖被截断的异常输出（0.22.5）");
 check(existsSync(join(root, "lib", "seam-provider.js")), "lib/seam-provider.js 在");
+const platformSrc = readFileSync(join(root, "lib", "platform.js"), "utf8");
+check(platformSrc.includes('win32: { base: true, extended: false, verified: false }'), "平台矩阵：Windows 基础面已知、未验证（0.33.0）");
+check(platformSrc.includes('linux: { base: false, extended: false, verified: false }'), "平台矩阵：Linux 无桌面后端（0.33.0）");
+check(existsSync(join(root, "scripts", "inspect.mjs")), "巡检脚本 scripts/inspect.mjs 在（0.45.0）");
 
 if (failures.length > 0) {
 	console.error(`\n✗ P0 检查失败 ${failures.length} 项`);
