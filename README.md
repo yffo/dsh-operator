@@ -172,7 +172,7 @@ npm test            # 290 项测试
 - [兼容性与平台边界](docs/COMPATIBILITY.md)
 - [cua-driver 人机并行](docs/CUA-DRIVER.md)
 - [第三方许可（NOTICE）](NOTICE)
-- [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html) · [P0 进度与交接](docs/TOOLVIEW-P0-HANDOFF.md)
+- [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html) · [P0 进度与交接](docs/TOOLVIEW-P0-HANDOFF.md) · [0.5x 发布说明](docs/RELEASE-0.5x.md)
 - [发布与版本](docs/RELEASE.md)
 - [0.4x 发布说明（草稿）](docs/RELEASE-0.4x.md)
 - [场景/验收矩阵](docs/SCENARIOS-2026-11.md)
