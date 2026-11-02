@@ -183,6 +183,7 @@ npm test            # 284 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.50.0** `browser_click` 增 `refresh:true`：点击成功后直接附上新快照的 refs，「点一次再观察一次」压成一次调用。
 - **0.49.0** `browser_state` 支持 `max_refs`（默认 40，上限 200）；超出时明说「还有 N 个没列出」，大页不再一次灌 200 行。
 - **0.48.3** guard 拒绝时不再只说「不行」：附带三条替代路径（confirm 重调 / 原生控件用 `ax_press` / 网页控件用 `browser_click {text}`）。
 - **0.48.2** 恢复快照也会出现在工具输出的错误文本里（此前只进了结构化字段，模型看不到）。

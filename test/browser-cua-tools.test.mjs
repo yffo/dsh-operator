@@ -426,3 +426,24 @@ test("summarizeState：refs 超过 max_refs 时截断并说明还有多少", () 
 	assert.doesNotMatch(text, /p1:2/);
 	assert.match(text, /还有 4 个没列出/);
 });
+
+
+test("browser_click refresh:true 时把点击后的快照一起返回", async () => {
+	let clicks = 0;
+	const call = async (tool) => {
+		if (tool === "browser_click") {
+			clicks += 1;
+			return { ok: true, result: { clicked: true } };
+		}
+		if (tool === "get_browser_state") return { ok: true, result: { target_id: "t-1", tab_id: "tab-1", refs: [{ ref: "p2:1", node: "a", label: "href=/next" }] } };
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-1", tab_id: "tab-1" }, {});
+	const plain = await tools.browser_click.execute({ ref: "p1:1" }, {});
+	assert.doesNotMatch(plain.text, /点击后的快照/);
+	const refreshed = await tools.browser_click.execute({ ref: "p1:1", refresh: true }, {});
+	assert.match(refreshed.text, /点击后的快照/);
+	assert.match(refreshed.text, /p2:1/);
+	assert.equal(clicks, 2);
+});
