@@ -280,3 +280,29 @@ test("failure_list：给出 hot（工具·类型）一行摘要", async () => {
 		rmSync(home, { recursive: true, force: true });
 	}
 });
+
+test("plan_run：计划步骤可回放浏览器工具（共享工具表）", async () => {
+	const home = mkdtempSync(join(tmpdir(), "dsh-plan-browser-"));
+	const previous = process.env.DSH_HOME;
+	process.env.DSH_HOME = home;
+	try {
+		configurePlanStore({ dir: join(home, "plans") });
+		const tools = collectTools();
+		const created = await tools.find((tool) => tool.name === "plan_create").execute({
+			goal: "浏览器步骤回放（测试）",
+			steps: [
+				{ id: "open", tool: "browser_open", args: { url: "https://example.com/" } },
+				{ id: "key", tool: "hotkey", args: { keys: "cmd,l" } }
+			]
+		}, { signal: { throwIfAborted() {} } });
+		const run = await tools.find((tool) => tool.name === "plan_run").execute({ id: created.id }, { signal: { throwIfAborted() {} } });
+		assert.equal(run.executed, 2);
+		assert.equal(run.results.length, 2);
+		assert.deepEqual(run.results.map((row) => row.status), ["ok", "ok"]);
+		assert.match(String(run.text ?? ""), /executed 2, failed 0/);
+	} finally {
+		if (previous === undefined) delete process.env.DSH_HOME;
+		else process.env.DSH_HOME = previous;
+		rmSync(home, { recursive: true, force: true });
+	}
+});
