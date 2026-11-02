@@ -4,6 +4,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { configureAuditLog } from "../lib/audit-log.js";
+configureAuditLog({ enabled: false });
 import {
 	classifyFailure,
 	configureFailureStore,

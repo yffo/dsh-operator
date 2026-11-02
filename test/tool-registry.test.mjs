@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { hasTool, mergeToolRegistries, registryNames } from "../lib/tool-registry.js";
 import { registerOperatorTools, registerV2Tools } from "../lib/operator-tools.js";
 import { mergeParameters, parameterSpecs } from "../lib/tool-surface.js";
+import { configureAuditLog } from "../lib/audit-log.js";
+configureAuditLog({ enabled: false });
 
 function forkDefs() {
 	const def = (name, execute = async () => ({ schemaVersion: 1 })) => ({ name, execute, output: { render: () => [] } });

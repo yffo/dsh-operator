@@ -26,6 +26,7 @@
 | 0.42.0 | `browser_prepare` 按 app 找窗口；`browser_download` 核对新增文件 |
 | 0.43.0 | `failure_list` hot 摘要；`operator_status` 版本不一致提示 |
 | 0.44.0 | `operator_status` 显示浏览器通道注册状态 |
+| 0.45.0 | `npm run inspect` 巡检脚本；路径统一走 `DSH_HOME`；`check:p0` 加平台矩阵一致性 |
 
 ## 升级注意
 

@@ -6,6 +6,8 @@ import { afterEach, beforeEach, test } from "node:test";
 
 import { configureSkillStore, deleteSkill, listSkills, readSkill, saveSkill, skillDir, validateSkill } from "../lib/skill-store.js";
 import { registerOperatorTools, resetOperatorToolsInternals } from "../lib/operator-tools.js";
+import { configureAuditLog } from "../lib/audit-log.js";
+configureAuditLog({ enabled: false });
 
 let dir;
 

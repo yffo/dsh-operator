@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { evaluatePredicate, planWindowFrame, registerOperatorTools, resolveLayoutDisplay, V2_LEGACY_TOOL_NAMES, WINDOW_LAYOUTS } from "../lib/operator-tools.js";
 import { configurePlanStore, createPlan } from "../lib/planner.js";
 import { configureFailureStore, recordFailure } from "../lib/failure-store.js";
+import { configureAuditLog } from "../lib/audit-log.js";
+configureAuditLog({ enabled: false });
 
 test("evaluatePredicate：未知 kind 返回事实而不抛错", async () => {
 	const result = await evaluatePredicate({ kind: "nope" });
@@ -202,6 +204,7 @@ test("operator_status / plan_list：返回字段全部在 output schema 声明�
 			assert.deepEqual(extra, [], `${name} 返回了未声明字段: ${extra.join(",")}`);
 		}
 	} finally {
+		configureFailureStore({});
 		if (previous === undefined) delete process.env.DSH_HOME;
 		else process.env.DSH_HOME = previous;
 		rmSync(home, { recursive: true, force: true });
@@ -301,6 +304,7 @@ test("plan_run：计划步骤可回放浏览器工具（共享工具表）", asy
 		assert.deepEqual(run.results.map((row) => row.status), ["ok", "ok"]);
 		assert.match(String(run.text ?? ""), /executed 2, failed 0/);
 	} finally {
+		configureFailureStore({});
 		if (previous === undefined) delete process.env.DSH_HOME;
 		else process.env.DSH_HOME = previous;
 		rmSync(home, { recursive: true, force: true });

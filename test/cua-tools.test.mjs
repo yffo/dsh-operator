@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { registerCuaTools } from "../lib/cua-tools.js";
+import { configureAuditLog } from "../lib/audit-log.js";
+configureAuditLog({ enabled: false });
 
 const fakeBin = join(import.meta.dirname, "fixtures", "fake-cua-driver.mjs");
 chmodSync(fakeBin, 0o755);
