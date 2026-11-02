@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，255 项测试 + CI 全绿；欢迎自己改、自己发布。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，257 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -160,7 +160,7 @@ cua-driver 相关：`DSH_OPERATOR_CUA`、`DSH_OPERATOR_CUA_BIN`、`DSH_OPERATOR_
 npm run doctor      # 安装/数据目录/权限/日志等 9 项体检
 npm run preflight   # 隔离环境里做一次 DSH 引导，抓插件加载错误
 npm run failures    # 失败样本摘要（按错误类别分组）
-npm test            # 255 项测试
+npm test            # 257 项测试
 ```
 
 会话里也可以直接问 `operator_status`（版本/工具面/审计行数），或列出失败样本（`failure_list`）。
@@ -181,6 +181,7 @@ npm test            # 255 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.34.0** `browser_state` 的 refs 连续快照去重：同一页面下一次快照只回一行 `<refs_unchanged>`（最多连折 2 次），页面一变立刻回全文；`lib/ax-dedupe.js` 抽出通用 `dedupeByKey`，AX 树与 refs 共用同一套折叠逻辑。
 - **0.33.0** 平台面收敛：`lib/platform.js` 增加能力矩阵与 `platformSummary`，`operator_status`/`doctor` 明确打印 `UNVERIFIED`——Windows 基础 GUI 后端（GDI + SendInput）代码在但无真机验收，Linux 可加载但桌面后端未实现（`unsupported_platform`）；扩展工具仍只在 macOS 注册。
 - **0.32.0** `browser_wait` 支持 `selector`（可加 `visible`）：等到某个元素出现/可见再动手，不用靠 sleep 猜；选择器走 JSON 转义后嵌进固定表达式，不执行任意页面 JS。
 - **0.31.1** 技能/计划回放支持宿主 GUI 动作：`skill_run` / `plan_run` 现在能回放 `click` / `input_text` / `hotkey` / `scroll` / `drag` / `wait` 等基础动作（之前只跑插件自有工具，录制下来的序列回放不了）。

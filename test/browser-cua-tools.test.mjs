@@ -8,7 +8,9 @@ import { configureAuditLog } from "../lib/audit-log.js";
 import {
 	BROWSER_TOOL_NAMES,
 	compactJson,
+	dedupeStateText,
 	hintForBrowserError,
+	REFS_UNCHANGED_NOTE,
 	registerBrowserTools,
 	summarizeState
 } from "../lib/browser-cua-tools.js";
@@ -161,4 +163,29 @@ test("browser_key 缺 key 时直接拒绝", async () => {
 	const value = await tools.browser_key.execute({ pid: 123 });
 	assert.equal(value.ok, false);
 	assert.match(value.text, /需要 key/);
+});
+
+test("dedupeStateText：同一页面连续快照折叠 refs，页面变了回全文", () => {
+	const state = {
+		target_id: "t-dedupe-1",
+		tab_id: "tab-dedupe-1",
+		refs: [
+			{ ref: "p1:0", node: "link", label: "More information…" },
+			{ ref: "p1:1", node: "heading", label: "Example Domain" }
+		]
+	};
+	const text = summarizeState(state);
+	const first = dedupeStateText(text, state);
+	assert.equal(first, text);
+	const second = dedupeStateText(text, state);
+	assert.equal(second.includes(REFS_UNCHANGED_NOTE), true);
+	assert.equal(second.includes("refs (2):"), false);
+	const changed = { ...state, refs: [...state.refs, { ref: "p1:2", node: "link", label: "新元素" }] };
+	const third = dedupeStateText(summarizeState(changed), changed);
+	assert.equal(third.includes("refs (3):"), true);
+});
+
+test("dedupeStateText：没有 refs 时原样返回", () => {
+	const text = "target_id=t1\ntab_id=tab";
+	assert.equal(dedupeStateText(text, { target_id: "t1", tab_id: "tab", tabs: [] }), text);
 });

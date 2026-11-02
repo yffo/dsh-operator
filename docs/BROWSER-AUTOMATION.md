@@ -29,7 +29,7 @@
    - `browser_type ref=… text=… replace=true|mode:keystrokes`
    - `browser_pointer action=scroll|hover|double_click|drag …`
    - `browser_select ref=… label|value`
-5. 每一步之后如果要继续点别的元素，先重新 `browser_state`——ref 会因页面变化而失效。
+5. 每一步之后如果要继续点别的元素，先重新 `browser_state`——ref 会因页面变化而失效。同一页面连续快照时 refs 会折叠成一行 `<refs_unchanged>`（最多连折 2 次），页面一变立刻回全文；需要完整列表时传 `query` 或换个页面。
 
 `target_id` / `tab_id` 会记住最近一次绑定值，所以第 4 步通常只用传 `ref`；显式传 `target_id`/`tab_id` 可以覆盖。
 
