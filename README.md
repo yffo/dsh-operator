@@ -183,6 +183,7 @@ npm test            # 287 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.52.0** `browser_console` / `browser_network` 支持 `query` 子串过滤（只留相关条目），`browser_network` 补上 `reload` 参数声明。
 - **0.51.2** `refresh` 回包默认只带 20 个 ref（大页不再一口气灌 40 行），需要更多再显式调 `browser_state`。
 - **0.51.1** `browser_prepare` 按 `app` 找窗口兼容 cua-driver 的 `app_name` 字段，并优先选带标题的真实窗口（Chrome 会多出无标题辅助窗口）。
 - **0.51.0** `browser_type` / `browser_key` 也支持 `refresh:true`（输入后、回车提交后直接回报新 refs）。
