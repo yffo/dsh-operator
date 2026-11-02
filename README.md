@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，291 项测试 + CI 全绿；欢迎自己改、自己发布。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，292 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -161,7 +161,7 @@ cua-driver 相关：`DSH_OPERATOR_CUA`、`DSH_OPERATOR_CUA_BIN`、`DSH_OPERATOR_
 npm run doctor      # 安装/数据目录/权限/日志等 9 项体检
 npm run preflight   # 隔离环境里做一次 DSH 引导，抓插件加载错误
 npm run failures    # 失败样本摘要（按错误类别分组）
-npm test            # 291 项测试
+npm test            # 292 项测试
 ```
 
 会话里也可以直接问 `operator_status`（版本/工具面/审计行数），或列出失败样本（`failure_list`）。
