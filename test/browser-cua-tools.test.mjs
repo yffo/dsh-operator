@@ -463,3 +463,31 @@ test("browser_type / browser_key refresh:true 也回报新快照", async () => {
 	const pressed = await tools.browser_key.execute({ key: "return", pid: 4242, refresh: true }, {});
 	assert.match(pressed.text, /按键后的快照/);
 });
+
+
+test("browser_prepare 按 app 找窗口：兼容驱动返回的 app_name，并优先带标题的窗口", async () => {
+	let prepared;
+	const call = async (tool, args) => {
+		if (tool === "list_windows") {
+			return {
+				ok: true,
+				result: {
+					windows: [
+						{ app_name: "Google Chrome", title: "", pid: 2402, window_id: 79 },
+						{ app_name: "Google Chrome", title: "Example Domain", pid: 2402, window_id: 76 },
+						{ app_name: "DeepSeek Harness", title: "Harness", pid: 1, window_id: 2 }
+					]
+				}
+			};
+		}
+		if (tool === "browser_prepare") {
+			prepared = args;
+			return { ok: true, result: { attached: true } };
+		}
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	const result = await tools.browser_prepare.execute({ app: "chrome" }, {});
+	assert.equal(result.ok, true);
+	assert.equal(prepared?.window_id, 76);
+});
