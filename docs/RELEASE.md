@@ -63,3 +63,22 @@ npm run release -- 0.16.0 --yes --install
 - 不要 `git tag -d` / 强推 tag；版本号一旦公开就只增不改。
 - 不要在工作区有未提交改动时发版。
 - 不要在 CI 红时发版；先修 CI。
+
+## 0.5x 一键链路（macOS 真机，约 10 秒）
+
+前置：Chrome 已打开任意页面；插件版本 ≥ 0.56.0；重启过 App。
+
+| # | 调用 | 期望 |
+|---|---|---|
+| 1 | `browser_prepare {app:"Chrome"}` | `已绑定 pid=… window=…` |
+| 2 | `browser_state {pid, window_id, max_refs:15}` | 列出 tabs，`target_id=…` |
+| 3 | `browser_state {target_id, tab_id}` | `refs (n): p28:7 link Learn more …`（默认语义快照，带文案） |
+| 4 | `browser_click {text:"Learn more", refresh:true}` | `已点击 p29:7` + 新快照 |
+| 5 | `browser_wait {expect_url:"help/example-domains"}` | `地址已变化：…（<500ms）` |
+
+**瘦身对照（同一 iana 页，41 refs）**：0.55 及以前 `browser_state` 回包 5443 字符；0.56 截断正文/结构树后 2197 字符，省 60%。
+
+常见偏差：
+- 第 1 步报 `browser_consent_required` → 升级 cua-driver 或确认已 `--grant existing-profile`（插件自 0.24.5 起自动带）；
+- 第 5 步超时 → 页面没真正跳转，先用 `browser_read` 看当前地址；`expect_url` 不需要调试端口。
+
