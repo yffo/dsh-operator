@@ -183,6 +183,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.46.4** 审批类拒绝给出正确下一步提示（「需要宿主确认」而不是「还没绑定」）。
 - **0.46.3** cua-driver 返回 `status:"refused"` 时按失败上报（`browser_download` 等需要宿主确认的动作不再被当成「已触发」）；补回归测试。
 - **0.46.2** 修 `clipboard_read/clipboard_write` 从未真正注册：模块只拼了定义、没走 `ctx.tools.register`，宿主工具面看不到；补回归测试。
 - **0.46.1** 修 `ocr` 工具引用未定义 `SCHEMA_VERSION`（调用即报错）；`check:p0` 加断言防止回退。

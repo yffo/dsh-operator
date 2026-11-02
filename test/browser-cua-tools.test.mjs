@@ -397,4 +397,5 @@ test("cua-driver 的 status:refused 记成失败（browser_download 审批被拒
 	const download = await tools.browser_download.execute({ ref: "p1:0", destination_root: "/tmp", confirm: true }, {});
 	assert.equal(download.ok, false);
 	assert.match(download.text, /approval|确认|拒绝|consent/i);
+	assert.match(download.text, /destructive-tool confirmation|宿主确认/);
 });
