@@ -263,7 +263,7 @@ test("browser_click text：优先 semantic_v2 的 name/role，取不到时回退
 		return { ok: false, error: `unexpected ${tool}` };
 	};
 	const { tools } = setup({}, call);
-	await tools.browser_state.execute({ target_id: "t-v2", tab_id: "tab-v2" }, {});
+	await tools.browser_state.execute({ target_id: "t-v2", tab_id: "tab-v2", snapshot_format: "dom_refs_v1" }, {});
 	const v2 = await tools.browser_click.execute({ text: "保存" }, {});
 	assert.equal(v2.ok, true);
 	assert.match(v2.text, /已点击 p2:1/);
