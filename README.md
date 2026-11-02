@@ -183,6 +183,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.48.1** `ax_scroll` 失败时同样附带最新 AX 快照（与 `ax_press`/`ax_set_value` 一致）。
 - **0.48.0** `ax_press` / `ax_set_value` 失败时附带最新 AX 节点摘要（含新 index），省掉一次重新观察；快照拿不到就退回原错误。
 - **0.47.0** `browser_wait` 支持 `text`：等可见文本出现（提交后等结果文案），与 `selector`/`visible` 并列。
 - **0.46.5** `browser_download` 触发后最多等 2s 看文件落地（避免「刚下载就说没看到」）；`browser_dialog/download/set_input_files` 的 stale ref 也会自动补快照。
