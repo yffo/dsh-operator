@@ -34,6 +34,23 @@ npm run release -- 0.16.0 --yes --install
    `rsync -a --delete --exclude .git --exclude node_modules --exclude test --exclude docs --exclude bench --exclude archive --exclude .github <repo>/ ~/.dsh/profiles/desktop/node_modules/dsh-operator/`
    然后逐文件 `cmp`（至少 index.js / package.json / lib/operator-tools.js / lib/computer-use/index.js / client/client.js）。
 
+## 0.4x 真机清单（macOS，重启 App 后跑一遍）
+
+浏览器/OCR/剪贴板都是「注册后要重启才生效」，发版或同步后按顺序验：
+
+1. `operator_status`：版本号对、`platform: darwin … (verified)`、`browserCdpPort` 是预期值；
+2. `cua_windows app_contains="Chrome"` 能看到窗口（没有就先打开 Chrome）；
+3. `browser_prepare app="Chrome"`（多窗口时加 `window_title`）→ `browser_state` 有 refs；
+4. 随便点一个非破坏性链接 → `browser_click ref=…`；再 `browser_read max_chars=800` 看文本；
+5. 调试端口在开时：`browser_wait`（readyState+空闲）、`browser_network reload:true`；
+6. `ax_batch` 里混一条 `browser_open` + 一条桌面 `hotkey`，确认顺序执行；
+7. `ocr` 对当前窗口截一次，返回带坐标文本行；
+8. `clipboard_write` 一段短文本 → `clipboard_read` 回读一致；
+9. `click` 落在危险按钮（测试页「删除账户」）→ 应被 guard 拒绝，`confirm:true` 才放行；
+10. `failure_list` 看最近样本：不应有授权/未开启导致的噪声。
+
+任何一步失败：先看 `~/.dsh/dsh-operator/audit.jsonl` 最后几条与 `failures/` 当日文件，再对照 `doctor` 输出。
+
 ## 发版后
 
 - 等了 CI 变绿（`gh run list --limit 1`）。

@@ -57,8 +57,9 @@ dsh plugin --profile desktop add --save-exact "file:$HOME/projects/dsh-operator"
 | AX 动作 | `ax_press`、`ax_set_value`、`ax_scroll`、`ax_menu`、`ax_batch`（2–12 个动作一批，可混跑桌面与浏览器动作） |
 | 窗口 / 应用 | `list_apps`、`open_app`（前台激活）、`cua_launch`（后台启动，不置顶）、`open_in_browser`、`open_in_finder`、`window_move`（含 left/right-half 等预设） |
 | 浏览器 DOM | `browser_dom_snapshot`、`browser_dom_click`、`browser_dom_fill`、`browser_dom_probe`（Chrome/Safari，AppleScript 优先，CDP 回退） |
-| 浏览器自动化 | `browser_state`、`browser_prepare`、`browser_open`、`browser_click`、`browser_type`、`browser_pointer`、`browser_select`、`browser_key`（经 cua-driver：真实 profile、语义 ref、受信任输入） |
+| 浏览器自动化 | `browser_state`、`browser_prepare`（可按 app 名找窗口）、`browser_open`、`browser_click`（ref 或文案）、`browser_type`、`browser_pointer`、`browser_select`、`browser_key`、`browser_dialog`、`browser_download`、`browser_set_input_files`（经 cua-driver：真实 profile、语义 ref、受信任输入） |
 | 浏览器 CDP | `browser_wait`、`browser_read`、`browser_console`、`browser_network`（需 `browserCdpPort` + Chrome `--remote-debugging-port`：等网络空闲/等元素、读页面可见文本、看控制台错误、看失败请求） |
+| 剪贴板 | `clipboard_read`、`clipboard_write`（文本/图片/文件；只读文本默认 4000 字符，硬顶 20000） |
 | 任务 / 技能 | `task_profile`、`plan_create/list/update/run/delete`、`skill_save/list/show/run/delete` |
 | 后台会话 | `code_agent`（另起标准会话执行代码/长任务） |
 | 查询 / 诊断 | `verify_state`（窗口标题/AX/前台等谓词轮询）、`operator_status`、`failure_list`（失败样本摘要） |
