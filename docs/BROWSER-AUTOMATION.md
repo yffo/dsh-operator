@@ -106,7 +106,7 @@ cua-driver 的 `browser_*` 只给「语义快照 + 输入动作」，拿不到 R
 
 | 工具 | 做什么 | 备注 |
 | --- | --- | --- |
-| `browser_wait` | 等 `document.readyState === "complete"` 且网络空闲（默认 500ms） | 可用 `url_contains` / `title_contains` / `index` 选 tab |
+| `browser_wait` | 等 `document.readyState === "complete"` 且网络空闲（默认 500ms）；传 `selector` 时改为等该元素出现（`visible: true` 要求已渲染） | 可用 `url_contains` / `title_contains` / `index` 选 tab；元素等待超时给可读错误 |
 | `browser_console` | 收集 error/warning/未捕获异常 | `reload:true` 会重载页面，才能抓到加载期错误 |
 | `browser_network` | 收集失败请求与 4xx/5xx | 同上；默认只收调用之后的流量 |
 

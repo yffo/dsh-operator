@@ -8,7 +8,8 @@ import {
 	isFailureStatus,
 	pickTarget,
 	summarizeConsoleEntry,
-	summarizeNetworkEntry
+	summarizeNetworkEntry,
+	waitForSelector
 } from "../lib/browser-cdp.js";
 
 const targets = [
@@ -50,4 +51,53 @@ test("cdpVersion/cdpTargets 连不上时返回 ok:false 而不是抛错", async 
 	const listed = await cdpTargets(1, { timeoutMs: 800 });
 	assert.equal(listed.ok, false);
 	assert.match(CDP_UNAVAILABLE_HINT, /remote-debugging-port/);
+});
+
+function fakeClient(sequence) {
+	let calls = 0;
+	return {
+		sent: [],
+		async send(method, params) {
+			this.sent.push(method);
+			const value = sequence[Math.min(calls, sequence.length - 1)];
+			calls += 1;
+			if (method !== "Runtime.evaluate") return { result: {} };
+			return { result: { value } };
+		}
+	};
+}
+
+test("waitForSelector 命中即返回，选择器走 JSON 转义", async () => {
+	const client = fakeClient([{ found: true, visible: true }]);
+	const result = await waitForSelector(client, 'a[href="x"]', { timeoutMs: 2000 });
+	assert.equal(result.ok, true);
+	assert.equal(result.found, true);
+	assert.equal(result.visible, true);
+});
+
+test("waitForSelector 先把选择器安全嵌进固定表达式", async () => {
+	const seen = [];
+	const client = {
+		async send(method, params) {
+			seen.push(params?.expression ?? "");
+			return { result: { value: { found: false } } };
+		}
+	};
+	await waitForSelector(client, 'x"y', { timeoutMs: 1000, intervalMs: 100 });
+	assert.match(seen[0], /document\.querySelector\("x\\"y"\)/);
+});
+
+test("waitForSelector 要 visible 时等到可见才成功", async () => {
+	const client = fakeClient([{ found: true, visible: false }, { found: true, visible: true }]);
+	const result = await waitForSelector(client, "#ok", { timeoutMs: 3000, visible: true, intervalMs: 100 });
+	assert.equal(result.ok, true);
+	assert.equal(result.visible, true);
+});
+
+test("waitForSelector 超时给可读错误", async () => {
+	const client = fakeClient([{ found: false }]);
+	const result = await waitForSelector(client, "#never", { timeoutMs: 1000, intervalMs: 100 });
+	assert.equal(result.ok, false);
+	assert.match(result.error, /等待选择器超时/);
+	assert.equal(result.elapsedMs >= 900, true);
 });
