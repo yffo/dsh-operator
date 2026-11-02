@@ -8,6 +8,7 @@ import { configureAuditLog } from "../lib/audit-log.js";
 import { configureFailureStore, failureDir } from "../lib/failure-store.js";
 import {
 	BROWSER_TOOL_NAMES,
+	browserToolsStatus,
 	compactJson,
 	dedupeStateText,
 	hintForBrowserError,
@@ -333,4 +334,12 @@ test("browser_download：下载后报告新增文件（名称 + 大小，不读�
 	assert.equal(ok.text.includes("x".repeat(32)), false, "不应回传文件内容");
 	const noNew = await tools.browser_download.execute({ ref: "p1:4", destination_root: mkdtempSync(join(tmpdir(), "dsh-download-")), confirm: true }, {});
 	assert.equal(noNew.ok, true);
+});
+
+test("registerBrowserTools：注册成功后 browserToolsStatus 反映注册结果", () => {
+	const { handle } = setup({}, async () => ({ ok: true, result: {} }));
+	assert.equal(handle.registered, true);
+	const state = browserToolsStatus();
+	assert.equal(state.registered, true);
+	assert.equal(state.names.length, BROWSER_TOOL_NAMES.length);
 });

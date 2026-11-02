@@ -78,3 +78,13 @@ test("collectStatus：磁盘版本与运行中版本不同时提示重启", () =
 	const missing = collectStatus({ home, platform: "darwin", version: "0.42.0" });
 	assert.equal(missing.text.includes("磁盘上是"), false);
 });
+
+test("collectStatus：显示浏览器通道状态（注册/跳过）", () => {
+	const home = mkdtempSync(join(tmpdir(), "dsh-operator-status-"));
+	const on = collectStatus({ home, platform: "darwin", browserTools: { registered: true, names: ["a", "b"] } });
+	assert.match(on.text, /browser tools: registered \(2 tools\)/);
+	const off = collectStatus({ home, platform: "darwin", browserTools: { registered: false, reason: "cua-driver not installed" } });
+	assert.match(off.text, /browser tools: skipped — cua-driver not installed/);
+	const none = collectStatus({ home, platform: "darwin" });
+	assert.equal(none.text.includes("browser tools:"), false);
+});
