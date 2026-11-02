@@ -169,10 +169,7 @@ test("dedupeStateText：同一页面连续快照折叠 refs，页面变了回全
 	const state = {
 		target_id: "t-dedupe-1",
 		tab_id: "tab-dedupe-1",
-		refs: [
-			{ ref: "p1:0", node: "link", label: "More information…" },
-			{ ref: "p1:1", node: "heading", label: "Example Domain" }
-		]
+		refs: Array.from({ length: 12 }, (_value, index) => ({ ref: `p1:${index}`, node: "link", label: `link ${index} with a fairly long label` }))
 	};
 	const text = summarizeState(state);
 	const first = dedupeStateText(text, state);
@@ -180,9 +177,16 @@ test("dedupeStateText：同一页面连续快照折叠 refs，页面变了回全
 	const second = dedupeStateText(text, state);
 	assert.equal(second.includes(REFS_UNCHANGED_NOTE), true);
 	assert.equal(second.includes("refs (2):"), false);
-	const changed = { ...state, refs: [...state.refs, { ref: "p1:2", node: "link", label: "新元素" }] };
+	const changed = { ...state, refs: [...state.refs, { ref: "p1:99", node: "link", label: "新元素" }] };
 	const third = dedupeStateText(summarizeState(changed), changed);
-	assert.equal(third.includes("refs (3):"), true);
+	assert.equal(third.includes("refs (13):"), true);
+});
+
+test("dedupeStateText：小快照不折叠（说明行反而更长）", () => {
+	const state = { target_id: "t-small", tab_id: "tab-small", refs: [{ ref: "p1:0", node: "link", label: "x" }] };
+	const text = summarizeState(state);
+	assert.equal(dedupeStateText(text, state), text);
+	assert.equal(dedupeStateText(text, state), text);
 });
 
 test("dedupeStateText：没有 refs 时原样返回", () => {
