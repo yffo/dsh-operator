@@ -530,3 +530,25 @@ test("summarizeState：正文与结构树按上限截断（省 token）", () => 
 	assert.match(small, /短文本/);
 	assert.match(small, /- a/);
 });
+
+test("summarizeState：interactive_only 只留可交互 ref", async () => {
+	const { summarizeState, isInteractiveRef } = await import("../lib/browser-cua-tools.js");
+	const result = {
+		target_id: "t1",
+		tab_id: "tab1",
+		refs: [
+			{ ref: "p1:0", node: "heading", label: "标题" },
+			{ ref: "p1:1", node: "a", label: "Learn more" },
+			{ ref: "p1:2", node: "button", label: "提交" },
+			{ ref: "p1:3", node: "StaticText", label: "说明" }
+		]
+	};
+	assert.equal(isInteractiveRef(result.refs[1]), true);
+	assert.equal(isInteractiveRef(result.refs[0]), false);
+	const text = summarizeState(result, { interactiveOnly: true });
+	assert.match(text, /refs \(2\):/);
+	assert.match(text, /p1:1 a Learn more/);
+	assert.match(text, /p1:2 button 提交/);
+	assert.doesNotMatch(text, /p1:0/);
+});
+

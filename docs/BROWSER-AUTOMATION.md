@@ -37,6 +37,15 @@
 
 `browser_click text` 内部先取 `snapshot_format:"semantic_v2"`（`name`/`role` 才是人话）；`dom_refs_v1` 的 `label` 只给 `href=…`，匹配不到可见文案。驱动不支持 v2 时自动回退默认格式。
 
+## 只看可交互元素
+
+```
+browser_state {interactive_only: true, max_refs: 20}
+→ refs (17): …（只剩 link/button/input/checkbox 这类）
+```
+
+标题、段落、静态文本会被过滤掉，适合「这页有哪些能点的」。需要全文时用 `browser_read`。
+
 ## 常用配方（可直接抄）
 
 ```jsonc
