@@ -68,3 +68,13 @@ test("collectStatus：extendedToolsSupported 随 platform 变化，文本给出�
 	assert.equal(linux.platformVerified, false);
 	assert.match(linux.text, /not implemented/);
 });
+
+test("collectStatus：磁盘版本与运行中版本不同时提示重启", () => {
+	const home = mkdtempSync(join(tmpdir(), "dsh-operator-status-"));
+	const stale = collectStatus({ home, platform: "darwin", version: "0.41.0", installedVersion: "0.42.0" });
+	assert.match(stale.text, /磁盘上是 0\.42\.0，运行中是 0\.41\.0/);
+	const same = collectStatus({ home, platform: "darwin", version: "0.42.0", installedVersion: "0.42.0" });
+	assert.equal(same.text.includes("磁盘上是"), false);
+	const missing = collectStatus({ home, platform: "darwin", version: "0.42.0" });
+	assert.equal(missing.text.includes("磁盘上是"), false);
+});

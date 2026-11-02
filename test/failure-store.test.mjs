@@ -55,6 +55,8 @@ test("recordFailure：落盘 JSONL、可汇总、不抛错", () => {
 		assert.equal(digest.total, 2);
 		assert.equal(digest.byTool.length, 2);
 		assert.equal(digest.byKind.reduce((sum, [, count]) => sum + count, 0), 2);
+		assert.deepEqual(digest.byPair[0], ["click·error", 1]);
+		assert.equal(digest.byPair.length, 2);
 	} finally {
 		rmSync(dir, { recursive: true, force: true });
 	}

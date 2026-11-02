@@ -182,6 +182,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.43.0** 更能自证：`failure_list` 多一行 `hot:`（工具·失败类型组合，如 `browser_click·not_found(2)`）；`operator_status` 发现「磁盘上是新版、运行中是旧版」时直接提示重启 App。
 - **0.42.0** 两处顺手：`browser_prepare` 可以直接给 `app:"Chrome"`（+可选 `window_title`）自动找窗口，歧义时列候选；`browser_download` 结束后对比目录，报告新增文件名与大小（不读内容），不用再 ls 复核。
 - **0.41.0** `browser_read` 支持 `selector`：只读某个元素的可见文本（选择器走 JSON.stringify 嵌进固定表达式，仍不执行任意 JS），长页面不用先吞全文。
 - **0.40.0** 浏览器工具失败也进失败样本：`browser_*` 失败写 `failures/*.jsonl`（工具名 `browser_click` 等、错误分类、参数脱敏），`failure_list` / `scripts/failures.mjs` 能一起复盘；`stale`/`superseded` 归到 `not_found` 类。

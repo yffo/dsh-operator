@@ -257,3 +257,26 @@ test("ax_batch：浏览器动作缺少必填字段时报 missing 并停在该步
 	assert.equal(result.failedAt, 1);
 	assert.match(result.steps[1].note, /missing text/);
 });
+
+test("failure_list：给出 hot（工具·类型）一行摘要", async () => {
+	const home = mkdtempSync(join(tmpdir(), "dsh-fail-list-"));
+	const previous = process.env.DSH_HOME;
+	process.env.DSH_HOME = home;
+	try {
+		configureFailureStore({ dir: join(home, "dsh-operator", "failures") });
+		recordFailure({ tool: "browser_click", error: new Error("ref p1:2 is stale"), kind: "not_found" });
+		recordFailure({ tool: "browser_click", error: new Error("ref p1:3 is stale"), kind: "not_found" });
+		recordFailure({ tool: "click", error: new Error("guarded word"), kind: "guard_rejected" });
+		const tools = collectTools();
+		const list = tools.find((tool) => tool.name === "failure_list");
+		const value = await list.execute({ limit: 5 }, {});
+		assert.equal(value.total, 3);
+		assert.match(value.text, /hot: browser_click·not_found\(2\), click·guard_rejected\(1\)/);
+		assert.equal(value.hot[0].key, "browser_click·not_found");
+	} finally {
+		configureFailureStore({});
+		if (previous === undefined) delete process.env.DSH_HOME;
+		else process.env.DSH_HOME = previous;
+		rmSync(home, { recursive: true, force: true });
+	}
+});
