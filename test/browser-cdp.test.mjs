@@ -5,6 +5,7 @@ import {
 	CDP_UNAVAILABLE_HINT,
 	cdpTargets,
 	cdpVersion,
+	consoleEntryLevel,
 	isFailureStatus,
 	pickTarget,
 	readPageText,
@@ -160,4 +161,14 @@ test("waitForText 超时给可读错误", async () => {
 	const result = await waitForText(client, "永不出现", { timeoutMs: 800, intervalMs: 100 });
 	assert.equal(result.ok, false);
 	assert.match(String(result.error), /等文本超时/);
+});
+
+
+test("consoleEntryLevel：异常/assert 算 error，Log.warning 算 warning", () => {
+	assert.equal(consoleEntryLevel({ kind: "exception", text: "x" }), "error");
+	assert.equal(consoleEntryLevel({ kind: "console", type: "assert", args: [] }), "error");
+	assert.equal(consoleEntryLevel({ kind: "console", type: "warning", args: [] }), "warning");
+	assert.equal(consoleEntryLevel({ kind: "log", level: "warning", text: "w" }), "warning");
+	assert.equal(consoleEntryLevel({ kind: "log", level: "error", text: "e" }), "error");
+	assert.equal(consoleEntryLevel(null), "error");
 });
