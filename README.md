@@ -181,6 +181,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.41.0** `browser_read` 支持 `selector`：只读某个元素的可见文本（选择器走 JSON.stringify 嵌进固定表达式，仍不执行任意 JS），长页面不用先吞全文。
 - **0.40.0** 浏览器工具失败也进失败样本：`browser_*` 失败写 `failures/*.jsonl`（工具名 `browser_click` 等、错误分类、参数脱敏），`failure_list` / `scripts/failures.mjs` 能一起复盘；`stale`/`superseded` 归到 `not_found` 类。
 - **0.39.0** `ax_batch` 可混跑浏览器动作：`browser_open` / `browser_click`（ref 或 text）/ `browser_type`，一次调用里「开页→点→输入→桌面按键」，中间不消耗回合；步骤摘要直接取浏览器工具返回的文本。
 - **0.38.0** `browser_click` 支持按可见文案点：`text="登录"` 会先快照再匹配（不区分大小写，可用 `role`/`index` 收窄）；歧义时**拒绝点击并列出候选**，不会点错。

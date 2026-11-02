@@ -127,3 +127,15 @@ test("readPageText：CDP 报错时返回 ok:false", async () => {
 	assert.equal(failed.ok, false);
 	assert.match(failed.error, /读取页面文本失败/);
 });
+
+test("readPageText：selector 只拼到固定骨架里、转义安全", async () => {
+	const sent = [];
+	const client = { send: async (method, params) => { sent.push({ method, params }); return { result: { value: "  main text  " } }; } };
+	const out = await readPageText(client, { selector: "main #x" });
+	assert.equal(out.ok, true);
+	assert.equal(out.text, "main text");
+	assert.match(sent[0].params.expression, /document\.querySelector\("main #x"\)/);
+	const quoted = await readPageText(client, { selector: "a[title=\"x\"]" });
+	assert.equal(quoted.ok, true);
+	assert.match(sent[1].params.expression, /a\[title=/);
+});
