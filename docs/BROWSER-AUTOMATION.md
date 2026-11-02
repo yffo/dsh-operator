@@ -46,6 +46,17 @@ browser_state {interactive_only: true, max_refs: 20}
 
 标题、段落、静态文本会被过滤掉，适合「这页有哪些能点的」。需要全文时用 `browser_read`。
 
+## 只读可点元素（不读整页）
+
+```
+browser_read {interactive_only: true, max_chars: 1500}
+→ 可交互元素（https://example.com/）：
+a · Learn more
+button · 提交
+```
+
+和 `browser_state interactive_only` 的区别：这条走 CDP、不需要 cua-driver，也不返回 ref；用来快速知道页面上有哪些可点的东西。
+
 ## 常用配方（可直接抄）
 
 ```jsonc

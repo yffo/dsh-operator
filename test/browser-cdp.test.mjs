@@ -8,6 +8,7 @@ import {
 	consoleEntryLevel,
 	isFailureStatus,
 	pickTarget,
+	readInteractiveText,
 	readPageText,
 	summarizeConsoleEntry,
 	summarizeNetworkEntry,
@@ -172,3 +173,23 @@ test("consoleEntryLevel：异常/assert 算 error，Log.warning 算 warning", ()
 	assert.equal(consoleEntryLevel({ kind: "log", level: "error", text: "e" }), "error");
 	assert.equal(consoleEntryLevel(null), "error");
 });
+
+
+test("readInteractiveText：固定表达式、按 maxChars 截断", async () => {
+	const sent = [];
+	const client = {
+		send: async (method, params) => {
+			sent.push({ method, params });
+			return { result: { value: "a · Learn more\nbutton · 提交" } };
+		}
+	};
+	const ok = await readInteractiveText(client, { maxChars: 200 });
+	assert.equal(ok.ok, true);
+	assert.match(ok.text, /Learn more/);
+	assert.equal(sent[0].method, "Runtime.evaluate");
+	const expression = sent[0].params.expression;
+	assert.match(expression, /querySelectorAll/);
+	assert.match(expression, /role="button"/);
+	assert.doesNotMatch(expression, /eval\(/);
+});
+

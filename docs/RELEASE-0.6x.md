@@ -8,6 +8,7 @@
 - **语义快照默认**：`browser_state` 默认 `semantic_v2`（带 `name`/`role`），比 `dom_refs_v1` 更短且少猜；驱动不支持自动回退。
 - **观察裁剪**：`browser_state` 的正文 1200 字符、结构树 30 行封顶（`max_refs` 默认 40，上限 200）；连续观察同一元素树折叠成 `<tree_unchanged>`，连续快照的 refs 段折叠成 `<refs_unchanged>`。
 - **截图去重（0.59.0）**：按截图字节的 sha1 判同一帧，同一窗口同一区域连续同一帧第二次不再附图，只给 `<image_unchanged>`。
+- **可交互过滤**：`browser_state {interactive_only:true}` 只列 link/button/input；`browser_read {interactive_only:true}` 只回可点文案。
 - **失败自愈**：`browser_*` 遇 `ref_stale`/`not found` 自动补一次快照并把新 refs 附在错误里；`failure_list` 同类失败 ≥3 次给 `repeat:` 行与换策略建议；AX 动作失败会给最新快照摘要（`recovery`）。
 - **诚实报错**：驱动返回 `status:"refused"`（审批/授权）以前被当成功，现在归一化成失败并说明原因。
 
