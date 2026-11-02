@@ -24,7 +24,7 @@
    `browser_prepare pid=… window_id=… delivery_mode:"foreground"`（macOS Chrome 会弹一次它自己的调试授权，点允许即可）；
 3. `browser_state target_id=… tab_id=…` 拿 semantic 快照：`tabs` + `refs`（`p1:12` 这种）；
 4. 操作：
-   - `browser_open url=…`（导航，导航后 ref 全失效）
+   - `browser_open url=…`（导航，导航后 ref 全失效；默认自动取新快照并附 refs，`wait:false` 跳过）
    - `browser_click ref=…`
    - `browser_type ref=… text=… replace=true|mode:keystrokes`
    - `browser_pointer action=scroll|hover|double_click|drag …`
