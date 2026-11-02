@@ -44,10 +44,10 @@ after(() => {
 	rmSync(dir, { recursive: true, force: true });
 });
 
-function setup(config = {}) {
+function setup(config = {}, call) {
 	const tools = {};
 	const ctx = { tools: { register: (tool) => { tools[tool.name] = tool; } } };
-	const handle = registerBrowserTools(ctx, config, { defineTool: (definition) => definition, version: "0.25.0" });
+	const handle = registerBrowserTools(ctx, config, { defineTool: (definition) => definition, version: "0.25.0", ...(call === undefined ? {} : { call }) });
 	return { tools, handle };
 }
 
@@ -202,4 +202,36 @@ test("shouldRecoverWithSnapshot：只对 ref 过期/找不到这类错误补快�
 	assert.equal(shouldRecoverWithSnapshot("browser_consent_required: grant needed"), false);
 	assert.equal(shouldRecoverWithSnapshot("background_unavailable"), false);
 	assert.equal(shouldRecoverWithSnapshot(""), false);
+});
+
+test("browser_open：导航后自动附最新快照，wait:false 时跳过", async () => {
+	const calls = [];
+	const call = async (tool, args) => {
+		calls.push({ tool, args });
+		if (tool === "browser_navigate") return { ok: true, result: { ok: true } };
+		if (tool === "get_browser_state") {
+			return {
+				ok: true,
+				result: {
+					target_id: "t-open",
+					tab_id: "tab-open",
+					refs: Array.from({ length: 12 }, (_value, index) => ({ ref: `p1:${index}`, node: "link", label: `link ${index}` }))
+				}
+			};
+		}
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	const bind = await tools.browser_state.execute({ target_id: "t-open", tab_id: "tab-open" }, {});
+	assert.equal(bind.ok, true);
+	calls.length = 0;
+	const opened = await tools.browser_open.execute({ url: "https://example.com", target_id: "t-open", tab_id: "tab-open" }, {});
+	assert.equal(opened.ok, true);
+	assert.match(opened.text, /已打开 https:\/\/example\.com/);
+	assert.match(opened.text, /refs \(12\)|refs_unchanged/);
+	assert.deepEqual(calls.map((item) => item.tool), ["browser_navigate", "get_browser_state"]);
+	calls.length = 0;
+	const skipped = await tools.browser_open.execute({ url: "https://example.com", wait: false, target_id: "t-open", tab_id: "tab-open" }, {});
+	assert.equal(skipped.ok, true);
+	assert.deepEqual(calls.map((item) => item.tool), ["browser_navigate"]);
 });
