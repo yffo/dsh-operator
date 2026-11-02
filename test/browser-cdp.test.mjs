@@ -10,7 +10,8 @@ import {
 	readPageText,
 	summarizeConsoleEntry,
 	summarizeNetworkEntry,
-	waitForSelector
+	waitForSelector,
+	waitForText
 } from "../lib/browser-cdp.js";
 
 const targets = [
@@ -138,4 +139,25 @@ test("readPageText：selector 只拼到固定骨架里、转义安全", async ()
 	const quoted = await readPageText(client, { selector: "a[title=\"x\"]" });
 	assert.equal(quoted.ok, true);
 	assert.match(sent[1].params.expression, /a\[title=/);
+});
+
+
+test("waitForText 命中即返回，文本走 JSON 转义", async () => {
+	const seen = [];
+	const client = {
+		async send(method, params) {
+			seen.push(params?.expression ?? "");
+			return { result: { value: { found: true } } };
+		}
+	};
+	const result = await waitForText(client, '他说"好了"', { timeoutMs: 1500, intervalMs: 100 });
+	assert.equal(result.ok, true);
+	assert.match(seen[0], /includes\("他说\\"好了\\""\)/);
+});
+
+test("waitForText 超时给可读错误", async () => {
+	const client = fakeClient([{ found: false }]);
+	const result = await waitForText(client, "永不出现", { timeoutMs: 800, intervalMs: 100 });
+	assert.equal(result.ok, false);
+	assert.match(String(result.error), /等文本超时/);
 });

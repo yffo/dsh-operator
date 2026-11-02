@@ -183,6 +183,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.47.0** `browser_wait` 支持 `text`：等可见文本出现（提交后等结果文案），与 `selector`/`visible` 并列。
 - **0.46.5** `browser_download` 触发后最多等 2s 看文件落地（避免「刚下载就说没看到」）；`browser_dialog/download/set_input_files` 的 stale ref 也会自动补快照。
 - **0.46.4** 审批类拒绝给出正确下一步提示（「需要宿主确认」而不是「还没绑定」）。
 - **0.46.3** cua-driver 返回 `status:"refused"` 时按失败上报（`browser_download` 等需要宿主确认的动作不再被当成「已触发」）；补回归测试。
