@@ -17,6 +17,7 @@ import { slimPolicy } from "../lib/policy-slim.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = await readFile(join(root, "lib/computer-use/index.js"), "utf8");
+check(!/SCHEMA_VERSION/.test(src), "computer-use/index.js 内联 schemaVersion 用字面量（SCHEMA_VERSION 仅在 browser-cua-tools）");
 const backend = await readFile(join(root, "lib/computer-use/backend-xLwiz83E.js"), "utf8");
 const operatorTools = await readFile(join(root, "lib/operator-tools.js"), "utf8");
 const axObserver = await readFile(join(root, "lib/ax-observer.js"), "utf8");

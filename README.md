@@ -183,6 +183,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.46.1** 修 `ocr` 工具引用未定义 `SCHEMA_VERSION`（调用即报错）；`check:p0` 加断言防止回退。
 - **0.46.0** `browser_click` 按文案匹配改走 `semantic_v2` 快照（`name`/`role`）：驱动默认 `dom_refs_v1` 的 `label` 只有 `href=…`，按文案点会误报「找不到」；v2 不可用时自动回退默认格式。
 - **0.45.0** 维护面收口：`npm run inspect` 一条命令看巡检（audit 体积、失败热点+下一步、plans/skills 存量、测试文件数）；`failureDir`/默认 audit 路径改走 `DSH_HOME`（与 plans/skills 一致，测试隔离）。
 - **0.44.0** `operator_status` 显示浏览器通道状态：`browser tools: registered (15 tools)`，cua-driver 缺失/被关时显示 `skipped — 原因`，不用再靠「工具列表里没看到」猜。
