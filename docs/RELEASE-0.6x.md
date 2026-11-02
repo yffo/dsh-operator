@@ -23,6 +23,8 @@
 | 0.60.0 | `ax_batch` 成功步合并输出 |
 | 0.61.0 | `browser_state {interactive_only}` |
 | 0.62.0 | `browser_read {interactive_only}` |
+| 0.63.0 | 跨窗口交接 `operator_brief` / `operator_resume`，`operator_status` 增 handoff 行 |
+| 0.64.0 | 交接自动化：自动记最近动作，`operator_resume` 带最近失败建议 |
 
 ## 升级注意
 

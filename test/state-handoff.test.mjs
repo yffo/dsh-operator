@@ -87,3 +87,19 @@ test("operator_brief 自动带上最近动作；operator_resume 补充失败建�
 		assert.match(value.text, /本次窗口最近：browser_state, browser_click\(失败\)/);
 	});
 });
+
+
+test("operator_resume：include_recent/include_failures 可关", async () => {
+	await withHome(async () => {
+		clearRecentActions();
+		recordRecentAction("browser_state", true);
+		const tools = new Map();
+		const ctx = { tools: { register: (definition) => tools.set(definition.name, definition) } };
+		registerStateTools(ctx, {}, { defineTool: (definition) => definition, version: "0.64.1" });
+		await tools.get("operator_brief").execute({ goal: "关开关", todos: [], open: [] });
+		const value = await tools.get("operator_resume").execute({ include_recent: false, include_failures: false });
+		assert.doesNotMatch(value.text, /本次窗口最近/);
+		assert.doesNotMatch(value.text, /最近失败/);
+		assert.match(value.text, /目标 关开关/);
+	});
+});
