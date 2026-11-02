@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { evaluatePredicate, planWindowFrame, registerOperatorTools, resolveLayoutDisplay, V2_LEGACY_TOOL_NAMES, WINDOW_LAYOUTS } from "../lib/operator-tools.js";
+import { configureOperatorToolsInternals, evaluatePredicate, planWindowFrame, registerOperatorTools, resetOperatorToolsInternals, resolveLayoutDisplay, V2_LEGACY_TOOL_NAMES, WINDOW_LAYOUTS } from "../lib/operator-tools.js";
 import { configurePlanStore, createPlan } from "../lib/planner.js";
 import { configureFailureStore, recordFailure } from "../lib/failure-store.js";
 import { configureAuditLog } from "../lib/audit-log.js";
@@ -308,5 +308,28 @@ test("plan_run：计划步骤可回放浏览器工具（共享工具表）", asy
 		if (previous === undefined) delete process.env.DSH_HOME;
 		else process.env.DSH_HOME = previous;
 		rmSync(home, { recursive: true, force: true });
+	}
+});
+
+
+test("ax_press / ax_set_value 失败时附最新 AX 快照（省一次重新观察）", async () => {
+	const tools = collectTools();
+	configureOperatorToolsInternals({
+		listWindows: async () => ({ frontmostPid: 4242 }),
+		snapshotAx: async () => ({ nodes: [{ index: 3, role: "AXButton", title: "保存" }, { index: 5, role: "AXTextField", title: "搜索" }] }),
+		pressAx: async () => ({ pressed: false, index: 9, error: "cannot find element 9" }),
+		setAxValue: async () => ({ ok: false, index: 9, error: "no such element" })
+	});
+	try {
+		const press = tools.find((tool) => tool.name === "ax_press");
+		const result = await press.execute({ index: 9, pid: 4242 }, { signal: { throwIfAborted() {} } });
+		assert.equal(result.pressed, false);
+		assert.match(String(result.recovery), /\[3\] AXButton "保存"/);
+		const setValue = tools.find((tool) => tool.name === "ax_set_value");
+		const written = await setValue.execute({ index: 9, value: "x", pid: 4242 }, { signal: { throwIfAborted() {} } });
+		assert.equal(written.ok, false);
+		assert.match(String(written.recovery), /AXTextField/);
+	} finally {
+		resetOperatorToolsInternals();
 	}
 });
