@@ -416,3 +416,13 @@ test("browser_download / set_input_files 的 stale ref 也会自动补快照", a
 	assert.equal(files.ok, false);
 	assert.match(files.text, /已自动重新取快照/);
 });
+
+
+test("summarizeState：refs 超过 max_refs 时截断并说明还有多少", () => {
+	const refs = Array.from({ length: 6 }, (_, index) => ({ ref: `p1:${String(index)}`, node: "a", label: `href=/${String(index)}` }));
+	const text = summarizeState({ refs }, { maxRefs: 2 });
+	assert.match(text, /^refs \(6\):/m);
+	assert.match(text, /- p1:0 a href=\/0/);
+	assert.doesNotMatch(text, /p1:2/);
+	assert.match(text, /还有 4 个没列出/);
+});
