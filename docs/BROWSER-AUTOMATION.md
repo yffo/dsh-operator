@@ -19,7 +19,7 @@
 
 ## 标准流程
 
-1. `cua_windows app_contains="Chrome"` → 拿 `pid` / `window_id`；
+1. `cua_windows app_contains="Chrome"` → 拿 `pid` / `window_id`，或直接 `browser_prepare app="Chrome"` 让工具找窗口（多个时用 `window_title` 收窄，否则列候选）；
 2. `browser_state pid=… window_id=…` 尝试绑定；若被拒（`browser_consent_required` / `browser_requires_setup`）→
    `browser_prepare pid=… window_id=… delivery_mode:"foreground"`（macOS Chrome 会弹一次它自己的调试授权，点允许即可）；
 3. `browser_state target_id=… tab_id=…` 拿 semantic 快照：`tabs` + `refs`（`p1:12` 这种）；只要文字不要结构时用 `browser_read`（CDP，固定表达式读 `innerText`，比截图省 token；长页面加 `selector` 只读某块）；

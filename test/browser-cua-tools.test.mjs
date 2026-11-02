@@ -286,3 +286,51 @@ test("browser_* 失败会写入失败样本（browser_click）", async () => {
 	assert.equal(hit.kind, "not_found");
 	assert.match(hit.message, /stale/);
 });
+
+test("browser_prepare：给 app 名自动解析窗口；歧义时列候选；找不到给提示", async () => {
+	const windows = [
+		{ pid: 100, window_id: 11, app: "Google Chrome", title: "GitHub — Chrome" },
+		{ pid: 100, window_id: 12, app: "Google Chrome", title: "Docs — Chrome" },
+		{ pid: 200, window_id: 21, app: "Safari", title: "Example" }
+	];
+	const preps = [];
+	const call = async (tool, args) => {
+		if (tool === "list_windows") return { ok: true, result: { windows } };
+		if (tool === "browser_prepare") { preps.push(args); return { ok: true, result: { attached: true } }; }
+		return { ok: true, result: {} };
+	};
+	const { tools } = setup({}, call);
+	const ambiguous = await tools.browser_prepare.execute({ app: "Chrome" }, {});
+	assert.equal(ambiguous.ok, false);
+	assert.match(ambiguous.text, /匹配到 2 个窗口/);
+	const picked = await tools.browser_prepare.execute({ app: "Chrome", window_title: "Docs" }, {});
+	assert.equal(picked.ok, true);
+	assert.equal(preps[0].pid, 100);
+	assert.equal(preps[0].window_id, 12);
+	assert.deepEqual(preps[0].strategy, { kind: "existing_profile" });
+	const missing = await tools.browser_prepare.execute({ app: "Firefox" }, {});
+	assert.equal(missing.ok, false);
+	assert.match(missing.text, /没有找到/);
+	const neither = await tools.browser_prepare.execute({}, {});
+	assert.equal(neither.ok, false);
+	assert.match(neither.text, /需要 pid \+ window_id/);
+});
+
+test("browser_download：下载后报告新增文件（名称 + 大小，不读内容）", async () => {
+	const root = mkdtempSync(join(tmpdir(), "dsh-download-"));
+	writeFileSync(join(root, "old.txt"), "old");
+	const call = async (tool, args) => {
+		if (tool === "get_browser_state") return { ok: true, result: { target_id: "t-dl", tab_id: "tab-dl" } };
+		if (tool === "browser_download") { writeFileSync(join(root, "report.pdf"), "x".repeat(2048)); return { ok: true, result: {} }; }
+		return { ok: true, result: {} };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-dl", tab_id: "tab-dl" }, {});
+	const ok = await tools.browser_download.execute({ ref: "p1:4", destination_root: root, confirm: true }, {});
+	assert.equal(ok.ok, true);
+	assert.match(ok.text, /已下载 1 个文件/);
+	assert.match(ok.text, /report\.pdf（2\.0 KB）/);
+	assert.equal(ok.text.includes("x".repeat(32)), false, "不应回传文件内容");
+	const noNew = await tools.browser_download.execute({ ref: "p1:4", destination_root: mkdtempSync(join(tmpdir(), "dsh-download-")), confirm: true }, {});
+	assert.equal(noNew.ok, true);
+});
