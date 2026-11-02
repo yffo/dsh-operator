@@ -491,3 +491,30 @@ test("browser_prepare 按 app 找窗口：兼容驱动返回的 app_name，并�
 	assert.equal(result.ok, true);
 	assert.equal(prepared?.window_id, 76);
 });
+
+test("browser_wait expect_url：导航后等地址变化（不依赖 CDP）", async () => {
+	let calls = 0;
+	const call = async (tool) => {
+		if (tool !== "get_browser_state") return { ok: false, error: `unexpected ${tool}` };
+		calls += 1;
+		const url = calls < 3 ? "https://a.example/start" : "https://b.example/done?x=1";
+		return { ok: true, result: { target_id: "t-url", tab_id: "tab-url", tabs: [{ tab_id: "tab-url", url, active: true }] } };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-url", tab_id: "tab-url", snapshot_format: "dom_refs_v1" }, {});
+	const ok = await tools.browser_wait.execute({ expect_url: "done", timeout_ms: 2000 }, {});
+	assert.equal(ok.ok, true);
+	assert.match(ok.text, /b\.example\/done/);
+});
+
+test("browser_wait expect_url：超时给出当前地址", async () => {
+	const call = async (tool) => tool === "get_browser_state"
+		? { ok: true, result: { target_id: "t-slow", tab_id: "tab-slow", tabs: [{ tab_id: "tab-slow", url: "https://a.example/start", active: true }] } }
+		: { ok: false, error: `unexpected ${tool}` };
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-slow", tab_id: "tab-slow", snapshot_format: "dom_refs_v1" }, {});
+	const bad = await tools.browser_wait.execute({ expect_url: "never", timeout_ms: 400 }, {});
+	assert.equal(bad.ok, false);
+	assert.match(bad.text, /等 URL 超时/);
+	assert.match(bad.text, /a\.example\/start/);
+});
