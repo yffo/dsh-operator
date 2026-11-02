@@ -168,6 +168,8 @@ npm test            # 298 项测试
 
 ## 文档
 
+- [跨窗口状态交接方案](docs/STATE-CONTEXT.md)
+
 - [项目说明与决策记录](docs/PROJECT-2026-11.md)
 - [兼容性与平台边界](docs/COMPATIBILITY.md)
 - [cua-driver 人机并行](docs/CUA-DRIVER.md)

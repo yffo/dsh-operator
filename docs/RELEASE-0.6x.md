@@ -12,6 +12,18 @@
 - **失败自愈**：`browser_*` 遇 `ref_stale`/`not found` 自动补一次快照并把新 refs 附在错误里；`failure_list` 同类失败 ≥3 次给 `repeat:` 行与换策略建议；AX 动作失败会给最新快照摘要（`recovery`）。
 - **诚实报错**：驱动返回 `status:"refused"`（审批/授权）以前被当成功，现在归一化成失败并说明原因。
 
+## 版本索引
+
+| 版本 | 内容 |
+| --- | --- |
+| 0.56.0 | `browser_state` 正文/结构树封顶，回包 5443→2197 字符 |
+| 0.57.0 → 0.57.1 | 截图去重（attachmentId 方案）→ 回退 |
+| 0.58.0 | `failure_list` 的 `repeat:` 换策略提示 |
+| 0.59.0 | 截图去重重做（像素 sha1） |
+| 0.60.0 | `ax_batch` 成功步合并输出 |
+| 0.61.0 | `browser_state {interactive_only}` |
+| 0.62.0 | `browser_read {interactive_only}` |
+
 ## 升级注意
 
 - 0.59.0 需要重启 App 才生效（客户端/主进程都会加载插件代码）。
