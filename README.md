@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，258 项测试 + CI 全绿；欢迎自己改、自己发布。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，259 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -160,7 +160,7 @@ cua-driver 相关：`DSH_OPERATOR_CUA`、`DSH_OPERATOR_CUA_BIN`、`DSH_OPERATOR_
 npm run doctor      # 安装/数据目录/权限/日志等 9 项体检
 npm run preflight   # 隔离环境里做一次 DSH 引导，抓插件加载错误
 npm run failures    # 失败样本摘要（按错误类别分组）
-npm test            # 258 项测试
+npm test            # 259 项测试
 ```
 
 会话里也可以直接问 `operator_status`（版本/工具面/审计行数），或列出失败样本（`failure_list`）。
@@ -181,6 +181,7 @@ npm test            # 258 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.35.0** 失败自动补快照：`browser_click/type/pointer/select` 遇到 ref 过期/快照被取代/元素找不到时，自动再取一次最新 refs 附在错误里（模型直接用新 ref 继续，少一个来回）；`shouldRecoverWithSnapshot()` 只认这几类错误，授权/后台不可用不重取。
 - **0.34.1** refs 去重加最小长度阈值：refs 段没比说明行明显长就不折叠，避免小快照「越折越长」；30 个 refs 的页面实测 1223→198 字符（-83%）。
 - **0.34.0** `browser_state` 的 refs 连续快照去重：同一页面下一次快照只回一行 `<refs_unchanged>`（最多连折 2 次），页面一变立刻回全文；`lib/ax-dedupe.js` 抽出通用 `dedupeByKey`，AX 树与 refs 共用同一套折叠逻辑。
 - **0.33.0** 平台面收敛：`lib/platform.js` 增加能力矩阵与 `platformSummary`，`operator_status`/`doctor` 明确打印 `UNVERIFIED`——Windows 基础 GUI 后端（GDI + SendInput）代码在但无真机验收，Linux 可加载但桌面后端未实现（`unsupported_platform`）；扩展工具仍只在 macOS 注册。

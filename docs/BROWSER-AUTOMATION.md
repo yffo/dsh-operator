@@ -43,6 +43,7 @@
 
 - **节奏**：两次动作之间留 300–800ms（`browser_wait` 之后再点），不要毫秒级连点同一元素；
 - **顺序**：先 `browser_state` 拿 ref，再 click/type；ref 过期就重新取，不要猜坐标；
+- **自愈（0.35.0）**：ref 过期/快照被取代/元素找不到时，click/type/pointer/select 会自动补一份最新 refs 在错误里（`已自动重新取快照` 段落），直接拿新 ref 继续即可；授权、后台不可用这类错误不会乱重取；
 - **环境**：用真实 profile、真实 UA/语言/时区；不 headless、不加 `--enable-automation`、不注入伪装脚本；
 - **输入**：能逐字就 `mode:"keystrokes"`，批量 `insert_text` 只在确实需要时用；
 - **并发**：同一站点不要多标签并行刷；

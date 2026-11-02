@@ -12,6 +12,7 @@ import {
 	hintForBrowserError,
 	REFS_UNCHANGED_NOTE,
 	registerBrowserTools,
+	shouldRecoverWithSnapshot,
 	summarizeState
 } from "../lib/browser-cua-tools.js";
 
@@ -192,4 +193,13 @@ test("dedupeStateText：小快照不折叠（说明行反而更长）", () => {
 test("dedupeStateText：没有 refs 时原样返回", () => {
 	const text = "target_id=t1\ntab_id=tab";
 	assert.equal(dedupeStateText(text, { target_id: "t1", tab_id: "tab", tabs: [] }), text);
+});
+
+test("shouldRecoverWithSnapshot：只对 ref 过期/找不到这类错误补快照", () => {
+	assert.equal(shouldRecoverWithSnapshot("refused: browser_ref_stale: ref p1:2 is stale"), true);
+	assert.equal(shouldRecoverWithSnapshot("the page navigated or the snapshot was superseded"), true);
+	assert.equal(shouldRecoverWithSnapshot("element not found: #nope"), true);
+	assert.equal(shouldRecoverWithSnapshot("browser_consent_required: grant needed"), false);
+	assert.equal(shouldRecoverWithSnapshot("background_unavailable"), false);
+	assert.equal(shouldRecoverWithSnapshot(""), false);
 });
