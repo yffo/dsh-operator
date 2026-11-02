@@ -27,6 +27,12 @@
 | 0.43.0 | `failure_list` hot 摘要；`operator_status` 版本不一致提示 |
 | 0.44.0 | `operator_status` 显示浏览器通道注册状态 |
 | 0.45.0 | `npm run inspect` 巡检脚本；路径统一走 `DSH_HOME`；`check:p0` 加平台矩阵一致性 |
+| 0.46.0 | `browser_click` 按文案匹配改走 `semantic_v2`（驱动默认 label 只有 href） |
+| 0.46.1 | 修 `ocr` 工具 `SCHEMA_VERSION` 未定义 |
+| 0.46.2 | 修 `clipboard_read/write` 从未真正注册（没走 `ctx.tools.register`） |
+| 0.46.3 | cua-driver `status:"refused"` 按失败上报（下载不再假成功） |
+| 0.46.4 | 审批类拒绝给出「需要宿主确认」的正确提示 |
+| 0.46.5 | 下载后等 2s 落盘；`browser_dialog/download/set_input_files` stale 自动补快照 |
 
 ## 升级注意
 
@@ -39,4 +45,5 @@
 
 - 浏览器工具只在 macOS 验证过；Windows 基础 GUI 后端代码在但未真机验证，Linux 未实现桌面后端。
 - `browser_read` 只读可见文本，不返回 HTML/属性；需要结构化数据时用 `browser_dom_*`（AppleScript 通道）或 `browser_state` 的 refs。
-- 文件上传/下载会写磁盘，`browser_download` 必须显式 `confirm:true`。
+- 文件上传/下载会写磁盘，`browser_download` 必须显式 `confirm:true`；且 cua-driver 把下载列为**需要宿主确认**的破坏性动作，没有确认弹窗的环境（CLI/独立进程）会直接拒绝。
+- `browser_set_input_files` 可替代原生选择器，但只支持真实存在的绝对路径文件。
