@@ -53,7 +53,10 @@ function collectTools() {
 			["click", { execute: async (args) => (args.position[0] === 999 ? { ok: false, note: "decorated window blocked" } : { ok: true }) }],
 			["scroll", { execute: async () => ({ ok: true }) }],
 			["input_text", { execute: async () => ({ ok: true }) }],
-			["hotkey", { execute: async () => ({ ok: true }) }]
+			["hotkey", { execute: async () => ({ ok: true }) }],
+			["browser_open", { execute: async (args) => ({ ok: true, text: `open ${args.url}` }) }],
+			["browser_click", { execute: async (args) => ({ ok: true, text: `click ${args.ref ?? args.text ?? ""}` }) }],
+			["browser_type", { execute: async (args) => ({ ok: true, text: `type ${args.ref} ${args.text}` }) }]
 		])
 	});
 	return registered;
@@ -226,4 +229,31 @@ test("ax_batch：AX 步骤经 handlers 解析（不再报 not registered）", as
 	const result = await batch.execute({ steps: [{ action: "ax_press", index: 1 }, { action: "ax_press", index: 2 }] });
 	assert.ok(result.steps.length >= 1);
 	assert.notEqual(result.steps[0].note, "ax_press not registered", "ax_press 应从 handlers 解析");
+});
+
+test("ax_batch：浏览器动作与桌面动作可混跑（0.39.0）", async () => {
+	const tools = collectTools();
+	const batch = tools.find((tool) => tool.name === "ax_batch");
+	const result = await batch.execute({
+		steps: [
+			{ action: "browser_open", url: "https://example.com/" },
+			{ action: "browser_click", text: "More information" },
+			{ action: "browser_type", ref: "p1:3", text: "hello" },
+			{ action: "hotkey", keys: "cmd,l" }
+		]
+	});
+	assert.equal(result.failedAt, undefined);
+	assert.equal(result.steps.length, 4);
+	assert.match(result.text, /4\/4 ok/);
+	assert.match(result.steps[0].note, /open https:\/\/example\.com/);
+	assert.match(result.steps[1].note, /click More information/);
+	assert.match(result.steps[2].note, /type p1:3 hello/);
+});
+
+test("ax_batch：浏览器动作缺少必填字段时报 missing 并停在该步", async () => {
+	const tools = collectTools();
+	const batch = tools.find((tool) => tool.name === "ax_batch");
+	const result = await batch.execute({ steps: [{ action: "browser_open", url: "https://example.com/" }, { action: "browser_type", ref: "p1:3" }] });
+	assert.equal(result.failedAt, 1);
+	assert.match(result.steps[1].note, /missing text/);
 });

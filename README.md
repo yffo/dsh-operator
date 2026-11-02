@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，263 项测试 + CI 全绿；欢迎自己改、自己发布。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，265 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -54,7 +54,7 @@ dsh plugin --profile desktop add --save-exact "file:$HOME/projects/dsh-operator"
 | --- | --- |
 | 观察 | `screenshot`（截图+前台信息）、`wait` / `long_wait`、`cu_observe`（按窗口读 AX/截图）、`screenshot_window`、`list_windows`、`zoom_region`（局部原生分辨率放大）、`ocr`（Vision 文本兜底：AX 拿不到时读截图，返回带坐标的文本行） |
 | 鼠标 / 键盘 | `click`、`drag`、`scroll`、`input_text`、`hotkey`、`long_press`、`cu_act`（后台动作） |
-| AX 动作 | `ax_press`、`ax_set_value`、`ax_scroll`、`ax_menu`、`ax_batch`（2–12 个动作一批） |
+| AX 动作 | `ax_press`、`ax_set_value`、`ax_scroll`、`ax_menu`、`ax_batch`（2–12 个动作一批，可混跑桌面与浏览器动作） |
 | 窗口 / 应用 | `list_apps`、`open_app`（前台激活）、`cua_launch`（后台启动，不置顶）、`open_in_browser`、`open_in_finder`、`window_move`（含 left/right-half 等预设） |
 | 浏览器 DOM | `browser_dom_snapshot`、`browser_dom_click`、`browser_dom_fill`、`browser_dom_probe`（Chrome/Safari，AppleScript 优先，CDP 回退） |
 | 浏览器自动化 | `browser_state`、`browser_prepare`、`browser_open`、`browser_click`、`browser_type`、`browser_pointer`、`browser_select`、`browser_key`（经 cua-driver：真实 profile、语义 ref、受信任输入） |
@@ -160,7 +160,7 @@ cua-driver 相关：`DSH_OPERATOR_CUA`、`DSH_OPERATOR_CUA_BIN`、`DSH_OPERATOR_
 npm run doctor      # 安装/数据目录/权限/日志等 9 项体检
 npm run preflight   # 隔离环境里做一次 DSH 引导，抓插件加载错误
 npm run failures    # 失败样本摘要（按错误类别分组）
-npm test            # 263 项测试
+npm test            # 265 项测试
 ```
 
 会话里也可以直接问 `operator_status`（版本/工具面/审计行数），或列出失败样本（`failure_list`）。
@@ -181,6 +181,7 @@ npm test            # 263 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.39.0** `ax_batch` 可混跑浏览器动作：`browser_open` / `browser_click`（ref 或 text）/ `browser_type`，一次调用里「开页→点→输入→桌面按键」，中间不消耗回合；步骤摘要直接取浏览器工具返回的文本。
 - **0.38.0** `browser_click` 支持按可见文案点：`text="登录"` 会先快照再匹配（不区分大小写，可用 `role`/`index` 收窄）；歧义时**拒绝点击并列出候选**，不会点错。
 - **0.37.0** 新增 `browser_read`：CDP 读页面可见文本（固定表达式 `document.body.innerText`，不执行任意 JS；默认 4000 字符、硬顶 20000），只要文字时比截图省一个数量级的 token。
 - **0.36.0** `browser_open` 导航后默认自动取一份新快照（最多重试 3 次、间隔 300ms），结果里直接带最新 refs，省掉一次 `browser_state`；`wait:false` 可跳过。

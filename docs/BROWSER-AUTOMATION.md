@@ -43,6 +43,7 @@
 
 - **节奏**：两次动作之间留 300–800ms（`browser_wait` 之后再点），不要毫秒级连点同一元素；
 - **顺序**：先 `browser_state` 拿 ref，再 click/type；ref 过期就重新取，不要猜坐标；
+- **批处理（0.39.0）**：`ax_batch` 的 steps 里可以直接用 `browser_open` / `browser_click` / `browser_type`，和 `click`/`input`/`hotkey` 混在一个调用里；首错即停，摘要取工具返回文本。
 - **按文案点（0.38.0）**：`browser_click text="登录"` 内部先取快照再匹配；匹配到多个会拒绝并列出候选（用 `role`/`index` 收窄），不会盲点；
 - **自愈（0.35.0）**：ref 过期/快照被取代/元素找不到时，click/type/pointer/select 会自动补一份最新 refs 在错误里（`已自动重新取快照` 段落），直接拿新 ref 继续即可；授权、后台不可用这类错误不会乱重取；
 - **环境**：用真实 profile、真实 UA/语言/时区；不 headless、不加 `--enable-automation`、不注入伪装脚本；
