@@ -174,6 +174,7 @@ npm test            # 265 项测试
 - [第三方许可（NOTICE）](NOTICE)
 - [工具卡片设计（toolview）](docs/TOOLVIEW-CARDS.md) · [可交互 demo](design/toolview-demo.html) · [P0 进度与交接](docs/TOOLVIEW-P0-HANDOFF.md)
 - [发布与版本](docs/RELEASE.md)
+- [0.4x 发布说明（草稿）](docs/RELEASE-0.4x.md)
 - [场景/验收矩阵](docs/SCENARIOS-2026-11.md)
 - [seam provider 适配说明](docs/SEAM-PROVIDER.md)
 - [开发计划](docs/PLAN-2026-11.md)
