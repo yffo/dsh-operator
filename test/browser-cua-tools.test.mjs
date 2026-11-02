@@ -235,3 +235,35 @@ test("browser_open：导航后自动附最新快照，wait:false 时跳过", asy
 	assert.equal(skipped.ok, true);
 	assert.deepEqual(calls.map((item) => item.tool), ["browser_navigate"]);
 });
+
+test("browser_click text：唯一匹配直接点、歧义列候选、找不到给提示", async () => {
+	const clicked = [];
+	const refs = [
+		{ ref: "p1:0", node: "link", label: "登录" },
+		{ ref: "p1:1", node: "button", label: "登录并同意" },
+		{ ref: "p1:2", node: "link", label: "帮助" }
+	];
+	const call = async (tool, args) => {
+		if (tool === "get_browser_state") return { ok: true, result: { target_id: "t-text", tab_id: "tab-text", refs } };
+		if (tool === "browser_click") { clicked.push(args.ref); return { ok: true, result: {} }; }
+		return { ok: false, error: `unexpected ${tool}` };
+	};
+	const { tools } = setup({}, call);
+	await tools.browser_state.execute({ target_id: "t-text", tab_id: "tab-text" }, {});
+	const unique = await tools.browser_click.execute({ text: "帮助" }, {});
+	assert.equal(unique.ok, true);
+	assert.deepEqual(clicked, ["p1:2"]);
+	const ambiguous = await tools.browser_click.execute({ text: "登录" }, {});
+	assert.equal(ambiguous.ok, false);
+	assert.match(ambiguous.text, /匹配到 2 个元素/);
+	assert.match(ambiguous.text, /p1:0/);
+	const picked = await tools.browser_click.execute({ text: "登录", index: 1 }, {});
+	assert.equal(picked.ok, true);
+	assert.deepEqual(clicked, ["p1:2", "p1:1"]);
+	const missing = await tools.browser_click.execute({ text: "不存在的按钮" }, {});
+	assert.equal(missing.ok, false);
+	assert.match(missing.text, /没有找到/);
+	const empty = await tools.browser_click.execute({}, {});
+	assert.equal(empty.ok, false);
+	assert.match(empty.text, /ref.*或 text|需要 ref/);
+});
