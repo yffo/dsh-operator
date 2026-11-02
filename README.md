@@ -18,7 +18,7 @@
 - **动作有校验**：每次动作后自动重采并比较，给出 `actionEffect`（confirmed / unverifiable / suspected_noop）；失败会附上可读提示，而不是让模型瞎猜。
 - **后台人机并行（可选）**：接入 [cua-driver](docs/CUA-DRIVER.md) 后，`cua_launch` 后台启动 App、`cua_observe` 读窗口、`cua_act` 在后台点击/输入，**不移动你的真实光标、不抢占焦点**；你也可以选择不装，全部基础工具照常可用。
 - **安全边界清楚**：危险快捷键/「删除」类按压默认拦截（`guard`）；审计日志只记元数据、不存屏幕内容；失败样本自动脱敏；剪贴板用完还原。
-- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，260 项测试 + CI 全绿；欢迎自己改、自己发布。
+- **代码可自持**：MIT，全部能力代码在本仓库维护、无外部补丁链，262 项测试 + CI 全绿；欢迎自己改、自己发布。
 
 ## 3 分钟上手
 
@@ -58,7 +58,7 @@ dsh plugin --profile desktop add --save-exact "file:$HOME/projects/dsh-operator"
 | 窗口 / 应用 | `list_apps`、`open_app`（前台激活）、`cua_launch`（后台启动，不置顶）、`open_in_browser`、`open_in_finder`、`window_move`（含 left/right-half 等预设） |
 | 浏览器 DOM | `browser_dom_snapshot`、`browser_dom_click`、`browser_dom_fill`、`browser_dom_probe`（Chrome/Safari，AppleScript 优先，CDP 回退） |
 | 浏览器自动化 | `browser_state`、`browser_prepare`、`browser_open`、`browser_click`、`browser_type`、`browser_pointer`、`browser_select`、`browser_key`（经 cua-driver：真实 profile、语义 ref、受信任输入） |
-| 浏览器 CDP | `browser_wait`、`browser_console`、`browser_network`（需 `browserCdpPort` + Chrome `--remote-debugging-port`：等网络空闲、看控制台错误、看失败请求） |
+| 浏览器 CDP | `browser_wait`、`browser_read`、`browser_console`、`browser_network`（需 `browserCdpPort` + Chrome `--remote-debugging-port`：等网络空闲/等元素、读页面可见文本、看控制台错误、看失败请求） |
 | 任务 / 技能 | `task_profile`、`plan_create/list/update/run/delete`、`skill_save/list/show/run/delete` |
 | 后台会话 | `code_agent`（另起标准会话执行代码/长任务） |
 | 查询 / 诊断 | `verify_state`（窗口标题/AX/前台等谓词轮询）、`operator_status`、`failure_list`（失败样本摘要） |
@@ -160,7 +160,7 @@ cua-driver 相关：`DSH_OPERATOR_CUA`、`DSH_OPERATOR_CUA_BIN`、`DSH_OPERATOR_
 npm run doctor      # 安装/数据目录/权限/日志等 9 项体检
 npm run preflight   # 隔离环境里做一次 DSH 引导，抓插件加载错误
 npm run failures    # 失败样本摘要（按错误类别分组）
-npm test            # 260 项测试
+npm test            # 262 项测试
 ```
 
 会话里也可以直接问 `operator_status`（版本/工具面/审计行数），或列出失败样本（`failure_list`）。
@@ -181,6 +181,7 @@ npm test            # 260 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.37.0** 新增 `browser_read`：CDP 读页面可见文本（固定表达式 `document.body.innerText`，不执行任意 JS；默认 4000 字符、硬顶 20000），只要文字时比截图省一个数量级的 token。
 - **0.36.0** `browser_open` 导航后默认自动取一份新快照（最多重试 3 次、间隔 300ms），结果里直接带最新 refs，省掉一次 `browser_state`；`wait:false` 可跳过。
 - **0.35.0** 失败自动补快照：`browser_click/type/pointer/select` 遇到 ref 过期/快照被取代/元素找不到时，自动再取一次最新 refs 附在错误里（模型直接用新 ref 继续，少一个来回）；`shouldRecoverWithSnapshot()` 只认这几类错误，授权/后台不可用不重取。
 - **0.34.1** refs 去重加最小长度阈值：refs 段没比说明行明显长就不折叠，避免小快照「越折越长」；30 个 refs 的页面实测 1223→198 字符（-83%）。

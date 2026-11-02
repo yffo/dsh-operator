@@ -7,6 +7,7 @@ import {
 	cdpVersion,
 	isFailureStatus,
 	pickTarget,
+	readPageText,
 	summarizeConsoleEntry,
 	summarizeNetworkEntry,
 	waitForSelector
@@ -100,4 +101,29 @@ test("waitForSelector 超时给可读错误", async () => {
 	assert.equal(result.ok, false);
 	assert.match(result.error, /等待选择器超时/);
 	assert.equal(result.elapsedMs >= 900, true);
+});
+
+test("readPageText：只跑固定表达式、规范化空白、按 maxChars 截断", async () => {
+	const sent = [];
+	const value = `  Hello\r\n\n\n\nWorld ${"x".repeat(300)}  `;
+	const client = {
+		send: async (method, params) => {
+			sent.push({ method, params });
+			return { result: { value } };
+		}
+	};
+	const ok = await readPageText(client, { maxChars: 200 });
+	assert.equal(ok.ok, true);
+	assert.equal(sent[0].method, "Runtime.evaluate");
+	assert.match(sent[0].params.expression, /document\.body/);
+	assert.equal(ok.text.startsWith("Hello\n\nWorld"), true);
+	assert.equal(ok.text.length, 200);
+	assert.equal(ok.truncated, true);
+});
+
+test("readPageText：CDP 报错时返回 ok:false", async () => {
+	const client = { send: async () => { throw new Error("CDP Runtime.evaluate timeout"); } };
+	const failed = await readPageText(client, {});
+	assert.equal(failed.ok, false);
+	assert.match(failed.error, /读取页面文本失败/);
 });
