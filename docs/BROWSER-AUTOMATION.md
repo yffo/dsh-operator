@@ -161,3 +161,9 @@ cua-driver 的 `browser_*` 只给「语义快照 + 输入动作」，拿不到 R
 - 「在我已登录的浏览器里点一下」/ 高风控站点 / 需要真实输入 → 用 `browser_*`。
 
 不要为了统一而重造内置浏览器的那 30 多个工具；operator 的浏览器能力按需长。
+
+## 0.46 真机验证（macOS，Chrome 156 现有 profile）
+
+已跑通：`browser_prepare`（attach existing profile）→ `browser_state` → `browser_open`（自动附 refs）→ 按文案 `browser_click`（semantic_v2）→ `browser_read` / `browser_wait` / `browser_console` / `browser_network`（需 `browserCdpPort` + 调试端口）→ `browser_set_input_files`（本地 `<input type=file>`）。
+
+下载例外：`browser_download` 在 cua-driver 里属于需要**宿主确认**的破坏性动作。没有确认通道时（CLI/独立进程/当前 App 没有弹确认）驱动返回 `status:"refused"`，工具现在会如实报失败并提示「需要宿主确认」，不会假装「已触发下载」。
