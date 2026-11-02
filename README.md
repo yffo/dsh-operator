@@ -183,6 +183,7 @@ npm test            # 265 项测试
 
 按版本倒序，只列近期版本；完整历史见 [Releases](https://github.com/yffo/dsh-operator/releases) 与 tag。
 
+- **0.45.0** 维护面收口：`npm run inspect` 一条命令看巡检（audit 体积、失败热点+下一步、plans/skills 存量、测试文件数）；`failureDir`/默认 audit 路径改走 `DSH_HOME`（与 plans/skills 一致，测试隔离）。
 - **0.44.0** `operator_status` 显示浏览器通道状态：`browser tools: registered (15 tools)`，cua-driver 缺失/被关时显示 `skipped — 原因`，不用再靠「工具列表里没看到」猜。
 - **0.43.0** 更能自证：`failure_list` 多一行 `hot:`（工具·失败类型组合，如 `browser_click·not_found(2)`）；`operator_status` 发现「磁盘上是新版、运行中是旧版」时直接提示重启 App。
 - **0.42.0** 两处顺手：`browser_prepare` 可以直接给 `app:"Chrome"`（+可选 `window_title`）自动找窗口，歧义时列候选；`browser_download` 结束后对比目录，报告新增文件名与大小（不读内容），不用再 ls 复核。

@@ -33,6 +33,34 @@
 
 `target_id` / `tab_id` 会记住最近一次绑定值，所以第 4 步通常只用传 `ref`；显式传 `target_id`/`tab_id` 可以覆盖。
 
+## 常用配方（可直接抄）
+
+```jsonc
+// 只在 refs 里找「登录」相关元素，省 token
+browser_state { "query": "登录" }
+
+// 文案已经看准了：不用先抄 ref（歧义会列候选，不会乱点）
+browser_click { "text": "提交订单" }
+
+// 等元素出现再点，别用 sleep
+browser_wait { "selector": "#pay", "visible": true, "timeout_ms": 8000 }
+browser_click { "text": "确认支付" }
+
+// 只读价格区，不读整页
+browser_read { "selector": ".price-summary", "max_chars": 800 }
+
+// 开调试端口时：看控制台与失败请求（reload:true 抓加载期错误）
+browser_console { "reload": true, "duration_ms": 1200 }
+browser_network { "reload": true, "duration_ms": 1500 }
+
+// 一批里混桌面与浏览器动作（失败即停）
+ax_batch { "steps": [
+  { "action": "browser_open", "url": "https://example.com" },
+  { "action": "wait", "seconds": 1 },
+  { "action": "hotkey", "keys": "cmd,l" }
+] }
+```
+
 ## 授权与姿态
 
 - 绑定用户正在用的浏览器是**显式动作**：cua-driver 会要求授权，macOS Chrome 还会弹它自己的确认框。
