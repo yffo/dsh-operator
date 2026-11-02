@@ -15,6 +15,8 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { platformSummary } from "../lib/platform.js";
+
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(here, "..");
 const DSH_HOME = process.env.DSH_HOME ?? join(homedir(), ".dsh");
@@ -65,8 +67,8 @@ export async function runDoctor(options = {}) {
 	// 1. 平台
 	results.push(
 		deps.platform === "darwin"
-			? { level: "ok", text: `平台 macOS（${deps.platform}）` }
-			: { level: "warn", text: `平台 ${deps.platform}：扩展工具只在 macOS 注册（Windows 未验证）` }
+			? { level: "ok", text: `平台 macOS（${deps.platform}，已验证）` }
+			: { level: "warn", text: `平台 ${deps.platform}：${platformSummary(deps.platform)}` }
 	);
 
 	// 2. Node 版本
@@ -124,7 +126,7 @@ export async function runDoctor(options = {}) {
 	// 6. helper：存在、可执行、架构（仅 macOS；其它平台扩展工具不注册，这里记跳过而不是失败）
 	const helper = join(operatorDir, "lib", "bin", "ax-snapshot");
 	if (deps.platform !== "darwin") {
-		results.push({ level: "ok", text: `AX helper 仅 macOS：${deps.platform} 上扩展工具不注册（跳过）` });
+		results.push({ level: "ok", text: `AX helper 仅 macOS：${deps.platform} 上扩展工具不注册（跳过；该平台未验证）` });
 	} else if (deps.deps.exists(helper)) {
 		let mode = 0;
 		try {

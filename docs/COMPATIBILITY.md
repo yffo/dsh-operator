@@ -16,7 +16,8 @@
 | --- | --- | --- |
 | macOS arm64 | ✅ 已验证 | 主力开发与验收环境（AX 助手为 lipo 通用二进制） |
 | macOS x86_64 | ✅ 已验证（二进制层面） | helper 含 x86_64 slice，`doctor` 校验双架构；Intel 真机未跑过 GUI 验收 |
-| Windows / Linux | ⚠️ 未验证 | 基础 GUI 工具走 vendored koffi 后端（Windows：GDI `BitBlt` 截图 + `SendInput` 键鼠 + 窗口枚举；Linux 无后端）；扩展工具（`list_windows`/`screenshot_window`/`verify_state`/AX 系列）非 darwin 不注册并打印 macOS-only 警告；截图降 token（`sips`）跳过；`doctor` 在非 darwin 上把 AX helper 记为「仅 macOS，跳过」而不是致命。没有真机验收 |
+| Windows | ⚠️ 兼容但**未验证**（UNVERIFIED） | 代码路径在：基础 GUI 工具走 vendored koffi 后端（GDI `BitBlt` 截图 + `SendInput` 键鼠 + 窗口枚举），插件能加载；**没有真机验收**。扩展工具（`list_windows`/`screenshot_window`/`verify_state`/AX/浏览器/剪贴板）非 darwin 不注册并打印 macOS-only 警告；截图降 token（`sips`）跳过；`doctor` 把 AX helper 记为「仅 macOS，跳过」而非致命；`operator_status` 打印 `platform: win32 … UNVERIFIED` |
+| Linux | ⚠️ 兼容加载但**未验证/无后端** | 插件能加载、配置与状态工具可用；桌面后端未实现，任何 GUI/截图调用返回 `unsupported_platform: computer-use: desktop control is implemented only on macOS and Windows`；`operator_status` 打印 `platform: linux … UNVERIFIED` |
 
 ## 运行时
 

@@ -71,8 +71,9 @@ test("doctor：非 darwin + 缺安装副本时，AX helper 只记「macOS-only �
 	assert.ok(report.fatal >= 1, `期望至少 1 个致命项（安装副本缺失），实际 ${report.fatal}`);
 	assert.equal(report.ok, false);
 	const text = report.results.map((item) => item.text).join("\n");
-	assert.match(text, /扩展工具只在 macOS 注册/);
+	assert.match(text, /UNVERIFIED/);
+	assert.match(text, /linux/);
 	assert.match(text, /安装副本不存在/);
-	assert.match(text, /AX helper 仅 macOS：linux 上扩展工具不注册（跳过）/);
+	assert.match(text, /AX helper 仅 macOS：linux 上扩展工具不注册（跳过；该平台未验证）/);
 	assert.doesNotMatch(text, /AX helper 不存在/);
 });
