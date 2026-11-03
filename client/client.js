@@ -710,7 +710,7 @@ window.__ModuleLoader__.load({
 			".dop-dock-details summary::-webkit-details-marker{display:none}",
 			".dop-dock-details summary::before{content:\"▸ \";display:inline-block;transition:transform .15s ease}",
 			".dop-dock-details[open] summary::before{transform:rotate(90deg)}",
-			".dop-dock-detail-body{margin-top:5px;padding:6px 8px;border-radius:8px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary);font-size:11.5px;word-break:break-all}",
+			".dop-dock-detail-body{flex-basis:100%;margin-top:5px;padding:6px 8px;border-radius:8px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary);font-size:11.5px;word-break:break-all}",
 			".dop-dock-gate{margin:0 14px 12px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 40%,transparent);animation:dopDockRowIn .3s ease-out both}",
 			".dop-dock-gate-title{font-weight:650;font-size:13px;color:var(--dsw-alias-state-error-primary)}",
 			".dop-dock-gate-reason{margin-top:3px;font-size:12.5px}",
