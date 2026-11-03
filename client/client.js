@@ -667,7 +667,7 @@ window.__ModuleLoader__.load({
 		const DOCK_CSS = [
 			// 与输入框卡片同宽：照宿主 QueueDock 的公式（宽度扣掉左右 clearance 与 dock inset，再居中）。
 			".dop-dock{box-sizing:border-box;width:calc(100% - 2 * var(--dsh-composer-side-clearance,16px) - 2 * var(--dsh-composer-dock-inset,8px));max-width:calc(var(--dsh-composer-card-max-width,952px) - 2 * var(--dsh-composer-dock-inset,8px));margin:4px auto 10px;border-radius:18px;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 93%,#e8dcc6);box-shadow:0 1px 2px rgba(0,0,0,.04),0 20px 40px -32px rgba(0,0,0,.45);overflow:hidden;animation:dopDockIn .2s ease-out}",
-			".dop-dock-head{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:12px 16px 8px}",
+			".dop-dock-head{display:flex;flex-wrap:nowrap;align-items:center;gap:9px;padding:12px 16px 8px;min-width:0}",
 			".dop-dock-dot{flex:none;width:9px;height:9px;border-radius:50%;background:var(--dsw-alias-state-idle-primary);flex-shrink:0}",
 			".dop-dock[data-tone=\"running\"] .dop-dock-dot,.dop-dock[data-tone=\"waiting\"] .dop-dock-dot{background:var(--dsw-alias-state-warn-primary);animation:dopDockBreath 1.6s ease-in-out infinite}",
 			".dop-dock[data-tone=\"ok\"] .dop-dock-dot{background:var(--dsw-alias-state-success-primary)}",
@@ -780,6 +780,15 @@ window.__ModuleLoader__.load({
 				this.dismissed = false;
 				this.lastState = status !== null && status.view !== null ? status.view.state : null;
 				this.lastCallId = null;
+			}
+
+			componentDidUpdate() {
+				// 0.121.4：正序列表，新步骤出现时自动滚到最新一行（不需要用户手动滚）。
+				const el = this.stepsEl;
+				if (el === undefined || el === null) return;
+				const count = el.children.length;
+				if (this.lastStepCount === undefined || count > this.lastStepCount) el.scrollTop = el.scrollHeight;
+				this.lastStepCount = count;
 			}
 
 			componentDidMount() {
@@ -1000,7 +1009,7 @@ window.__ModuleLoader__.load({
 						"div",
 						null,
 						h("div", { className: "dop-dock-goal" }, currentTool === "" ? "目标：等待操作" : `目标：${toolLabel(currentTool)}${goalTarget === "" ? "" : ` · ${goalTarget}`}`),
-						rows.length === 0 ? null : h("div", { className: "dop-dock-steps" }, folded ? [rows[0], rows[1], foldedNote, ...rows.slice(2)].filter(Boolean) : rows),
+						rows.length === 0 ? null : h("div", { className: "dop-dock-steps", ref: (el) => { this.stepsEl = el; } }, folded ? [rows[0], rows[1], foldedNote, ...rows.slice(2)].filter(Boolean) : rows),
 						gate,
 						h(
 							"div",
