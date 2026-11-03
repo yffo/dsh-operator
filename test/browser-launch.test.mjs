@@ -31,3 +31,13 @@ test("buildLaunchArgs：headless 与起始 URL", () => {
 	assert.ok(args.includes("--headless=new"));
 	assert.equal(args.at(-1), "https://example.com");
 });
+
+test("buildLaunchArgs：window_size 转成 --window-size", () => {
+	const args = buildLaunchArgs({ port: 9222, userDataDir: "/tmp/p", windowSize: { width: 1280, height: 800 } });
+	assert.ok(args.includes("--window-size=1280,800"));
+});
+
+test("buildLaunchArgs：没有 window_size 时不加窗口参数", () => {
+	const args = buildLaunchArgs({ port: 9222, userDataDir: "/tmp/p" });
+	assert.ok(args.every((flag) => flag.startsWith("--window-size=") === false));
+});

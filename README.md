@@ -137,6 +137,22 @@ browser_close  port=…                    # 用完即关，临时 profile 自�
 - 传 `user_data_dir` 可以保留登录态，下次接着用；不传则用临时目录、关闭时删除。
 - 与上面「真实 profile」的区别：那条复用的是你已有的登录态，这条是隔离出来的干净环境。
 
+### 页面开发与调试
+
+除了点击输入，还有四个页面开发用的工具（都走 CDP，读优先）：
+
+```bash
+browser_eval expression="document.querySelectorAll('.item').length"   # 跑一个表达式，返回 JSON 值
+browser_selector selector="#submit"                                    # 元素存在性 / 盒子 / 计算样式 / 属性
+browser_screenshot selector=".chart"                                   # 截图存盘，返回路径（read_image 查看）
+browser_launch headless=false window_size={width:1280,height:800}      # 启动时定视口
+```
+
+- `browser_eval` 只接受**单个表达式**，不是脚本块；表达式碰到 cookie / 存储 / 网络时会自动带一句敏感提示。
+- 视口尺寸在**启动时**用 `window_size` 定（实测运行时 Emulation 覆盖在 Chrome 156 上不改变 layout viewport）；
+  宽度精确，高度按窗口算（含浏览器 UI，实际视口会小约 87px）。
+- 页面调试常用组合：`browser_console`（报错）+ `browser_network`（失败请求）+ `browser_selector`（元素为什么看不见）。
+
 ## 为什么省 token
 
 Computer Use 的成本主要不在截图数量，而在每张图多大：
