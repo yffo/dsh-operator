@@ -425,6 +425,26 @@ window.__ModuleLoader__.load({
 			browser_dom_click: "点击网页",
 			browser_dom_fill: "填写网页",
 			browser_dom_probe: "检查网页通道",
+			browser_state: "读取网页状态",
+			browser_prepare: "绑定浏览器",
+			browser_open: "打开网页",
+			browser_click: "点击网页元素",
+			browser_type: "网页输入",
+			browser_pointer: "网页指针操作",
+			browser_select: "选择下拉项",
+			browser_wait: "等网页就绪",
+			browser_console: "读网页控制台",
+			browser_network: "读网络请求",
+			browser_key: "网页按键",
+			browser_dialog: "处理网页弹窗",
+			browser_download: "下载网页文件",
+			browser_set_input_files: "上传文件",
+			browser_read: "读取网页文本",
+			browser_launch: "启动浏览器",
+			browser_close: "关闭浏览器",
+			browser_eval: "页面求值",
+			browser_selector: "查页面元素",
+			browser_screenshot: "网页截图",
 			bash: "执行命令",
 			write: "写文件",
 			edit: "改文件",
@@ -470,6 +490,12 @@ window.__ModuleLoader__.load({
 		};
 
 		/** 人话工具名。 */
+		/** 目标摘要：URL / 参数太长时截断，避免一整行只剩它（悬停 title 给全文）。 */
+		function targetLabel(target) {
+			const text = String(target ?? "");
+			return text.length > 60 ? `${text.slice(0, 60)}…` : text;
+		}
+
 		function toolLabel(name) {
 			if (typeof name !== "string" || name === "") return "操作";
 			if (Object.prototype.hasOwnProperty.call(TOOL_LABELS, name)) return TOOL_LABELS[name];
@@ -918,7 +944,7 @@ window.__ModuleLoader__.load({
 							"div",
 							{ className: "dop-dock-body" },
 							h("span", { className: "dop-dock-name" }, toolLabel(call.toolName)),
-							typeof call.target === "string" && call.target !== "" ? h("span", { className: "dop-dock-target" }, call.target) : null
+							typeof call.target === "string" && call.target !== "" ? h("span", { className: "dop-dock-target", title: call.target }, targetLabel(call.target)) : null
 						),
 						h("span", { className: "dop-dock-meta" }, meta),
 						(() => {
@@ -936,7 +962,7 @@ window.__ModuleLoader__.load({
 							? h(
 								"div",
 								{ className: "dop-dock-detail-body" },
-								`工具 ${call.toolName}${typeof call.target === "string" && call.target !== "" ? ` · 目标 ${call.target}` : ""}${seconds === "" ? "" : ` · 用时 ${seconds}`}${call.startedAt > 0 ? ` · 开始 ${new Date(call.startedAt).toLocaleTimeString("zh-CN", { hour12: false })}` : ""}`
+								`工具 ${call.toolName}${typeof call.target === "string" && call.target !== "" ? ` · 目标 ${targetLabel(call.target)}` : ""}`
 							)
 							: null
 					);
