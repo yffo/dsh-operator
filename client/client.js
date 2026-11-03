@@ -764,7 +764,27 @@ window.__ModuleLoader__.load({
 		 * 只在真有操作时出现；运行中展开、结束折成一行、空闲再整张消失。
 		 */
 		// 0.121.5：关闭状态跟着会话走——切换会话/重新挂载后不复活，直到该会话真的开始新一轮操作。
-		const dismissedSessions = new Set();
+		// 0.121.6：持久化到 localStorage，重启 App 后也保持关闭。
+		const DISMISSED_STORAGE_KEY = "dsh-operator:dismissed-sessions";
+		const dismissedSessions = (() => {
+			try {
+				if (typeof localStorage === "undefined") return new Set();
+				const raw = localStorage.getItem(DISMISSED_STORAGE_KEY);
+				if (raw === null) return new Set();
+				const parsed = JSON.parse(raw);
+				return new Set(Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string" && id !== "") : []);
+			} catch {
+				return new Set();
+			}
+		})();
+		const persistDismissedSessions = () => {
+			try {
+				if (typeof localStorage === "undefined") return;
+				localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify([...dismissedSessions]));
+			} catch {
+				// 存储不可用就只在内存里生效
+			}
+		};
 
 		class OperatorDock extends React.Component {
 			constructor(props) {
@@ -816,11 +836,11 @@ window.__ModuleLoader__.load({
 				// 新一轮开始（出现进行中的动作/等确认）时取消「已关闭」
 				if (state === "working" && view.callFinishedAt === 0) {
 					this.dismissed = false;
-					if (typeof sessionId === "string") dismissedSessions.delete(sessionId);
+					if (typeof sessionId === "string" && dismissedSessions.delete(sessionId) === true) persistDismissedSessions();
 				}
 				if (state === "waiting-person") {
 					this.dismissed = false;
-					if (typeof sessionId === "string") dismissedSessions.delete(sessionId);
+					if (typeof sessionId === "string" && dismissedSessions.delete(sessionId) === true) persistDismissedSessions();
 				}
 				// 0.121.5：该会话被关过 → 重新挂载（切会话回来）也保持关闭
 				if (typeof sessionId === "string" && dismissedSessions.has(sessionId) === true) this.dismissed = true;
@@ -869,7 +889,10 @@ window.__ModuleLoader__.load({
 			close() {
 				this.dismissed = true;
 				const sessionId = this.state.status === null ? null : this.state.status.sessionId;
-				if (typeof sessionId === "string" && sessionId !== "") dismissedSessions.add(sessionId);
+				if (typeof sessionId === "string" && sessionId !== "") {
+					dismissedSessions.add(sessionId);
+					persistDismissedSessions();
+				}
 				if (typeof this.forceUpdate === "function") this.forceUpdate();
 				else this.setState({});
 			}
