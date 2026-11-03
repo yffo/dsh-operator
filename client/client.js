@@ -763,6 +763,9 @@ window.__ModuleLoader__.load({
 		 * 输入框上方的「正在操作」卡片。
 		 * 只在真有操作时出现；运行中展开、结束折成一行、空闲再整张消失。
 		 */
+		// 0.121.5：关闭状态跟着会话走——切换会话/重新挂载后不复活，直到该会话真的开始新一轮操作。
+		const dismissedSessions = new Set();
+
 		class OperatorDock extends React.Component {
 			constructor(props) {
 				super(props);
@@ -809,9 +812,18 @@ window.__ModuleLoader__.load({
 				const view = status === null ? null : status.view;
 				const state = view === null ? null : view.state;
 				if (state === "working") this.wasActive = true;
+				const sessionId = status === null ? null : status.sessionId;
 				// 新一轮开始（出现进行中的动作/等确认）时取消「已关闭」
-				if (state === "working" && view.callFinishedAt === 0) this.dismissed = false;
-				if (state === "waiting-person") this.dismissed = false;
+				if (state === "working" && view.callFinishedAt === 0) {
+					this.dismissed = false;
+					if (typeof sessionId === "string") dismissedSessions.delete(sessionId);
+				}
+				if (state === "waiting-person") {
+					this.dismissed = false;
+					if (typeof sessionId === "string") dismissedSessions.delete(sessionId);
+				}
+				// 0.121.5：该会话被关过 → 重新挂载（切会话回来）也保持关闭
+				if (typeof sessionId === "string" && dismissedSessions.has(sessionId) === true) this.dismissed = true;
 				// 新一轮（ended → working）时忘掉上一次的手动折叠
 				if (this.lastState === "ended" && state !== "ended") this.userCollapsed = false;
 				let collapsed = this.state.collapsed;
@@ -856,6 +868,8 @@ window.__ModuleLoader__.load({
 
 			close() {
 				this.dismissed = true;
+				const sessionId = this.state.status === null ? null : this.state.status.sessionId;
+				if (typeof sessionId === "string" && sessionId !== "") dismissedSessions.add(sessionId);
 				if (typeof this.forceUpdate === "function") this.forceUpdate();
 				else this.setState({});
 			}
