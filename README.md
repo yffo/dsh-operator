@@ -122,6 +122,21 @@ browser_pointer action="scroll" delta_y=-600
 - 不读 Cookie/密码、不伪造指纹、不绕验证码；遇到挑战会停下并在提示里让你接管。
 - `DSH_OPERATOR_BROWSER=0` 关闭这组工具；cua-driver < 0.38 时自动跳过。细节见 docs/BROWSER-AUTOMATION.md。
 
+### 自带实例：独立窗口、用完即关
+
+需要干净的登录环境（换个账号）或后台跑任务、不想动自己的浏览器时，让插件自己开一个实例——
+**独立 profile（独立 cookie）+ 独立调试端口**，不碰你正在用的浏览器：
+
+```bash
+browser_launch headless=false            # 返回 pid / port / profileDir
+browser_state  port=…                    # 后续 browser_* 都带这个 port
+browser_close  port=…                    # 用完即关，临时 profile 自动删除
+```
+
+- 独立实例是按需的：不启动、不常驻，关掉就干净了，不会多一个窗口一直挂着。
+- 传 `user_data_dir` 可以保留登录态，下次接着用；不传则用临时目录、关闭时删除。
+- 与上面「真实 profile」的区别：那条复用的是你已有的登录态，这条是隔离出来的干净环境。
+
 ## 为什么省 token
 
 Computer Use 的成本主要不在截图数量，而在每张图多大：
