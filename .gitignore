@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+*.log
+.env
+tmp/
+bench/*-scenarios-sheet.md
+bench/results/*-scenarios.jsonl
+
+# 内部过程文档不进公开仓库（本地保留）：对外只有 README + Releases
+docs/
+CHANGELOG.md

@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-operator · 输入框上方「正在操作」卡片预览</title>
+<style>
+  /* 设计稿：落点 = conversation.input.dock（输入框上方全宽卡片位），不依赖任何第三方插件。
+     类名 dop-dock-* 与客户端实现一一对应，方便直接搬 CSS。 */
+  :root{
+    --paper:#f5f3ee; --card:#fffdf9; --card-2:#faf7f1; --line:#e7e1d6; --line-2:#d8d0c1;
+    --ink:#26231e; --muted:#746e64; --faint:#9a9388;
+    --green:#1f8a4c; --green-soft:#e5f5eb;
+    --orange:#b46a00; --orange-soft:#fdf0dc;
+    --red:#c0392b; --red-soft:#fdeceb;
+    --blue:#3b5bdb; --blue-soft:#e9edff;
+    --shadow:0 1px 2px rgba(38,35,30,.05), 0 18px 36px -24px rgba(38,35,30,.35);
+    --radius:16px;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:"PingFang SC","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+  }
+  html[data-theme="dark"]{
+    --paper:#14161a; --card:#1b1e24; --card-2:#20242b; --line:#2a2f38; --line-2:#39404b;
+    --ink:#e9e6df; --muted:#9aa0ab; --faint:#7d8492;
+    --green:#54c789; --green-soft:#173225;
+    --orange:#e3a94e; --orange-soft:#33280f;
+    --red:#f0796a; --red-soft:#3a1d1a;
+    --blue:#8aa2ff; --blue-soft:#232a44;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 18px 40px -24px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .bar{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(8px)}
+  .bar b{font-size:13px;margin-right:6px}
+  .bar button{font:inherit;font-size:12.5px;padding:5px 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);color:var(--ink);cursor:pointer}
+  .bar button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .bar .spacer{flex:1}
+  .hint{font-size:12px;color:var(--muted)}
+
+  .stage{max-width:760px;margin:0 auto;padding:26px 20px 90px}
+  .conversation{padding:16px 4px 8px;color:var(--muted);font-size:13px}
+  .bubble{max-width:80%;padding:10px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);color:var(--ink);margin-bottom:10px}
+
+  /* ── 卡片本体 ───────────────────────────────────────────── */
+  .dop-dock{margin:6px 0 12px;border-radius:18px;background:color-mix(in srgb,var(--card) 72%,var(--paper));border:1px solid var(--line);box-shadow:0 1px 2px rgba(38,35,30,.04),0 24px 48px -32px rgba(38,35,30,.45);overflow:hidden}
+  .dop-dock[hidden]{display:none}
+  .dop-dock-head{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:16px 18px 10px}
+  .dop-dock-dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none}
+  [data-tone="running"] .dop-dock-dot{background:var(--orange);animation:dopBreath 1.6s ease-in-out infinite}
+  [data-tone="waiting"] .dop-dock-dot{background:var(--orange)}
+  [data-tone="ok"] .dop-dock-dot{background:var(--green)}
+  [data-tone="error"] .dop-dock-dot{background:var(--red)}
+  .dop-dock-title{font-size:16px;font-weight:680;letter-spacing:.01em}
+  .dop-dock-step{font-weight:400;color:var(--muted)}
+  .dop-dock-elapsed{margin-left:auto;padding:2px 9px;border-radius:999px;background:var(--card-2);color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  .dop-dock-badge{padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:var(--green);background:var(--green-soft)}
+  .dop-dock-collapse{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer}
+  .dop-dock-collapse:hover{background:var(--card-2)}
+  .dop-dock-goal{padding:0 18px 12px;color:var(--muted);font-size:13px}
+  .dop-dock-segs{display:flex;gap:7px;padding:0 18px 16px}
+  .dop-dock-seg{height:5px;flex:1;border-radius:3px;background:color-mix(in srgb,var(--line) 80%,var(--paper));transform-origin:left center;animation:dopGrow .5s ease-out both}
+  .dop-dock-seg[data-state="ok"]{background:var(--green)}
+  .dop-dock-seg[data-state="error"]{background:var(--red)}
+  .dop-dock-seg[data-state="running"]{background:var(--orange);animation:dopGrow .5s ease-out both,dopBreath 1.9s ease-in-out infinite}
+
+  .dop-dock-steps{display:flex;flex-direction:column;gap:4px;padding:0 10px 14px}
+  .dop-dock-step-row{display:flex;gap:12px;padding:12px 12px;border-radius:14px;border:1px solid transparent;animation:dopRowIn .32s cubic-bezier(.2,.7,.3,1) both}
+  .dop-dock-step-row[data-current="1"]{background:var(--card);border-color:var(--line);box-shadow:0 1px 2px rgba(38,35,30,.05),0 10px 22px -18px rgba(38,35,30,.5)}
+  .dop-dock-icon{flex:none;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;background:color-mix(in srgb,var(--line) 55%,transparent);color:var(--muted)}
+  .dop-dock-icon[data-state="ok"]{color:var(--green);background:var(--green-soft)}
+  .dop-dock-icon[data-state="running"]{color:var(--orange);background:var(--orange-soft)}
+  .dop-dock-icon[data-state="error"]{color:var(--red);background:var(--red-soft)}
+  .dop-dock-body{flex:1;min-width:0}
+  .dop-dock-name{font-weight:650;font-size:14.5px}
+  .dop-dock-target{font-weight:400;font-size:12.5px;color:var(--muted);margin-left:6px}
+  .dop-dock-meta{font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums;margin-top:2px}
+  .dop-dock-details{margin-top:4px}
+  .dop-dock-details summary{cursor:pointer;list-style:none;font-size:12px;color:var(--muted)}
+  .dop-dock-details summary::-webkit-details-marker{display:none}
+  .dop-dock-details summary::before{content:"▸ ";display:inline-block;transition:transform .15s ease}
+  .dop-dock-details[open] summary::before{transform:rotate(90deg)}
+  .dop-dock-detail-body{margin-top:5px;padding:7px 9px;border-radius:8px;background:var(--card-2);color:var(--muted);font-size:12px;font-family:var(--mono);word-break:break-all}
+
+  .dop-dock-gate{margin:0 14px 12px;padding:11px 12px;border-radius:12px;background:var(--red-soft);border:1px solid color-mix(in srgb,var(--red) 40%,transparent);animation:dopRowIn .3s ease-out both}
+  .dop-dock-gate-title{font-weight:650;color:var(--red);font-size:13.5px}
+  .dop-dock-gate-reason{margin-top:3px;font-size:12.5px}
+  .dop-dock-gate-note{margin-top:6px;font-size:11.5px;color:var(--muted)}
+  .dop-dock-foot{display:flex;align-items:center;gap:10px;padding:11px 18px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--card) 85%,var(--paper))}
+  .dop-dock-foot-text{flex:1;min-width:0;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dop-dock-chip{flex:none;padding:4px 12px;border-radius:9px;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-soft)}
+
+  /* 折叠态 */
+  .dop-dock[data-collapsed="1"] .dop-dock-head{padding:10px 16px}
+  .dop-dock[data-collapsed="1"] .dop-dock-goal,
+  .dop-dock[data-collapsed="1"] .dop-dock-segs,
+  .dop-dock[data-collapsed="1"] .dop-dock-steps,
+  .dop-dock[data-collapsed="1"] .dop-dock-gate,
+  .dop-dock[data-collapsed="1"] .dop-dock-foot{display:none}
+
+  /* 模拟输入框，用来判断卡片会不会把输入框顶太高 */
+  .composer{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;border:1px solid var(--line-2);background:var(--card);box-shadow:var(--shadow);color:var(--faint);font-size:13px}
+  .composer .plus{width:26px;height:26px;border-radius:50%;border:1px solid var(--line-2);display:inline-flex;align-items:center;justify-content:center}
+  .composer .send{margin-left:auto;width:28px;height:28px;border-radius:50%;background:var(--blue);opacity:.9}
+
+  @keyframes dopBreath{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes dopRowIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes dopGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>状态</b>
+  <button data-state="running" aria-pressed="true">运行中</button>
+  <button data-state="waiting">等确认</button>
+  <button data-state="failed">失败</button>
+  <button data-state="ended">已结束(折叠)</button>
+  <span class="spacer"></span>
+  <button id="replay">重播动效</button>
+  <button id="theme">深色</button>
+  <span class="hint">宽度按输入框实宽（约 700px）；类名 dop-dock-* 与实现一致</span>
+</div>
+
+<div class="stage">
+  <div class="conversation">
+    <div class="bubble">帮我把「系统设置」切到显示器，截图给我看排列；如果看到对比度选项，顺手改成「增强」。</div>
+    <div class="bubble" style="margin-left:auto;background:var(--card-2)">好，我按 4 步来：打开设置 → 切到显示器 → 截图确认 → 修改对比度。涉及改设置的那一步我会先问你。</div>
+  </div>
+
+  <!-- 卡片：运行中 -->
+  <section class="dop-dock" id="dock" data-tone="running" data-collapsed="0">
+    <div class="dop-dock-head">
+      <span class="dop-dock-dot"></span>
+      <span class="dop-dock-title">正在操作</span>
+      <span class="dop-dock-step">· 第 4 步</span>
+      <span class="dop-dock-elapsed">5.0s</span>
+      <span class="dop-dock-badge">后台执行 · 不影响你</span>
+      <button class="dop-dock-collapse" title="收起">▾</button>
+    </div>
+    <div class="dop-dock-goal">目标：按控件 · 显示器 › 对比度</div>
+    <div class="dop-dock-segs">
+      <span class="dop-dock-seg" data-state="ok" style="animation-delay:.02s"></span>
+      <span class="dop-dock-seg" data-state="ok" style="animation-delay:.08s"></span>
+      <span class="dop-dock-seg" data-state="ok" style="animation-delay:.14s"></span>
+      <span class="dop-dock-seg" data-state="running" style="animation-delay:.2s"></span>
+    </div>
+    <div class="dop-dock-steps">
+      <div class="dop-dock-step-row" data-current="0" style="animation-delay:.04s">
+        <span class="dop-dock-icon" data-state="ok">✓</span>
+        <div class="dop-dock-body">
+          <div><span class="dop-dock-name">打开应用</span><span class="dop-dock-target">系统设置</span></div>
+          <div class="dop-dock-meta">已完成 · 前台 · 0.9s</div>
+        </div>
+      </div>
+      <div class="dop-dock-step-row" data-current="1" style="animation-delay:.1s">
+        <span class="dop-dock-icon" data-state="running">4</span>
+        <div class="dop-dock-body">
+          <div><span class="dop-dock-name">按控件</span><span class="dop-dock-target">显示器侧边栏</span></div>
+          <div class="dop-dock-meta">进行中 · 后台 · 2.4s</div>
+          <details class="dop-dock-details">
+            <summary>调用详情</summary>
+            <div class="dop-dock-detail-body">ax_press · 显示器侧边栏 · #3 · 2.4s</div>
+          </details>
+        </div>
+      </div>
+      <div class="dop-dock-step-row" data-current="0" style="animation-delay:.16s">
+        <span class="dop-dock-icon" data-state="ok">✓</span>
+        <div class="dop-dock-body">
+          <div><span class="dop-dock-name">放大查看</span><span class="dop-dock-target">显示器排列</span></div>
+          <div class="dop-dock-meta">已完成 · 前台 · 0.4s</div>
+        </div>
+      </div>
+    </div>
+    <div class="dop-dock-foot">
+      <span class="dop-dock-foot-text">第 4 步进行中 · 5.0s · 截图在对话里的工具卡上</span>
+      <span class="dop-dock-chip">底部细条可开合</span>
+    </div>
+  </section>
+
+  <div class="composer"><span class="plus">＋</span> 发消息或创建任务，/ 调用指令，@ 文件或对话<span class="send"></span></div>
+</div>
+
+<script>
+  const dock = document.getElementById("dock");
+  const buttons = [...document.querySelectorAll(".bar button[data-state]")];
+  const themeBtn = document.getElementById("theme");
+  const replay = document.getElementById("replay");
+
+  function render(state) {
+    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.state === state)));
+    if (state === "running") {
+      dock.dataset.tone = "running"; dock.dataset.collapsed = "0";
+    } else if (state === "waiting") {
+      dock.dataset.tone = "waiting"; dock.dataset.collapsed = "0";
+      dock.querySelector(".dop-dock-title").textContent = "等你确认";
+      dock.querySelector(".dop-dock-gate")?.remove();
+      const gate = document.createElement("div");
+      gate.className = "dop-dock-gate";
+      gate.innerHTML = '<div class="dop-dock-gate-title">需要确认：修改对比度设置</div>' +
+        '<div class="dop-dock-gate-reason">接下来会修改「显示器 › 对比度」，改完可在 30 秒内撤销。</div>' +
+        '<div class="dop-dock-gate-note">确认门只在改设置 / 破坏性动作出现；请在对话输入框上方点「允许」或「拒绝」。</div>';
+      dock.querySelector(".dop-dock-foot").before(gate);
+      dock.querySelector(".dop-dock-foot-text").textContent = "第 4 步等你确认：在对话里点允许或拒绝";
+      dock.querySelector(".dop-dock-chip").textContent = "在对话里确认";
+    } else if (state === "failed") {
+      dock.dataset.tone = "error"; dock.dataset.collapsed = "0";
+      dock.querySelector(".dop-dock-title").textContent = "操作失败";
+      dock.querySelector(".dop-dock-gate")?.remove();
+      dock.querySelector(".dop-dock-foot-text").textContent = "第 4 步失败：可以重试，或让我接管";
+      dock.querySelector(".dop-dock-chip").textContent = "看截图";
+    } else {
+      dock.dataset.tone = "ok"; dock.dataset.collapsed = "1";
+      dock.querySelector(".dop-dock-title").textContent = "已结束";
+      dock.querySelector(".dop-dock-gate")?.remove();
+      dock.querySelector(".dop-dock-elapsed").textContent = "1.3s";
+    }
+  }
+  buttons.forEach((b) => b.addEventListener("click", () => render(b.dataset.state)));
+  themeBtn.addEventListener("click", () => {
+    const dark = document.documentElement.dataset.theme === "dark";
+    document.documentElement.dataset.theme = dark ? "light" : "dark";
+    themeBtn.textContent = dark ? "深色" : "浅色";
+  });
+  replay.addEventListener("click", () => {
+    const rows = [...dock.querySelectorAll(".dop-dock-step-row, .dop-dock-seg")];
+    rows.forEach((el) => { el.style.animation = "none"; void el.offsetWidth; el.style.animation = ""; });
+  });
+  render("running");
+</script>
+</body>
+</html>

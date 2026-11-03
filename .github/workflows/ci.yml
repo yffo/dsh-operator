@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15]
+        node: [22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build AX helper (Swift)
+        run: |
+          swift --version
+          npm run build:ax
+          file lib/bin/ax-snapshot
+          test -x lib/bin/ax-snapshot
+
+      - name: Unit / schema / bench checks
+        run: npm test
+
+      - name: Fork guards (check-p0)
+        run: node scripts/check-p0.mjs
+
+      - name: Doctor (informational on CI; 没有安装 DSH profile 时会有 ❌ 属正常)
+        run: node scripts/doctor.mjs || true
+
+      - name: Upload helper binary
+        if: matrix.node == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: ax-snapshot-${{ matrix.os }}-node${{ matrix.node }}
+          path: lib/bin/ax-snapshot
+          retention-days: 7

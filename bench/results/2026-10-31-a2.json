@@ -1,0 +1,16 @@
+{
+	"run": "2026-10-31-a2",
+	"implementation": "dsh-operator",
+	"version": "0.5.2",
+	"date": "2026-10-31",
+	"mode": "AX + 视觉（浅树阈值之后）",
+	"tasks": [
+		{ "id": "T1", "success": true, "steps": 3, "seconds": 10, "note": "open_app → AX 点显示器 → 截图" },
+		{ "id": "T2", "success": true, "steps": 3, "seconds": 40, "note": "第一次用 AX 坐标拖拽失败（多窗口坐标空间 bug），重试一次" },
+		{ "id": "T3", "success": true, "steps": 3, "seconds": 15, "note": "Chrome 无窗口 → open_in_browser 开窗" },
+		{ "id": "T4", "success": true, "steps": 3, "seconds": 25, "note": "AX 点新建备忘录 + input_text 中文" },
+		{ "id": "T5", "success": true, "steps": 6, "seconds": 30 }
+	],
+	"totals": { "steps": 18, "seconds": 120, "costCny": 0.2176, "outputTokens": 5000 },
+	"notes": ["AX 文本约 +1.6KB/次观察", "T2 暴露的坐标 bug 已在 0.5.3 修复"]
+}

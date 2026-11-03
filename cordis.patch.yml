@@ -1,0 +1,24 @@
+# dsh-operator —— 全局挂载形态的 Computer Use。
+#
+# 这个 bundle patch 把插件插入 profile（host）层。在 host 层用 ctx.tools.register()
+# 注册的工具属于 dsh-tools 的「全局工具」，由所有 agent 会话继承（preset 里注册的
+# 才是会话级作用域工具），所以 GUI 工具对任何会话直接可见，不需要新建会话选模式。
+#
+# 能力层裁剪自 dsh-orb@0.2.0 的 cordis.patch.yml：去掉悬浮球 host（orb-host）、
+# 主窗口设置页（ui-settings-orb）与 Computer Use 模式 preset；保留 GUI 工具插件、
+# code_agent 工具与它的注册表，插件名改为本包名（原名 dsh-orb-computer-use）。
+
+- insert:
+    - id: computer-use
+      name: dsh-operator
+      config:
+        postActionWaitMs: 500
+        # 观察截图长边上限（0 = 不缩放）。Retina 2x 下把 ~2558px 缩到 1280px，
+        # 图片 token 大约省 3/4；坐标按 0–1000 归一化，点击精度不受影响。
+        captureMaxEdge: 1280
+        # 缩放后按此质量重编码 JPEG（100 = 不重编码）。sips 失败会回退原图。
+        jpegQuality: 80
+    - id: computer-use-code-agent-registry
+      name: dsh-operator/code-agent-registry
+    - id: computer-use-code-agent
+      name: dsh-operator/code-agent

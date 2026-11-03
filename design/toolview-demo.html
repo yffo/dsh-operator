@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-operator · 操作卡片交互 demo</title>
+<style>
+  :root{
+    --bg:#f5f3ee; --panel:#fffdf9; --panel-2:#faf7f1; --ink:#26231e; --muted:#746e64;
+    --line:#e7e1d6; --line-strong:#d8d0c1;
+    --accent:#3b5bdb; --accent-soft:#e9edff;
+    --ok:#1f8a4c; --ok-soft:#e5f5eb;
+    --warn:#b46a00; --warn-soft:#fdf0dc;
+    --err:#c0392b; --err-soft:#fdeceb;
+    --idle:#7b8497; --idle-soft:#eef0f4;
+    --shadow:0 1px 2px rgba(38,35,30,.05), 0 8px 24px -12px rgba(38,35,30,.18);
+    --radius:16px;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  }
+  html[data-theme="dark"]{
+    --bg:#14161a; --panel:#1b1e24; --panel-2:#20242b; --ink:#e9e6df; --muted:#9aa0ab;
+    --line:#2a2f38; --line-strong:#39404b;
+    --accent:#8aa2ff; --accent-soft:#232a44;
+    --ok:#54c789; --ok-soft:#173225;
+    --warn:#e3a94e; --warn-soft:#33280f;
+    --err:#f0796a; --err-soft:#3a1d1a;
+    --idle:#8b93a3; --idle-soft:#232830;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 18px 40px -20px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit;cursor:pointer}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .shell{max-width:1080px;margin:0 auto;padding:20px 20px 80px}
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
+    padding:10px 14px;margin:0 -6px 18px;background:color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:650;letter-spacing:.2px}
+  .brand .mark{width:22px;height:22px;border-radius:7px;background:linear-gradient(140deg,var(--accent),#7c3aed);
+    display:grid;place-items:center;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+  .brand .mark svg{width:13px;height:13px}
+  .brand small{font-weight:500;color:var(--muted);margin-left:4px}
+  .seg{display:flex;background:var(--idle-soft);border-radius:10px;padding:2px;gap:2px}
+  .seg button{border:0;background:transparent;padding:5px 11px;border-radius:8px;color:var(--muted);font-size:12.5px}
+  .seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .top-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line-strong);background:var(--panel);border-radius:9px;padding:5px 10px;font-size:12.5px;color:var(--ink)}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+  .btn.ghost:hover{background:var(--idle-soft);color:var(--ink)}
+  .btn.tiny{padding:3px 8px;font-size:12px;border-radius:7px}
+
+  .chat{display:flex;flex-direction:column;gap:16px}
+  .msg{display:flex;gap:10px}
+  .msg .who{flex:none;width:30px;height:30px;border-radius:10px;background:var(--idle-soft);display:grid;place-items:center;color:var(--muted)}
+  .msg.user{justify-content:flex-end}
+  .msg.user .bubble{background:var(--accent);color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;max-width:78%}
+  .msg.ai .bubble{max-width:86%}
+  .msg .bubble{font-size:14px}
+  .msg.ai p{margin:0 0 8px}
+  .msg.ai p:last-child{margin-bottom:0}
+  .hintline{color:var(--muted);font-size:12.5px}
+
+  /* ---------- Activity card ---------- */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .card-head{display:flex;align-items:center;gap:10px;padding:12px 14px 10px}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--idle)}
+  .dot.run{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}
+  .dot.ok{background:var(--ok)}
+  .dot.warn{background:var(--warn)}
+  .dot.err{background:var(--err)}
+  .card-title{font-weight:650;letter-spacing:.1px}
+  .card-sub{color:var(--muted);font-size:12.5px;margin-top:1px}
+  .card-meta{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  .pill{border-radius:999px;font-size:11.5px;padding:2.5px 8px;border:1px solid transparent;white-space:nowrap}
+  .pill.bg{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 22%, transparent)}
+  .pill.time{font-family:var(--mono);background:var(--idle-soft);color:var(--muted);border-color:var(--line)}
+  .iconbtn{border:1px solid var(--line);background:var(--panel);border-radius:8px;width:26px;height:26px;display:grid;place-items:center;color:var(--muted);padding:0}
+  .iconbtn:hover{color:var(--accent);border-color:var(--accent)}
+  .iconbtn svg{width:13px;height:13px;transition:transform .18s ease}
+  .card[data-open="false"] .chevron{transform:rotate(-90deg)}
+  .progress{display:flex;gap:4px;padding:0 14px 10px}
+  .progress span{height:4px;flex:1;border-radius:999px;background:var(--idle-soft);position:relative;overflow:hidden}
+  .progress span.done{background:var(--ok)}
+  .progress span.active{background:linear-gradient(90deg,var(--warn),color-mix(in srgb,var(--warn) 35%, var(--idle-soft)))}
+  .progress span.err{background:var(--err)}
+  /* 一次性高冲击过渡（非循环、不闪烁） */
+  @keyframes barFlow{0%{transform:scaleX(.18);filter:brightness(1.6)}55%{transform:scaleX(1.03);filter:brightness(1.18)}100%{transform:scaleX(1);filter:none}}
+  @keyframes barComet{0%{transform:translateX(-140%);opacity:0}10%{opacity:1}82%{opacity:.95}100%{transform:translateX(150%);opacity:0}}
+  @keyframes barDone{0%{filter:brightness(2.4);transform:scaleY(2)}100%{filter:none;transform:scaleY(1)}}
+  @keyframes rowSweep{0%{background-position:130% 0;opacity:0}18%{opacity:1}100%{background-position:-30% 0;opacity:0}}
+  @keyframes idxPop{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 56%,transparent),0 0 0 0 color-mix(in srgb,var(--warn) 24%,transparent)}60%{box-shadow:0 0 0 4px color-mix(in srgb,var(--warn) 30%,transparent)}100%{box-shadow:0 0 0 10px transparent,0 0 0 0 transparent}}
+  @keyframes idxCheck{0%{transform:scale(.5) rotate(-10deg);opacity:.35}62%{transform:scale(1.16) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+  @keyframes drawCheck{to{stroke-dashoffset:0}}
+  @keyframes hudNumIn{0%{opacity:0;transform:translateY(7px) scale(.96)}100%{opacity:1;transform:none}}
+  @keyframes headSheen{0%{transform:translateX(-115%)}100%{transform:translateX(125%)}}
+  .progress span.active.flow{animation:barFlow 1.0s cubic-bezier(.22,.9,.24,1) both;transform-origin:left;overflow:visible}
+  .progress span.active.flow::after{content:"";position:absolute;top:-2px;bottom:-2px;left:0;width:58%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent);mix-blend-mode:screen;animation:barComet 1.15s .05s cubic-bezier(.3,.8,.25,1) both}
+  .progress span.done.justdone{animation:barDone .42s ease both}
+  .step.advance::after{content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;background:linear-gradient(102deg,transparent 12%,color-mix(in srgb,var(--warn) 28%,transparent) 46%,transparent 80%);background-size:220% 100%;background-position:130% 0;animation:rowSweep 1.8s cubic-bezier(.2,.7,.25,1) both}
+  .step[data-state="running"] .idx{animation:idxPop .55s cubic-bezier(.3,1.5,.5,1) both}
+  .step[data-state="done"] .idx{animation:idxCheck .48s cubic-bezier(.25,.9,.3,1) both}
+  .step[data-state="done"] .idx svg path{stroke-dasharray:26;stroke-dashoffset:26;animation:drawCheck .42s .1s ease forwards}
+  #actTitle.pop,#hudTitle.pop{animation:hudNumIn .34s cubic-bezier(.2,.8,.25,1) both}
+  .card-head{position:relative;overflow:hidden}
+  @keyframes thumbGlow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 60%,transparent);border-color:var(--warn)}70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  @keyframes doneBurst{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 48%,transparent)}55%{box-shadow:0 0 0 14px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  .step[data-state="running"] .thumb{animation:thumbGlow .9s ease-out both;border-color:color-mix(in srgb,var(--warn) 45%,var(--line))}
+  .card.complete{animation:doneBurst 1.1s ease-out both}
+  .card-head.advance::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--warn),transparent);animation:headSheen .8s cubic-bezier(.3,.8,.25,1) both}
+  .steps{padding:2px 8px 8px;display:flex;flex-direction:column}
+  .card[data-open="false"] .steps, .card[data-open="false"] .card-foot, .card[data-open="false"] .progress{display:none}
+  .step{display:flex;gap:10px;padding:8px 6px;border-radius:12px;position:relative;align-items:flex-start}
+  .step:hover{background:var(--panel-2)}
+  .step + .step::before{content:"";position:absolute;left:17px;top:-8px;height:8px;width:1px;background:var(--line)}
+  .step .idx{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-family:var(--mono);
+    background:var(--idle-soft);color:var(--muted);border:1px solid var(--line);margin-top:1px}
+  .step[data-state="done"] .idx{background:var(--ok-soft);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%, transparent)}
+  .step[data-state="running"] .idx{background:var(--warn-soft);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%, transparent)}
+  .step[data-state="warn"] .idx,.step[data-state="error"] .idx{background:var(--err-soft);color:var(--err);border-color:color-mix(in srgb,var(--err) 35%, transparent)}
+  .step .body{flex:1;min-width:0}
+  .step .title{font-weight:560;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .step .title .state-tag{font-size:11px;color:var(--muted);font-weight:400}
+  .step[data-state="running"] .title .state-tag{color:var(--warn)}
+  .step[data-state="warn"] .title .state-tag,.step[data-state="error"] .title .state-tag{color:var(--err)}
+  .step .meta{color:var(--muted);font-size:12px;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+  .step .meta .mono{font-family:var(--mono);font-size:11.5px}
+  .step .thumb{flex:none;width:74px;height:48px;border-radius:8px;border:1px solid var(--line);overflow:hidden;background:var(--panel-2)}
+  .step .thumb .mini{width:100%;height:100%}
+  .reason{margin-top:6px;background:var(--err-soft);border:1px solid color-mix(in srgb,var(--err) 25%, transparent);
+    border-radius:10px;padding:8px 10px;font-size:12.5px;color:var(--ink)}
+  .reason b{color:var(--err);font-weight:650}
+  .reason .hint{color:var(--muted);margin-top:2px}
+  .step-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .card-foot{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel-2);font-size:12.5px;color:var(--muted)}
+  .card-foot .grow{flex:1}
+  .card-foot strong{color:var(--ink);font-weight:600}
+
+  /* mini screenshot */
+  .mini{display:flex;height:100%;background:var(--panel)}
+  .mini .side{width:34%;background:var(--panel-2);border-right:1px solid var(--line);padding:3px 2px;display:flex;flex-direction:column;gap:2px}
+  .mini .side i{display:block;height:4px;border-radius:2px;background:var(--line-strong);opacity:.7}
+  .mini .side i.on{background:var(--accent);opacity:1}
+  .mini .main{flex:1;padding:3px 4px;display:flex;flex-direction:column;gap:3px;position:relative}
+  .mini .main i{display:block;height:3px;border-radius:2px;background:var(--line-strong);opacity:.55}
+  .mini .main i.t{height:5px;width:52%;opacity:.85}
+  .mini .target{position:absolute;inset:auto 4px 4px auto;border:1.5px solid var(--accent);border-radius:4px;width:56%;height:46%;
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%, transparent);animation:focusGlow 4s ease-in-out infinite}
+  @keyframes focusGlow{0%,100%{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 8%, transparent)}50%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 13%, transparent)}}
+  .mini.shot .side{display:none}
+  .mini.shot .main{background:linear-gradient(160deg,var(--panel-2),var(--panel))}
+  .mini.shot .main i{opacity:.35}
+
+  /* ---------- compact row variant ---------- */
+  .rowlist{display:flex;flex-direction:column;gap:6px}
+  .trow{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .trow:hover{border-color:var(--line-strong)}
+  .trow .dot{margin-left:2px}
+  .trow .name{font-weight:560;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trow .target{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trow .tmeta{color:var(--muted);font-family:var(--mono);font-size:11.5px;flex:none}
+  .trow .thumb{width:46px;height:30px;border-radius:6px;border:1px solid var(--line);overflow:hidden;flex:none}
+  .trow .expand{flex:none;color:var(--muted);border:0;background:transparent;padding:2px 4px}
+  .variant-note{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+
+  /* ---------- notes / research ---------- */
+  .section{margin-top:34px}
+  .section h2{font-size:15px;letter-spacing:.2px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .section h2 .bar{width:3px;height:14px;border-radius:2px;background:var(--accent)}
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media (max-width:900px){.cols{grid-template-columns:1fr}}
+  .note{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 14px}
+  .note h3{margin:0 0 6px;font-size:13px}
+  .note p,.note li{color:var(--muted);font-size:12.5px;margin:4px 0}
+  .note ul{margin:4px 0 0 -14px}
+  .note code{font-family:var(--mono);font-size:11.5px;background:var(--idle-soft);padding:1px 5px;border-radius:5px;color:var(--ink)}
+  .quote{border-left:2px solid var(--line-strong);margin:8px 0 0;padding:2px 0 2px 10px;color:var(--muted);font-size:12.5px}
+  .footer{margin-top:40px;color:var(--muted);font-size:12px;text-align:center}
+
+  .toolbar-note{color:var(--muted);font-size:12px;margin:0 0 10px}
+  .divider{height:1px;background:var(--line);margin:26px 0}
+  .kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--panel)}
+
+
+  /* ===== P2 概念：桌面悬浮 HUD（模拟 dsh-pet 式常驻小窗） ===== */
+  .hud{position:fixed;right:18px;bottom:18px;z-index:50;width:308px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(14px) saturate(1.2);box-shadow:var(--shadow);padding:10px 12px 9px;display:none}
+  .hud.show{display:block;animation:hudIn .32s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes hudIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  .hud-body{display:flex;gap:9px;align-items:center;margin-top:7px}
+  .hud-thumb{flex:none;width:64px;height:41px;border-radius:8px;border:1px solid var(--line);overflow:hidden;background:var(--panel-2);position:relative}
+  .hud-thumb .mini{width:100%;height:100%}
+  .hud-thumb:empty::after{content:"缩略图";position:absolute;inset:0;display:grid;place-items:center;font-size:10px;color:var(--muted)}
+  .hud-thumb.running{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 14%,transparent)}
+  .hud-info{flex:1;min-width:0}
+  .hud-info .s{margin-top:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hud-live{display:flex;align-items:center;gap:5px;margin-top:3px;color:var(--muted);font-size:11px}
+  .hud-live .sep{opacity:.45}
+  .hud-rail{display:flex;gap:4px;margin-top:9px}
+  .hud-rail span{height:4px;flex:1;border-radius:999px;background:var(--idle-soft);position:relative;overflow:hidden}
+  .hud-rail span.done{background:var(--ok)}
+  .hud-rail span.active{background:color-mix(in srgb,var(--warn) 58%,var(--idle-soft))}
+  .hud-rail span.err{background:var(--err)}
+  .hud-rail span.active.working::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-120%);animation:longFlow 3.2s ease-in-out .9s infinite}
+  .hud.flash{animation:hudFlash .7s ease-out both}
+  @keyframes hudFlash{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 40%,transparent)}100%{box-shadow:var(--shadow)}}
+  .hud[data-state="done"] .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 20%,transparent)}
+  .hud[data-state="run"] .dot{animation:hudBreath 3.2s ease-in-out infinite}
+  @keyframes hudBreath{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--warn) 7%,transparent)}}
+  @keyframes longFlow{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+  @keyframes idxBreath{0%,100%{opacity:.28}50%{opacity:.7}}
+  .step[data-state="running"] .idx{position:relative}
+  .step[data-state="running"] .idx::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid color-mix(in srgb,var(--warn) 38%,transparent);animation:idxBreath 3.2s ease-in-out infinite;pointer-events:none}
+  .hud .row{display:flex;gap:8px;align-items:center}
+  .hud .dot{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent);flex:none}
+  .hud .t{font-weight:620;font-size:12.5px}
+  .hud .badge{font-size:10.5px;padding:2px 6px;border-radius:999px;background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn);margin-left:auto;white-space:nowrap}
+  .hud .s{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .hud .hint{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .hud .hint .badge{margin-left:0;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+  .hud[data-state="warn"] .dot{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent)}
+  .hud[data-state="takeover"] .dot{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .hud[data-state="takeover"] .t{color:var(--accent)}
+  .hud[data-state="done"] .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+  /* ===== 长耗时样例：ETA / 日志流 / 光标脉冲 ===== */
+  .pill.eta{background:var(--warn-soft);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 26%,transparent)}
+  .pill.eta.done{background:var(--ok-soft);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 24%,transparent)}
+  .logfeed{margin-top:8px;height:78px;overflow:hidden;position:relative;display:flex;flex-direction:column;justify-content:flex-end;
+    padding:6px 9px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);
+    font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--muted);
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 36%);mask-image:linear-gradient(to bottom,transparent 0,#000 36%)}
+  .logfeed .ln{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:logIn .26s ease both}
+  .logfeed .ln .t{color:var(--idle);margin-right:6px}
+  .logfeed .ln b{color:var(--ink);font-weight:600}
+  @keyframes logIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .mini .agent{position:absolute;right:16%;top:34%;width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent)}
+  .mini .agent::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px solid var(--accent);animation:cursorPulse 1.8s ease-out infinite}
+  @keyframes cursorPulse{0%{transform:scale(.35);opacity:.85}100%{transform:scale(1.9);opacity:0}}
+
+  /* ===== 动效增强 ===== */
+  .card{animation:cardIn .34s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes cardIn{from{opacity:0;transform:translateY(6px) scale(.996)}to{opacity:1;transform:none}}
+  .mini{position:relative}
+  .thumb{position:relative;transition:box-shadow .18s ease}
+  .thumb:hover{box-shadow:0 2px 10px rgba(0,0,0,.18);z-index:2}
+  .mini .flash{display:none}
+  .mini.drag .dotA,.mini.drag .dotB{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .mini.drag .dotA{left:7%;top:66%}.mini.drag .dotB{right:7%;top:42%}
+  .mini.drag .path i{position:absolute;left:10%;top:63%;width:30%;height:2px;border-radius:2px;background:var(--accent);opacity:.72;transform-origin:left center;transform:rotate(-16deg)}
+  .reason.gate{animation:sheetIn .26s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .step[data-state="warn"] .reason,.step[data-state="error"] .reason{animation:shake .42s ease}
+  @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-2px)}40%{transform:translateX(2px)}60%{transform:translateX(-1px)}80%{transform:translateX(1px)}}
+  .btn.retrying{pointer-events:none;opacity:.75}
+  .btn.retrying::before{content:"";display:inline-block;width:10px;height:10px;margin-right:6px;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-1px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(10px);opacity:0;z-index:80;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px;padding:8px 12px;font-size:12.5px;transition:all .22s ease;pointer-events:none;max-width:70vw}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  .lightbox{position:fixed;inset:0;z-index:90;background:color-mix(in srgb,var(--text) 52%,transparent);display:none;align-items:center;justify-content:center;padding:40px}
+  .lightbox.show{display:flex}
+  .lightbox .shot{max-width:720px;width:100%;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow);animation:lbIn .22s ease both}
+  @keyframes lbIn{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+  .lightbox .shot .head{padding:10px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .lightbox .shot .body{padding:16px;min-height:170px;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;color:var(--muted);font-size:12.5px;background:linear-gradient(160deg,var(--panel-2),var(--panel))}
+  .note ul{margin:6px 0 0 16px;padding:0;display:flex;flex-direction:column;gap:5px}
+  .note li{color:var(--muted);font-size:12.5px;line-height:1.5}
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12h4l3-7 3 14 3-7h3"/></svg></span>
+      dsh · 会话 <small>操作卡片预览</small>
+    </div>
+    <div class="seg" role="group" aria-label="方案切换">
+      <button id="tabA" aria-pressed="true">方案 A · 活动卡片</button>
+      <button id="tabB" aria-pressed="false">方案 B · 行内卡</button>
+    </div>
+    <div class="top-actions">
+      <button class="btn" id="modeBtn" title="切换 cua-driver 后台执行模式">后台执行：开</button>
+      <button class="btn" id="themeBtn">深色</button>
+      <button class="btn" id="hudBtn" title="模拟桌面悬浮窗（P2 概念）">桌面 HUD：开</button>
+      <button class="btn primary" id="replayBtn">重播</button>
+    </div>
+  </header>
+
+  <div class="toolbar-note">这是一份可交互的交互稿：数据是模拟的，按钮可点；重点看「操作前是否心里有数、操作中是否看得见、失败后是否知道怎么办」。</div>
+  <div class="toolbar-note" id="legendNote">规则：<b>所有插件执行都会出现这张卡片</b>；<b>确认门只出现在改设置 / 删除 / 发送这类可撤销或破坏性动作</b>；「后台执行」徽标 = 动作不抢你的焦点，你可以同时用电脑。</div>
+
+  <main class="chat" id="chat">
+    <div class="msg user">
+      <div class="bubble">帮我把「系统设置」切到显示器页，截图给我看排列；如果看到对比度选项，顺手改成“增强”。</div>
+    </div>
+
+    <div class="msg ai">
+      <div class="who"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg></div>
+      <div class="bubble">
+        <p>好，我按 4 步来：打开设置 → 切到显示器 → 截图确认 → 修改对比度。涉及改设置的那一步我会先问你。</p>
+      </div>
+    </div>
+
+    <!-- ===== 方案 A：活动卡片 ===== -->
+    <section id="variantA" class="card" data-open="true" aria-label="操作进度卡片">
+      <div class="card-head">
+        <span class="dot run" id="actDot" aria-hidden="true"></span>
+        <div>
+          <div class="card-title" id="actTitle">正在操作 · 第 1/4 步</div>
+          <div class="card-sub" id="actSub">目标：系统设置 › 显示器</div>
+        </div>
+        <div class="card-meta">
+          <span class="pill time" id="actTimer">0.0s</span>
+          <span class="pill bg" id="actMode" title="cua-driver 后台执行，不抢占你的鼠标键盘">后台执行 · 不影响你</span>
+          <button class="iconbtn" id="collapseBtn" aria-label="展开或收起详情" aria-expanded="true"><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </div>
+      <div class="progress" id="actProgress" aria-hidden="true"></div>
+      <div class="steps" id="actSteps"></div>
+      <div class="card-foot" id="actFoot">
+        <span class="grow" id="actFootText">正在读取窗口信息…</span>
+        <button class="btn tiny ghost" id="pauseBtn">暂停</button>
+      </div>
+    </section>
+
+
+    <!-- ===== 长耗时样例：ETA + 日志流 + 光标脉冲 ===== -->
+    <section id="longCard" class="card" data-open="true" aria-label="长耗时任务样例">
+      <div class="card-head">
+        <span class="dot run" id="longDot" aria-hidden="true"></span>
+        <div>
+          <div class="card-title" id="longTitle">正在操作 · 第 2/3 步</div>
+          <div class="card-sub" id="longSub">目标：访达 › 下载 › 按类型归档 412 个文件</div>
+        </div>
+        <div class="card-meta">
+          <span class="pill time" id="longTimer">0.0s</span>
+          <span class="pill eta" id="longEta">预计剩余 ~12s</span>
+          <span class="pill bg" title="后台执行，不抢占你的鼠标键盘">后台执行 · 不影响你</span>
+        </div>
+      </div>
+      <div class="progress" id="longProgress" aria-hidden="true"></div>
+      <div class="steps">
+        <div class="step" data-state="done">
+          <div class="idx"><span style="display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></span></div>
+          <div class="body">
+            <div class="title"><span>读取「下载」目录清单</span><span class="state-tag">已完成</span></div>
+            <div class="meta"><span class="mono">0.8s</span><span class="mono">412 个文件 · 4.2 GB</span></div>
+          </div>
+        </div>
+        <div class="step advance" data-state="running" id="longStep">
+          <div class="idx">2</div>
+          <div class="body">
+            <div class="title"><span>按类型归档 412 个文件</span><span class="state-tag">进行中</span></div>
+            <div class="meta"><span class="mono live-elapsed" id="longElapsed">已用时 0.0s</span><span class="mono" id="longMetaEta">剩余 ~12s</span></div>
+            <div class="logfeed" id="longLog" aria-hidden="true"></div>
+          </div>
+          <div class="thumb"><div class="mini"><div class="side"><i></i><i class="on"></i><i></i><i></i><i></i></div><div class="main"><i class="t"></i><i></i><i></i><span class="agent"></span></div></div></div>
+        </div>
+        <div class="step" data-state="idle">
+          <div class="idx">3</div>
+          <div class="body">
+            <div class="title"><span>生成归档报告与截图</span><span class="state-tag">等待</span></div>
+            <div class="meta"><span class="mono">等待中</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card-foot"><span class="grow" id="longFoot">已扫描 0 / 412 个文件</span><button class="btn tiny ghost" id="longReplay">重播长任务</button></div>
+    </section>
+    <!-- ===== 方案 B：行内卡 ===== -->
+    <section id="variantB" hidden>
+      <div class="rowlist" id="rowList"></div>
+      <p class="variant-note">行内卡更轻、更接近现有 DSH 工具行；代价是缩略图和失败建议都要收起，新手仍然“看得到但看不明白”。</p>
+    </section>
+  </main>
+
+  <aside class="hud" id="hud" data-state="run" aria-live="polite" aria-label="桌面悬浮窗概念预览">
+    <div class="row"><span class="dot"></span><div class="t" id="hudTitle">正在操作 · 第 1/5 步</div><span class="badge" id="hudBadge" hidden>需要你确认</span></div>
+    <div class="hud-body">
+      <div class="hud-thumb" id="hudThumb" aria-hidden="true"></div>
+      <div class="hud-info">
+        <div class="s" id="hudSub">目标：系统设置 › 显示器</div>
+        <div class="hud-live"><span class="mono" id="hudTime">0.0s</span><span class="sep">·</span><span id="hudStep">第 1/5 步</span><span class="sep">·</span><span id="hudEffect">AXPress</span></div>
+      </div>
+    </div>
+    <div class="hud-rail" id="hudRail" aria-hidden="true"></div>
+    <div class="hint"><span class="badge">桌面 HUD 概念</span> 悬浮在任意窗口上方 · 不抢焦点 <button class="btn tiny ghost" id="hudFocus">回到卡片</button></div>
+  </aside>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="上一步截图">
+    <div class="shot"><div class="head"><span id="lbHead">上一步截图</span><button class="btn tiny ghost" id="lbClose">关闭</button></div><div class="body">截图占位（演示）：真实实现会显示 1280 宽缩略图，←/→ 可切换相邻步骤</div></div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <section class="section" id="decisions">
+    <h2><span class="bar"></span>按你的拍板定下的默认值</h2>
+    <div class="cols">
+      <div class="note"><h3>展示范围与确认门</h3><ul><li>只要用到本插件执行，就显示「活动卡片」——不只在危险动作时出现。</li><li>确认门只在改设置 / 删除 / 发送 / 不可撤销动作出现；普通点击、截图、读取不打断。</li><li>默认展开、进行中可见；任务完成后折叠成一行摘要，可再展开。</li></ul></div>
+      <div class="note"><h3>「后台执行」徽标怎么读</h3><ul><li>徽标 = 这一动作通过 AXPress / CGEvent 后台投递，<b>不抢焦点、不动你的真实鼠标</b>，你可以继续用电脑。</li><li>少数动作必须前台（原生菜单、部分 Electron 输入），徽标会变成「前台执行 · 会短暂占用屏幕」并提示你。</li><li>你可以随时点「我来接管」暂停 AI，自己操作完再继续。</li></ul></div>
+      <div class="note"><h3>缩略图动画与桌面 HUD</h3><ul><li>缩略图本体是静态截图；动画是动作 overlay：目标框呼吸（ax_press）、拖拽路径流动（drag）、截图闪光（screenshot）——不同任务自动复用，不依赖预录动画。</li><li>桌面 HUD（右下角预览）是 P2 概念：独立轻量原生悬浮窗（Swift/AppKit，零外部依赖），只读本地状态文件，显示 n/N、目标、是否需你介入；不抢焦点、可关闭。</li></ul></div>
+    </div>
+  </section>
+
+  <section class="section" id="designNotes">
+    <h2><span class="bar"></span>设计说明</h2>
+    <div class="cols">
+      <div class="note">
+        <h3>为什么是「活动卡片」而不是「一行日志」</h3>
+        <p>Agent 的 UI 是控制面，不是聊天窗。研究里被反复验证的 7 个模式：任务框架、自主度、计划面、进度流、确认门、错误恢复、交接。卡片至少同时承担「进度流 + 确认门 + 错误恢复」三件。</p>
+        <ul>
+          <li>每步一行：只放动作、目标、耗时、结果，不塞模型思考。</li>
+          <li>目标显式化：App › 窗口 › 控件，用户一眼能判断“点得对不对”。</li>
+          <li>缩略图：截图即证据，比“已点击”三个字可信。</li>
+          <li>失败给下一步：原因 + 建议动作（重试/置顶/接管），而不是一句“出错了”。</li>
+        </ul>
+        <p class="quote">参考：AI Agent UI Design Patterns（progress stream 必须结构化；error recovery 是产品的一半）。</p>
+      </div>
+      <div class="note">
+        <h3>数据从哪来（客户端可先行）</h3>
+        <p><b>P0 纯客户端</b>：数量 n/N 用同一轮动作计数（有 plan 时取 plan 总步数）；耗时用 block 生命周期时间；缩略图直接取工具结果里的 image 附件；失败原因沿用现有 <code>actionEffect</code>/<code>note</code>/error 文本。</p>
+        <p><b>P1 宿主补字段</b>：动作类工具输出增加可选 <code>ui</code> 对象：</p>
+        <p><code>ui:{ target:{app,window,element}, durationMs, effect, step:{index,total}, hint }</code></p>
+        <p>全部可选，不破坏旧 schema；客户端优先读 <code>ui</code>，缺失时回退 P0 解析。</p>
+      </div>
+      <div class="note">
+        <h3>滚动落地</h3>
+        <ul>
+          <li><b>P0</b>（1–2 天）：动作工具注册自定义卡片；缩略图 + 每步耗时 + n/N 计数 + 失败态与建议按钮（重试由模型重新调用，不新增协议）。</li>
+          <li><b>P1</b>（2–3 天）：宿主补 <code>ui</code> 字段；连续动作折叠为一张活动卡；完成后折叠成摘要行（4 步 · 6.8s · 2 张截图）。</li>
+          <li><b>P2</b>（可选）：暂停/接管（cua-driver 已支持前台接管语义）、多任务并排、卡片内直接确认破坏性动作（对接 guard）。</li>
+        </ul>
+        <p>取舍：先做客户端，不碰宿主组合层与 wire 协议，风险最小；P1 再动 host，改动被 199 项测试兜住。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2><span class="bar"></span>调研速记</h2>
+    <div class="cols">
+      <div class="note">
+        <h3>同类产品的做法</h3>
+        <ul>
+          <li><b>ChatGPT Operator</b>：受监督浏览器，动作日志在会话里，可暂停/接管；支付等动作先暂停确认。</li>
+          <li><b>Claude Code</b>：终端即界面，每个工具调用、diff 实时流式输出；计划以 markdown 呈现。</li>
+          <li><b>Devin</b>：工作台全景（浏览器/终端/编辑器），用户可从任一层接管。</li>
+          <li><b>Cursor</b>：小事隐形、大事出计划，按任务规模校准存在感。</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>可以借的 5 个细节</h3>
+        <ul>
+          <li>「开始 / 关键节点 / 结果」三张截图随进度出现，带一句 caption。</li>
+          <li>破坏性动作卡片单列，不和普通步骤混排；可加一条打字确认。</li>
+          <li>暂停按钮常驻，不藏在设置里。</li>
+          <li>失败后保留现场：重试不清空前面的成功步骤。</li>
+          <li>完成态折叠成一行摘要，别占着屏幕。</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>需要你拍板的点</h3>
+        <ul>
+          <li>方案 A 还是 B？（推荐 A，B 作为小屏/低干扰模式）</li>
+          <li>卡片默认展开还是折叠？</li>
+          <li>缩略图默认显示几张（建议只显示最后一张 + 手动展开）？</li>
+          <li>「后台执行」要不要带明显的 agent cursor 徽标？</li>
+          <li>失败时的「我来接管」是跳到前台接管，还是只给指引？</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">dsh-operator · toolview 交互稿 · 数据为示意，不代表真实运行结果</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- tiny helpers ---------- */
+  function el(tag, cls, text){ var n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; }
+  function svg(path, w){ return '<svg viewBox="0 0 24 24" width="'+(w||14)+'" height="'+(w||14)+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>'; }
+  var ICONS = {
+    window: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/>'),
+    cursor: svg('<path d="M4 4l6.5 16 2.2-6.4L19 11.4z"/>'),
+    camera: svg('<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13" r="3.2"/><path d="M8 7l1.5-2h5L16 7"/>'),
+    hand:   svg('<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-4.5a1.5 1.5 0 0 1 3 0V11m0-3a1.5 1.5 0 0 1 3 0v6c0 4-2.5 6-6 6h-1.5A5.5 5.5 0 0 1 5 14.5V12a1.5 1.5 0 0 1 3 0"/>'),
+    gear:   svg('<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+    check:  svg('<path d="M4 12.5l5 5L20 6.5"/>'),
+    warn:   svg('<path d="M12 3l9.5 17H2.5z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>'),
+    stop:   svg('<rect x="6" y="6" width="12" height="12" rx="2"/>'),
+    play:   svg('<path d="M7 4.5l12 7.5-12 7.5z"/>')
+  };
+
+  var thumbSettings = '<div class="mini"><div class="side"><i></i><i class="on"></i><i></i><i></i><i></i><i></i></div><div class="main"><i class="t"></i><i></i><i></i><i></i><i></i><span class="target"></span></div></div>';
+  var thumbShot = '<div class="mini shot"><div class="main"><i class="t"></i><i></i><i></i><i></i><i></i></div></div>';
+  var thumbShotFlash = thumbShot.replace("</div></div>", '<span class="flash"></span></div></div>');
+  var thumbDrag = '<div class="mini drag"><div class="side"><i></i><i class="on"></i><i></i><i></i><i></i><i></i></div><div class="main"><i class="t"></i><i></i><i></i><i></i><i></i><span class="dotA"></span><span class="dotB"></span><span class="path"><i></i></span></div></div>';
+
+  /* ---------- activity card model ---------- */
+  var STEPS = [
+    { icon:"window", label:"打开「系统设置」", state:"idle", meta:["前台激活","0.9s"], thumb:null,
+      detail:'open_app { name: "系统设置" }' },
+    { icon:"cursor", label:"点击「显示器」侧边栏项", state:"idle", targetTag:"AXPress · 后台", meta:["确认生效","2.4s"], thumb:thumbSettings,
+      detail:'ax_press { role: "AXButton", title: "显示器" }' },
+    { icon:"camera", label:"截图显示器排列", state:"idle", meta:["长边 1280 · JPEG q80","0.4s"], thumb:thumbShotFlash,
+      detail:'screenshot { screen_index: 0 }' },
+    { icon:"gear", label:"把对比度改为「增强」", state:"idle", meta:["需要你确认"], thumb:null,
+      detail:'ax_press { role: "AXButton", title: "增强" }', gate:true },
+    { icon:"hand", label:"拖拽 hello.txt 到下载窗口", state:"idle", meta:["后台拖拽","1.1s"], thumb:thumbDrag,
+      detail:'drag { from: [430, 160], to: [1180, 430] }' }
+  ];
+
+  var timers = [];
+  var stepNodes = [];
+  var stepSig = [];
+  var progressKey = "";
+  var running = false;
+  var modeBackground = true;
+  var startedAt = 0;
+  var elapsedBase = 0;
+  var rafId = null;
+  var currentIdx = -1;
+  var failureDone = false;
+
+  var actCard = document.getElementById("variantA");
+  var actHead = document.querySelector("#variantA .card-head");
+  var actDot = document.getElementById("actDot");
+  var actTitle = document.getElementById("actTitle");
+  var actSub = document.getElementById("actSub");
+  var actTimer = document.getElementById("actTimer");
+  var actMode = document.getElementById("actMode");
+  var actProgress = document.getElementById("actProgress");
+  var actSteps = document.getElementById("actSteps");
+  var actFoot = document.getElementById("actFoot");
+  var actFootText = document.getElementById("actFootText");
+  var pauseBtn = document.getElementById("pauseBtn");
+  var collapseBtn = document.getElementById("collapseBtn");
+
+  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; if(rafId){cancelAnimationFrame(rafId); rafId=null;} }
+  function later(fn, ms){ timers.push(setTimeout(fn, reduce?0:ms)); }
+
+  function fmt(n){ return (Math.round(n*10)/10).toFixed(1)+"s"; }
+
+  function elapsedMs(){ return elapsedBase + (running ? (Date.now()-startedAt) : 0); }
+  function tick(){
+    if(!running) return;
+    var totalSec = fmt(elapsedMs()/1000);
+    actTimer.textContent = totalSec;
+    var stepSec = fmt((Date.now() - (stepStartedAt || Date.now()))/1000);
+    var le = actSteps.querySelectorAll(".live-elapsed");
+    for(var k=0;k<le.length;k++) le[k].textContent = "已耗时 "+stepSec;
+    if(hudTime) hudTime.textContent = stepSec;
+    rafId = requestAnimationFrame(tick);
+  }
+  function freezeTimer(){
+    if(running){ elapsedBase = elapsedMs(); running = false; }
+    setModeDone();
+    actTimer.textContent = fmt(elapsedBase/1000);
+  }
+  function resumeTimer(){
+    if(!running){ running = true; startedAt = Date.now(); tick(); }
+  }
+
+  function buildProgress(){
+    var classes = [];
+    for(var i=0;i<STEPS.length;i++){
+      var s = STEPS[i], c = "";
+      if(i < currentIdx) c = "done";
+      else if(i === currentIdx) c = (s.state==="warn" || s.state==="error") ? "err" : "active";
+      classes.push(c);
+    }
+    var key = classes.map(function(c, i){ return c + (i === currentIdx ? ":" + STEPS[i].state : ""); }).join("|");
+    if(key === progressKey) return;
+    var prev = progressKey === "" ? [] : progressKey.split("|").map(function(c){ return c.split(":")[0]; });
+    progressKey = key;
+    actProgress.innerHTML = "";
+    for(var j=0;j<classes.length;j++){
+      var sp = el("span", classes[j]);
+      if(classes[j]==="done" && prev[j] !== "done") sp.classList.add("justdone");
+      if(classes[j]==="active"){
+        sp.classList.add("flow");
+        if(STEPS[j].state==="running") sp.classList.add("working");
+      }
+      actProgress.appendChild(sp);
+    }
+  }
+
+  function renderStep(i){
+    var st = STEPS[i];
+    var step = el("div","step");
+    step.dataset.state = st.state;
+    if(st.state==="running") step.classList.add("advance");
+    var idx = el("div","idx");
+    idx.textContent = st.state==="done" ? "✓" : (st.state==="warn"||st.state==="error" ? "!" : String(i+1));
+    if(st.state==="done") idx.innerHTML = '<span style="display:flex;align-items:center;justify-content:center">'+ICONS.check+'</span>';
+    step.appendChild(idx);
+
+    var body = el("div","body");
+    var title = el("div","title");
+    title.appendChild(el("span",null,st.label));
+    var tag = el("span","state-tag");
+    if(st.state==="done") tag.textContent = "已完成";
+    else if(st.state==="running") tag.textContent = "进行中";
+    else if(st.state==="warn") tag.textContent = "需要处理";
+    else if(st.state==="error") tag.textContent = "失败";
+    else if(st.gate) tag.textContent = "等待确认";
+    if(st.targetTag) tag.textContent += " · "+st.targetTag;
+    title.appendChild(tag);
+    body.appendChild(title);
+
+    var meta = el("div","meta");
+    (st.meta||[]).forEach(function(m){
+      var s = el("span","mono",m); meta.appendChild(s);
+    });
+    if(st.state==="running") meta.appendChild(el("span","mono live-elapsed","已耗时 0.0s"));
+    body.appendChild(meta);
+
+    if(st.state==="running" && st.thumb){
+      // subtle progress hint inside thumb
+    }
+    if(st.thumb){
+      var th = el("div","thumb");
+      th.innerHTML = st.thumb;
+      step.appendChild(th);
+    }
+
+    if(st.reason){
+      var r = el("div","reason");
+      r.innerHTML = "<b>"+(st.reasonTitle||"失败")+"</b>： "+st.reason+(st.hint?"<div class='hint'>"+st.hint+"</div>":"");
+      body.appendChild(r);
+      var acts = el("div","step-actions");
+      if(st.retryable){
+        var b1 = el("button","btn tiny","重试这一步");
+        b1.addEventListener("click",function(){ retryStep(i); });
+        acts.appendChild(b1);
+      }
+      var b2 = el("button","btn tiny ghost","我来接管");
+      b2.addEventListener("click",function(){ takeOver(i); });
+      acts.appendChild(b2);
+      if(i>0){
+        var b3 = el("button","btn tiny ghost","查看上一步截图");
+        b3.addEventListener("click",function(){
+          if(stepNodes[i-1] && stepNodes[i-1].thumb){ stepNodes[i-1].thumb.scrollIntoView({block:"center",behavior:reduce?"auto":"smooth"}); }
+        });
+        acts.appendChild(b3);
+      }
+      body.appendChild(acts);
+    }
+
+    var det = el("details");
+    det.style.marginTop = "4px";
+    var sum = el("summary","hintline","调用详情");
+    sum.style.cursor = "pointer";
+    sum.style.fontSize = "12px";
+    det.appendChild(sum);
+    var code = el("div");
+    code.style.cssText = "margin-top:6px;font-family:var(--mono);font-size:11.5px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:7px 9px;white-space:pre-wrap";
+    code.textContent = st.detail;
+    det.appendChild(code);
+    body.appendChild(det);
+
+    step.appendChild(body);
+    stepNodes[i] = step;
+    return step;
+  }
+
+  function stepSignature(st){
+    return JSON.stringify([st.state, st.label, st.meta, st.thumb, st.reason, st.reasonTitle, st.hint, st.retryable, st.gate, st.targetTag]);
+  }
+  // 只重建有变化的步骤，避免未变化的行被重复插入触发勾号/扫光动画
+  function renderAll(onlyIndex){
+    syncHud();
+    var list = onlyIndex == null ? STEPS.map(function(_, i){ return i; }) : [onlyIndex];
+    for(var n=0;n<list.length;n++){
+      var i = list[n];
+      var sig = stepSignature(STEPS[i]);
+      if(stepNodes[i] && stepSig[i] === sig) continue;
+      var node = renderStep(i);
+      var old = actSteps.children[i];
+      if(old) actSteps.replaceChild(node, old);
+      else actSteps.appendChild(node);
+      stepNodes[i] = node;
+      stepSig[i] = sig;
+    }
+    buildProgress();
+  }
+
+  function statusFor(i){
+    if(i < currentIdx) return "done";
+    if(i === currentIdx) return STEPS[i].state;
+    return "idle";
+  }
+
+  var stepStartedAt = 0;
+  function setStep(i, state, patch){
+    STEPS[i].state = state;
+    if(state==="running") stepStartedAt = Date.now();
+    if(patch) Object.keys(patch).forEach(function(k){ STEPS[i][k]=patch[k]; });
+    if(stepNodes[i]) renderAll(i); else renderAll();
+    if(i>0 && stepNodes[i-1]){ STEPS[i-1].state="done"; renderAll(i-1); }
+    buildProgress();
+  }
+
+  var lastHeadStep = -1;
+  function setTitlePop(el, txt){
+    if(!el || el.textContent === txt) return;
+    el.textContent = txt;
+    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+  }
+  function setHeader(kind){
+    syncHud();
+    actDot.className = "dot "+kind;
+    var n = Math.min(currentIdx+1,STEPS.length);
+    var txt = kind==="run" ? "正在操作 · 第 "+n+"/"+STEPS.length+" 步" : kind==="ok" ? "操作完成 · 共 "+STEPS.length+" 步" : "操作需要你决定 · 第 "+n+" 步卡住了";
+    setTitlePop(actTitle, txt);
+    if(kind==="run" && actHead && lastHeadStep !== currentIdx){
+      lastHeadStep = currentIdx;
+      actHead.classList.remove("advance"); void actHead.offsetWidth; actHead.classList.add("advance");
+    }
+  }
+
+  function setSub(){
+    var st = STEPS[Math.max(0,currentIdx)];
+    actSub.textContent = st && st.targetTag ? ("目标："+st.label.replace(/^点击|^把/,"").trim()) : "目标：系统设置 › 显示器";
+    if(currentIdx >= 1) actSub.textContent = "目标：系统设置 › 显示器";
+    if(currentIdx === 2) actSub.textContent = "画面来源：系统设置窗口（Retina 2x → 1280）";
+    if(currentIdx === 3) actSub.textContent = "目标：系统设置 › 外观 › 对比度";
+    if(currentIdx === 4) actSub.textContent = "目标：访达 › 下载窗口（后台拖拽）";
+  }
+
+  function footText(){
+    var done = STEPS.filter(function(s){return s.state==="done";}).length;
+    if(STEPS[4] && STEPS[4].state==="warn") return "第 5 步遇到问题，已暂停，等你决定";
+    if(currentIdx>=3) return "已截好图；对比度那一项属于改设置，按约定等你确认后再点";
+    return "正在执行第 "+(Math.min(currentIdx+1,STEPS.length))+" 步…";
+  }
+
+
+  /* ---------- HUD / toast / lightbox / 接管增强 ---------- */
+  var hudEl = document.getElementById("hud");
+  var hudTitle = document.getElementById("hudTitle");
+  var hudSub = document.getElementById("hudSub");
+  var hudBadge = document.getElementById("hudBadge");
+  var hudThumb = document.getElementById("hudThumb");
+  var hudRail = document.getElementById("hudRail");
+  var hudTime = document.getElementById("hudTime");
+  var hudStep = document.getElementById("hudStep");
+  var hudEffect = document.getElementById("hudEffect");
+  var toastEl = document.getElementById("toast");
+  var lbEl = document.getElementById("lightbox");
+  var lbHead = document.getElementById("lbHead");
+  var toastTimer = null;
+  var lastHudState = "";
+  var lastAllDone = false;
+  var HUD_TARGETS = ["系统设置","系统设置 › 显示器","系统设置 › 显示器 › 排列","系统设置 › 外观 › 对比度","访达 › 下载窗口"];
+
+  function showToast(text){
+    if(!toastEl) return;
+    toastEl.textContent = text;
+    toastEl.classList.add("show");
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2600);
+  }
+
+  function decorateUI(){
+    if(!actSteps) return;
+    var reasons = actSteps.querySelectorAll(".reason");
+    for(var i=0;i<reasons.length;i++){
+      if(reasons[i].textContent.indexOf("需要确认")>=0) reasons[i].classList.add("gate");
+    }
+    var steps = actSteps.querySelectorAll(".step");
+    for(var j=0;j<steps.length;j++){
+      var th = steps[j].querySelector(".thumb");
+      if(th){ th.title = "点击查看上一步截图"; th.onclick = (function(idx){ return function(){ openLightbox(idx); }; })(j); }
+    }
+  }
+
+  function syncHud(){
+    if(!hudEl) return;
+    decorateUI();
+    var total = STEPS.length;
+    var needs = STEPS.some(function(s){ return s.state==="gate"; });
+    var failed = STEPS.some(function(s){ return s.state==="warn" || s.state==="error"; });
+    var done = STEPS.every(function(s){ return s.state==="done"; });
+    var takeover = actCard.dataset.takeover === "true";
+    if(done && !lastAllDone){ actCard.classList.remove("complete"); void actCard.offsetWidth; actCard.classList.add("complete"); }
+    lastAllDone = done;
+    var n = Math.min(currentIdx+1, total);
+    var hudState = done ? "done" : (takeover ? "takeover" : ((needs||failed) ? "warn" : "run"));
+    hudEl.dataset.state = hudState;
+    if(hudState !== lastHudState){
+      hudEl.classList.remove("flash"); void hudEl.offsetWidth; hudEl.classList.add("flash");
+      lastHudState = hudState;
+    }
+    var hudText = done ? "已完成 · "+total+"/"+total+" 步" : (takeover ? "你接管中 · 第 "+n+"/"+total+" 步" : "正在操作 · 第 "+n+"/"+total+" 步");
+    if(hudTitle.textContent !== hudText){
+      hudTitle.textContent = hudText;
+      hudTitle.classList.remove("pop"); void hudTitle.offsetWidth; hudTitle.classList.add("pop");
+    }
+    hudSub.textContent = "目标：" + (HUD_TARGETS[Math.min(currentIdx,total-1)] || "此 Mac");
+    if(hudStep) hudStep.textContent = "第 "+n+"/"+total+" 步";
+    if(hudEffect){
+      var cur = STEPS[Math.min(currentIdx,total-1)] || {};
+      hudEffect.textContent = cur.targetTag || (cur.meta && cur.meta[0]) || (takeover ? "等待你操作" : "—");
+    }
+    if(hudThumb){
+      var _i = Math.min(currentIdx,total-1), _thumb = "";
+      for(var _k=_i; _k>=0 && !_thumb; _k--){ if(STEPS[_k] && STEPS[_k].thumb) _thumb = STEPS[_k].thumb; }
+      for(var _k2=_i+1; _k2<STEPS.length && !_thumb; _k2++){ if(STEPS[_k2] && STEPS[_k2].thumb) _thumb = STEPS[_k2].thumb; }
+      hudThumb.innerHTML = _thumb;
+      hudThumb.classList.toggle("running", !done && !takeover && !needs && !failed);
+    }
+    if(hudRail){
+      hudRail.innerHTML = "";
+      STEPS.forEach(function(st, si){
+        var sp = document.createElement("span");
+        var cls = st.state==="done" ? "done" : ((st.state==="warn"||st.state==="error") ? "err" : (si===currentIdx ? "active" : ""));
+        if(cls) sp.className = cls;
+        if(cls==="active" && st.state==="running") sp.classList.add("working");
+        hudRail.appendChild(sp);
+      });
+    }
+    hudBadge.hidden = !(needs || failed || takeover);
+    hudBadge.textContent = takeover ? "等你操作" : (needs ? "需要你确认" : "需要处理");
+  }
+
+  function openLightbox(i){
+    var st = STEPS[i]; if(!st || !lbEl) return;
+    lbHead.textContent = "第 "+(i+1)+"/5 步 · "+st.label+" · 上一步截图（演示）";
+    lbEl.classList.add("show");
+  }
+  function closeLightbox(){ if(lbEl) lbEl.classList.remove("show"); }
+
+  function continueAfterTakeover(){
+    actCard.dataset.takeover = "false";
+    showToast("继续执行：已恢复 AI 操作");
+    currentIdx = 4;
+    retryStep(4);
+    syncHud();
+  }
+  function endTask(){
+    clearTimers(); running = false; setModeDone(); clearFootButtons();
+    actFootText.textContent = "任务已结束 · 你已接管剩余步骤";
+    actTitle.textContent = "已结束 · 第 4/5 步";
+    actDot.className = "dot warn";
+    footButtons([["重新演示","primary", start]]);
+    showToast("任务已结束（接管后终止）。点「重新演示」可回放。");
+    syncHud();
+  }
+
+  function start(){
+    clearTimers();
+    running = true;
+    failureDone = false;
+    lastAllDone = false;
+    lastHeadStep = -1;
+    lastHudState = "";
+    stepStartedAt = Date.now();
+    actCard.classList.remove("complete");
+    currentIdx = 0;
+    stepSig = [];
+    progressKey = "";
+    elapsedBase = 0;
+    startedAt = Date.now();
+    for(var i=0;i<STEPS.length;i++){ STEPS[i].state="idle"; delete STEPS[i].reason; delete STEPS[i].reasonTitle; delete STEPS[i].retryable; renderAll(i); }
+    renderAll();
+    actCard.dataset.open = "true";
+    collapseBtn.setAttribute("aria-expanded","true");
+    clearFootButtons();
+    setHeader("run"); setSub();
+    STEPS[0].state="running"; renderAll(0); actFootText.textContent = "正在执行第 1 步…";
+    actTimer.textContent = "0.0s";
+    tick();
+
+    later(function(){ setStep(0,"done"); setStep(1,"running"); currentIdx=1; setHeader("run"); setSub(); actFootText.textContent="正在执行第 2 步…"; renderAll(); }, 900);
+    later(function(){ setStep(1,"done"); setStep(2,"running"); currentIdx=2; setHeader("run"); setSub(); actFootText.textContent="正在执行第 3 步…"; buildProgress(); }, 2600);
+    later(function(){ setStep(2,"done"); setStep(3,"running"); currentIdx=3; setHeader("run"); setSub(); actFootText.textContent="已截好图；对比度属于改设置，等你确认"; buildProgress(); }, 3900);
+    later(function(){
+      // confirmation gate for step 4
+      STEPS[3].state="gate";
+      setStep(3,"running",{reasonTitle:"需要确认",reason:"接下来会修改「对比度」设置（可撤销）。确认继续？",hint:"确认门只在改设置/破坏性动作出现；可改成 30 秒内可撤销。",retryable:false});
+      actFootText.textContent="第 4 步等你确认：要修改对比度设置";
+      footButtons([["继续并修改","primary",function(){ clearGate(3); setStep(3,"done"); currentIdx=4; setHeader("run"); setSub(); resumeTimer(); playStep5(); }],["跳过这步","ghost",function(){ clearGate(3); setStep(3,"done"); currentIdx=4; setHeader("run"); resumeTimer(); playStep5(true); }]]);
+      freezeTimer();
+    }, 5000);
+  }
+
+  function clearGate(i){
+    delete STEPS[i].reason; delete STEPS[i].reasonTitle; delete STEPS[i].hint; delete STEPS[i].retryable;
+  }
+
+  function playStep5(skip){
+    clearFootButtons();
+    setStep(4,"running"); actFootText.textContent="正在执行第 5 步…"; setHeader("run"); setSub(); buildProgress();
+    later(function(){
+      if(!skip){
+        STEPS[4].state="warn";
+        setStep(4,"warn",{reasonTitle:"画面没有变化（suspected_noop）",
+          reason:"拖拽后截图与上一张相同，文件没有移动。",
+          hint:"目标窗口可能被其他窗口挡住。建议先把「下载」窗口置顶，再重试一次。",
+          retryable:true});
+        setHeader("warn"); actFootText.textContent="第 5 步没有生效，等你决定"; freezeTimer();
+        footButtons([["重试并置顶目标","primary",function(){ setStep(4,"done"); finishSuccess(); }],["我来接管","ghost",function(){ takeOverCurrent(); }]]);
+      }else{
+        finishSuccess();
+      }
+    }, 1300);
+  }
+
+  function finishSuccess(){
+    freezeTimer();
+    setHeader("ok"); STEPS[4].state="done"; renderAll(); buildProgress();
+    actFootText.innerHTML = "<strong>完成</strong> · 5 步 · " + actTimer.textContent + " · 2 张截图";
+    footButtons([["查看完整记录","ghost",function(){ actCard.dataset.open="true"; collapseBtn.setAttribute("aria-expanded","true"); }]]);
+    setSub();
+  }
+
+  function setModeDone(){ if(rafId){cancelAnimationFrame(rafId); rafId=null;} }
+
+  function clearFootButtons(){
+    Array.prototype.slice.call(actFoot.querySelectorAll("button")).forEach(function(b){ b.remove(); });
+  }
+
+  function footButtons(list){
+    // wipe existing action buttons from footer
+    clearFootButtons();
+    list.forEach(function(t){
+      var b = el("button","btn tiny"+(t[1]==="primary"?" primary":" ghost"), t[0]);
+      b.addEventListener("click", t[2]);
+      actFoot.appendChild(b);
+    });
+  }
+
+  function retryStep(i){
+    STEPS[i].state="done"; delete STEPS[i].reason; delete STEPS[i].hint; delete STEPS[i].reasonTitle; delete STEPS[i].retryable;
+    renderAll(i);
+    actFootText.textContent = "重试置顶后成功（演示）";
+    setHeader("ok");
+    finishSuccess();
+  }
+
+  function takeOver(i){
+    STEPS[i].state="warn";
+    STEPS[i].reasonTitle="已暂停，等你接管";
+    STEPS[i].reason="AI 已停止继续尝试。切到目标窗口即可自己操作，完成后点「继续」。";
+    STEPS[i].hint="接管时 AI 不再发新动作；你的鼠标键盘优先。";
+    STEPS[i].retryable=false;
+    renderAll(i);
+    clearTimers(); running=false; setModeDone(); setHeader("warn");
+    actCard.dataset.takeover = "true";
+    clearFootButtons();
+    footButtons([["我操作完了，继续","primary", continueAfterTakeover],["结束任务","ghost", endTask]]);
+    actFootText.textContent = "已暂停 · 你可以直接用鼠标键盘操作";
+    showToast("已暂停：AI 不再动鼠标/键盘。操作完成后点「继续」。");
+    syncHud();
+  }
+
+  function takeOverCurrent(){ takeOver(4); }
+
+  /* ---------- compact row variant ---------- */
+  /* ---------- 长耗时样例：ETA + 日志流 + 光标脉冲 ---------- */
+  var longCard = document.getElementById("longCard");
+  var longDot = document.getElementById("longDot");
+  var longTitle = document.getElementById("longTitle");
+  var longTimer = document.getElementById("longTimer");
+  var longEta = document.getElementById("longEta");
+  var longElapsed = document.getElementById("longElapsed");
+  var longMetaEta = document.getElementById("longMetaEta");
+  var longLog = document.getElementById("longLog");
+  var longFoot = document.getElementById("longFoot");
+  var longProgress = document.getElementById("longProgress");
+  var LONG_TOTAL = 12000;
+  var LONG_LOG = [
+    ["CGEvent", "scroll 下载窗口 → 顶部"],
+    ["AX", "读取 AXOutline · 412 个子项"],
+    ["plan", "按扩展名聚类：pdf 96 / png 141 / mov 23"],
+    ["fs", "mkdir Archive/PDF（已存在，跳过）"],
+    ["fs", "move 12 个 pdf → Archive/PDF"],
+    ["CGEvent", "scroll 下一页可见行 8 行"],
+    ["AX", "读取 AXOutline · 168 / 412"],
+    ["fs", "move 9 个 png → Archive/PNG"],
+    ["verify", "抽查 3 个文件，哈希一致"],
+    ["CGEvent", "hover 目标行：Archive 目录"],
+    ["plan", "剩余 244 个，预计 8s"],
+    ["AX", "读取 AXOutline · 301 / 412"],
+    ["fs", "move 27 个 mov → Archive/MOV"],
+    ["verify", "目录大小 4.2 GB，无冲突"],
+    ["fs", "写入归档清单 archive.json"]
+  ];
+  var longT0 = 0, longInterval = null, longLastLog = 0, longNext = 1, longDone = false;
+
+  function longSegments(){
+    if(!longProgress) return;
+    longProgress.innerHTML = "";
+    for(var i=0;i<3;i++){
+      var sp = el("span", longDone ? "done" : (i===1 ? "active working" : ""));
+      longProgress.appendChild(sp);
+    }
+  }
+  function pushLog(line, ms){
+    if(!longLog) return;
+    var ln = el("div","ln");
+    ln.innerHTML = '<span class="t">'+fmt(ms/1000)+'</span><b>'+line[0]+'</b> '+line[1];
+    longLog.appendChild(ln);
+    while(longLog.children.length > 5) longLog.removeChild(longLog.firstChild);
+  }
+  function longFinish(){
+    longDone = true;
+    if(longInterval){ clearInterval(longInterval); longInterval = null; }
+    if(longDot) longDot.className = "dot ok";
+    if(longTitle) longTitle.textContent = "操作完成 · 共 3 步";
+    if(longTimer) longTimer.textContent = fmt(LONG_TOTAL/1000);
+    if(longEta){ longEta.textContent = "已完成"; longEta.className = "pill eta done"; }
+    if(longMetaEta) longMetaEta.textContent = "已完成";
+    if(longElapsed) longElapsed.textContent = "已用时 "+fmt(LONG_TOTAL/1000);
+    if(longFoot) longFoot.innerHTML = "<strong>完成</strong> · 412 个文件 · "+fmt(LONG_TOTAL/1000);
+    if(longCard){
+      var steps = longCard.querySelectorAll(".step");
+      if(steps[1]){ steps[1].dataset.state="done"; steps[1].classList.remove("advance"); steps[1].querySelector(".idx").textContent="✓"; steps[1].querySelector(".state-tag").textContent="已完成"; }
+      if(steps[2]){ steps[2].dataset.state="done"; steps[2].querySelector(".state-tag").textContent="已完成"; steps[2].querySelector(".idx").textContent="✓"; var m=steps[2].querySelector(".meta .mono"); if(m) m.textContent="0.6s"; }
+    }
+    longSegments();
+  }
+  function longStepTick(){
+    var ms = Date.now() - longT0;
+    var remain = Math.max(0, LONG_TOTAL - ms);
+    if(longTimer) longTimer.textContent = fmt(ms/1000);
+    if(longElapsed) longElapsed.textContent = "已用时 "+fmt(ms/1000);
+    if(longEta) longEta.textContent = "预计剩余 ~"+Math.max(1, Math.ceil(remain/1000))+"s";
+    if(longMetaEta) longMetaEta.textContent = "剩余 ~"+Math.max(1, Math.ceil(remain/1000))+"s";
+    if(longFoot) longFoot.textContent = "已扫描 "+Math.min(412, Math.round(412*ms/LONG_TOTAL))+" / 412 个文件";
+    if(ms >= LONG_TOTAL){ longFinish(); return; }
+    if(longNext < LONG_LOG.length && ms - longLastLog > 680){
+      longLastLog = ms; pushLog(LONG_LOG[longNext++], ms);
+    }
+  }
+  function startLong(){
+    longDone = false;
+    if(longInterval){ clearInterval(longInterval); longInterval = null; }
+    if(longDot) longDot.className = "dot run";
+    if(longTitle) longTitle.textContent = "正在操作 · 第 2/3 步";
+    if(longTimer) longTimer.textContent = "0.0s";
+    if(longEta){ longEta.textContent = "预计剩余 ~12s"; longEta.className = "pill eta"; }
+    if(longFoot) longFoot.textContent = "已扫描 0 / 412 个文件";
+    if(longLog) longLog.innerHTML = "";
+    if(longCard){
+      var steps = longCard.querySelectorAll(".step");
+      if(steps[1]){
+        steps[1].dataset.state="running"; steps[1].classList.add("advance");
+        steps[1].querySelector(".idx").textContent="2";
+        steps[1].querySelector(".state-tag").textContent="进行中";
+        var monos = steps[1].querySelectorAll(".meta .mono");
+        if(monos[0]){ monos[0].textContent="已用时 0.0s"; monos[0].id="longElapsed"; longElapsed=monos[0]; }
+        if(monos[1]){ monos[1].textContent="剩余 ~12s"; monos[1].id="longMetaEta"; longMetaEta=monos[1]; }
+      }
+      if(steps[2]){
+        steps[2].dataset.state="idle";
+        steps[2].querySelector(".state-tag").textContent="等待";
+        steps[2].querySelector(".idx").textContent="3";
+        var m2 = steps[2].querySelector(".meta .mono"); if(m2) m2.textContent="等待中";
+      }
+    }
+    longSegments();
+    if(reduce){ longFinish(); return; }
+    longT0 = Date.now(); longNext = 1; longLastLog = 0;
+    pushLog(LONG_LOG[0], 0);
+    longInterval = setInterval(longStepTick, 100);
+  }
+  var longReplay = document.getElementById("longReplay");
+  if(longReplay) longReplay.addEventListener("click", startLong);
+
+  var rowList = document.getElementById("rowList");
+  function renderRows(){
+    rowList.innerHTML = "";
+    var rows = [
+      {dot:"run",  name:"截图窗口", target:"系统设置 › 显示器", meta:"0.4s", thumb:thumbSettings, state:"running"},
+      {dot:"ok",   name:"点击「显示器」", target:"系统设置 › 显示器", meta:"2.4s", thumb:null, state:"done"},
+      {dot:"warn", name:"拖拽 hello.txt", target:"访达 › 下载", meta:"1.1s", thumb:null, state:"warn", note:"画面没有变化，建议先把目标窗口置顶"}
+    ];
+    rows.forEach(function(r){
+      var row = el("div","trow");
+      row.appendChild(el("span","dot "+r.dot));
+      var body = el("div"); body.style.flex="1"; body.style.minWidth="0";
+      var line = el("div"); line.style.display="flex"; line.style.gap="8px"; line.style.alignItems="baseline";
+      var nm = el("span","name",r.name);
+      var tg = el("span","target","↳ "+r.target);
+      line.appendChild(nm); line.appendChild(tg);
+      body.appendChild(line);
+      if(r.note){ var nt = el("div","hintline",r.note); nt.style.color="var(--err)"; nt.style.fontSize="12px"; body.appendChild(nt); }
+      row.appendChild(body);
+      if(r.thumb){ var th = el("div","thumb"); th.innerHTML=r.thumb; row.appendChild(th); }
+      row.appendChild(el("span","tmeta",r.meta));
+      var ex = el("button","expand","⋯"); ex.title="展开详情";
+      row.appendChild(ex);
+      rowList.appendChild(row);
+    });
+  }
+
+  /* ---------- tabs / theme / mode / collapse ---------- */
+  var tabA = document.getElementById("tabA"), tabB = document.getElementById("tabB");
+  var variantA = document.getElementById("variantA"), variantB = document.getElementById("variantB");
+  tabA.addEventListener("click", function(){ setTab("A"); });
+  tabB.addEventListener("click", function(){ setTab("B"); });
+  function setTab(t){
+    var a = t==="A";
+    tabA.setAttribute("aria-pressed", a?"true":"false");
+    tabB.setAttribute("aria-pressed", a?"false":"true");
+    variantA.hidden = !a ? false : false; // keep A visible as context? no
+    variantA.hidden = !a;
+    variantB.hidden = a;
+    if(!a) renderRows();
+  }
+
+  var themeBtn = document.getElementById("themeBtn");
+  themeBtn.addEventListener("click", function(){
+    var dark = document.documentElement.dataset.theme === "dark";
+    document.documentElement.dataset.theme = dark ? "light" : "dark";
+    themeBtn.textContent = dark ? "深色" : "浅色";
+  });
+
+  var modeBtn = document.getElementById("modeBtn");
+  modeBtn.addEventListener("click", function(){
+    modeBackground = !modeBackground;
+    modeBtn.textContent = "后台执行：" + (modeBackground?"开":"关");
+    actMode.textContent = modeBackground ? "后台执行 · 不影响你" : "前台执行 · 会短暂占用屏幕";
+    actMode.style.background = modeBackground ? "" : "var(--warn-soft)";
+    actMode.style.color = modeBackground ? "" : "var(--warn)";
+    actMode.style.borderColor = modeBackground ? "" : "color-mix(in srgb,var(--warn) 35%, transparent)";
+  });
+
+  collapseBtn.addEventListener("click", function(){
+    var open = actCard.dataset.open !== "false";
+    actCard.dataset.open = open ? "false" : "true";
+    collapseBtn.setAttribute("aria-expanded", open?"false":"true");
+  });
+
+  pauseBtn.addEventListener("click", function(){
+    if(running){ freezeTimer(); pauseBtn.textContent="继续"; }
+    else { resumeTimer(); pauseBtn.textContent="暂停"; }
+  });
+
+
+  var hudBtn = document.getElementById("hudBtn");
+  if(hudBtn){ hudBtn.addEventListener("click", function(){
+    var on = hudEl.classList.toggle("show");
+    hudBtn.textContent = "桌面 HUD：" + (on ? "开" : "关");
+    if(on) showToast("桌面 HUD 已打开：悬浮显示进度，不抢焦点。");
+  }); }
+  var hudFocus = document.getElementById("hudFocus");
+  if(hudFocus){ hudFocus.addEventListener("click", function(){
+    actCard.scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
+    if(actCard.dataset.open === "false"){ actCard.dataset.open = "true"; collapseBtn.setAttribute("aria-expanded","true"); }
+    syncHud();
+  }); }
+  var lbClose = document.getElementById("lbClose");
+  if(lbClose) lbClose.addEventListener("click", closeLightbox);
+  if(lbEl) lbEl.addEventListener("click", function(e){ if(e.target === lbEl) closeLightbox(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeLightbox(); });
+  if(pauseBtn){ pauseBtn.addEventListener("click", function(){ setTimeout(syncHud, 80); }); }
+
+  document.getElementById("replayBtn").addEventListener("click", start);
+
+  if(hudEl) hudEl.classList.add("show");
+  renderAll(); start(); syncHud(); startLong();
+})();
+</script>
+</body>
+</html>

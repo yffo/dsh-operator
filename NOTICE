@@ -1,0 +1,161 @@
+dsh-operator
+============
+
+原名 dsh-orb-computer-use（0.2.x）。本插件的计算机操作能力层
+（`lib/computer-use/` 与工具提示词）来自：
+
+  dsh-orb v0.2.0
+  https://github.com/mini-yifan/dsh-orb-cordis
+  Copyright (c) 2026 mini-yifan
+  MIT License（见同目录 LICENSE）
+
+具体改动：
+
+- 只抽取 `dist/computer-use/`（13 个 GUI 工具、coordinate mode、code_agent、
+  code_agent 注册表与上游工具提示词），没有 ball host、Electron helper、
+  语音、native-selection、主窗口设置页，也没有 `client.js` 前端注入。
+- `cordis.patch.yml` 由上游同名文件裁剪而来：删掉 `orb-host`、`ui-settings-orb`
+  与 `preset-computer-use` 三行，改成本包的三行全局挂载（主插件 + code_agent
+  注册表 + code_agent），插件名改为本包名。
+- 给 `macos-sck-capture` 补执行位（上游 tarball 解出是 0644，dsh-orb issue #40）。
+- 依赖 `zod` 从上游声明的 `^4.4.3` 改为 `^3.25.76`：vendored 代码只用
+  `z.object` / `z.enum` / `.strict()`，与 zod 3 行为一致，且复用 profile 里
+  已经存在的 zod 3，避免同一 profile 出现两份 zod。
+- 新增入口 `index.js`（执行位自愈 + 转发插件导出）与本说明文件。
+- 0.2.2 起修改了 vendored 代码。0.4.0–0.9.0 期间这些修改以「锚点补丁」维护；
+  0.9.1 起 `lib/computer-use/` 直接 fork 为 first-party 代码（见 `docs/FORK.md`），
+  修改点保留 `PATCH(computer-use)` 注释作为索引：
+  - 观察截图在交给模型前用 `sips` 缩到长边 ≤ `captureMaxEdge`（默认 1280）并按
+    `jpegQuality`（默认 80）重编码；失败自动回退原图。实现位于本包
+    `lib/capture-downscale.js`，不在 vendored 目录内。
+  - 动作后截图与上一次逐字节相同（且动作有等待）时，工具结果附加 `note` 提示，
+    要求模型复核而不是盲目重试；策略提示词同步加入「先验证目标、无变化换路、
+    同一失败动作最多重试两次」的纪律。
+  - 新增 `Config` / `ResolvedComputerUseConfig` 的 `captureMaxEdge`、`jpegQuality` 字段。
+
+- 0.3.1 起修复上游 `list_apps` / `open_app` 的 JXA 判断 bug：JXA 里
+  `NSRunningApplication.activationPolicy` 返回的是字符串（"0"/"1"/"2"），上游用
+  `!== 0` 比较，导致所有 App 都被当成非 regular 过滤掉（`list_apps` 恒为空、
+  `open_app` 无法激活已运行的 App）。已改为 `Number(app.activationPolicy) !== 0`，
+  共两处（LIST_APPS_SCRIPT 与 openAppScript）。
+
+- 0.3.2 起修复上游 `open_app` 激活已运行 App 的第二个桥接问题：JXA 里
+  `NSRunningApplication` 没有 `activateWithOptions_` 方法（调用即 TypeError），
+  上游也只拿显示名去 `open -a`（中文显示名如「系统设置」会失败）。已改为：
+  JXA 单匹配时返回 bundle id（`openAppScript`），`parseOpenAppDecision` 透传
+  `bundle`，JS 侧用 `open -b <bundleId>` 激活；未运行时仍走 `open -a/ -b` 启动。
+
+除上述改动外，上游代码逻辑未改。0.9.1 起不再自动同步上游：用 `scripts/fetch-upstream.sh <版本>` 拉到临时目录人工对照，然后按 `docs/FORK.md` 的流程合并。
+
+- 0.4.1 修复 0.4.0 的 schema 回归：观察输出里 `screens[].image` 曾写成
+  `required: false`，DSH 的 schema 编译器只允许 `required: true` 或省略该键，
+  导致插件在加载阶段抛 JsonSchemaError、全局 GUI 工具不注册。现在省略该键
+  （`image` 变为可选字段），并加进 `scripts/check-p0.mjs` 的回归断言。
+- 0.4.0 起按源码审计（docs/ai/2026-10-31-cu-audit-official.md）落地 P0：
+  - 策略提示词从上游约 8.4KB 精简到约 3.9KB（`lib/policy-slim.js`，仍保留上游
+    0–1000 坐标段原文，`backgroundPolicyFor()` 行为不变）。
+  - 观察截图存储失败时不再让整个工具报错：降级为纯文本观察，screens 里带
+    `imageError`，动作结果照常返回（`PATCH(computer-use): admission degrade`）。
+  - 跨屏/超出所属显示器的窗口观察带 `clipped`、`sourceBounds`、`visibleBounds` 元数据。
+  - 动作结果新增结构化 `actionEffect`：`confirmed` / `suspected_noop` /
+    `unverifiable`，`suspected_noop` 时附 note 要求换路而不是盲目重试。
+  - 注册工具前检查 `ctx.tools` 是否已有同名工具，冲突时 fail fast。
+  以上改动均已并入 `lib/computer-use/` 源码（fork）。
+
+- 0.5.0 起补充 AX 文本观察（P1-6）：
+  - 新增 `scripts/ax-helper.swift`：读取前台 App 的 Accessibility 树（DFS 前序、
+    节点/深度受限、值截断、安全输入框打码），编译为 `lib/bin/ax-snapshot`
+    （`scripts/build-ax-helper.sh`，xcrun swiftc -O）。
+  - 新增 `lib/ax-observer.js`：格式化 AX 快照（只保留有身份的节点、与窗口求交、
+    坐标换算成窗口内 0–1000 的 `@(x,y)`、上限 32KB），失败/未授权/树太浅时静默
+    降级为纯视觉观察。
+  - `observeDesktop` 在截图之后插入 `<ax_snapshot>` 文本块；`Config` 新增
+    `axObservation`（默认 true）与 `axMaxNodes`（默认 120）。
+  - backend 的前台窗口元数据补 `pid`（AX 助手用它定位进程）。
+  以上改动已并入 `lib/computer-use/` 源码；AX 助手为纯只读，
+  不调用 AXPress，不做任何动作。
+
+- 0.5.1 修复 0.5.0 的 AX 文本没有出现在工具输出里：工具结果内容由
+  `resultBlocks` 从 screens 重建（`observeDesktop` 里的 `blocks` 只用于首帧路径），
+  所以把 AX 文本改为挂在观察结果的 `axText` 字段上，并在 `recapture` /
+  `observedFields` / `resultBlocks` / 输出 schema 里透传。
+
+- 0.5.2 修复 AX 观察拿不到 pid：`inspectForeground` 把解析结果交给
+  `foregroundFromFrontmost` 时只保留了 appName / windowTitle，pid 被丢掉，
+  AX 助手因此从不运行。修复方式是在 `foregroundFromFrontmost` 里透传 `pid`。
+
+- 0.5.3 修复 AX 坐标空间：观测截图可能合并同一 App 的多个窗口，而 AX 快照
+  之前按前台窗口 frame 归一化，多窗口时坐标与截图坐标空间不一致（模型会点
+  偏）。现在观察结果会带上本次截图区域 `screen.bounds`，AX 坐标按截图区域
+  归一化。
+
+- 0.6.0 补齐审计剩余项（本仓库代码，vendored 仅接线）：
+  - `lib/operator-tools.js` 注册三个扩展工具：`list_windows`（CGWindowList 窗口 +
+    NSScreen 显示器 + 前台 App）、`screenshot_window`（screencapture -l 单窗口）、
+    `verify_state`（window_title / frontmost_app / app_running / ax_text /
+    ax_element 谓词轮询，只返回事实，不带截图）。
+  - `lib/macos-query.js` 调 AX 助手 `--list-windows`（200ms 缓存）；
+    `lib/audit-log.js` 写无内容审计日志（脱敏：标量/数量/耗时，不含标题、
+    坐标、输入文本、剪贴板；5MB 轮转）。
+  - `lib/ax-observer.js` 增加 `schema_version="1"` 与浅 AX 树阈值 `axMinNodes`
+    （默认 16；Electron/Web 浅树不再附带）。
+  - `Config` 新增 `axMinNodes`、`auditLog`；`apply()` 接线
+    `configureAuditLog` / `registerOperatorTools`，`recapture` 记
+    `audit("action", ...)`。以上改动已并入 `lib/computer-use/` 源码。
+  - 扩展工具与 AX 只在 macOS 注册；Windows 仅保留 vendored 基础工具。
+
+- 0.6.1 修复 0.6.0 加载失败：`screenshot_window` 输出 schema 里的嵌套 `image`
+  object 少了 `additionalProperties`，DSH 的 schema 编译器抛
+  `JsonSchemaError: unsupported JSON schema:
+  schema.properties.image.additionalProperties must be explicitly true or false`，
+  插件 apply 整体失败、所有 GUI 工具消失。补上后三个扩展工具都能用真实
+  `defineTool` 注册；`test-operator.mjs` 增加「每个 object 必须显式
+  additionalProperties」的递归断言，防止同类回归。
+
+- 0.6.2 修正浅 AX 树阈值：0.6.0/0.6.1 用「原始 AX 节点数」判断，而原始树里
+  有大量被格式化过滤掉的容器/菜单节点（Harness 原始 30+、实际保留 13），
+  导致 Electron/Web 的浅树仍被附带。现在按格式化后真正保留的节点数判断，
+  低于 `axMinNodes`（默认 16）不附；`formatAxSnapshot` 增加可选第 4 参数
+  `minimumNodes`，`test-ax.mjs` 增加对应断言。
+
+- 0.7.0 新增：
+  - P1-10 `ax_press` 工具：按 `<ax_snapshot>` 的节点 index 对原生控件后台触发
+    AXPress（不动光标、不抢焦点，先校验 role/title 再按，拒绝过期/错位节点）；
+    Swift 助手新增 `--press/--expect-role/--expect-title` 模式。
+  - P1-9 合并一次观察里的两次 JXA：`listScreens` 与 `inspectForeground` 共用
+    250ms 前台缓存，每步约省 100–200ms。
+  - 工具面：list_windows / screenshot_window / verify_state / ax_press 四个扩展工具。
+
+- 0.8.0 新增 `zoom_region` 工具：对当前前台窗口的局部区域按 0–1000 坐标做原生分辨率
+  裁剪截图（读小字 / 图标细节 / 拥挤控件），避免为看清细节而整屏重截；
+  README 补充「每次观察只带当前截图，不重复附带历史截图」的说明。
+
+0.9.0（2026-11-01，P0 前三项）
+- 首帧懒观察：`firstFrame: "auto"`（默认）时，只有本会话最近 `idleObserveMs`（默认 10 分钟）内做过 GUI 动作，
+  新的 user 消息才自动附首帧截图；纯聊天会话不再产生截图 token。会话第一次需要看屏幕时先调 wait。
+- `suspected_noop` 不再重复附同一张截图，只回 actionEffect + note（上一步截图仍在上下文）。
+- 敏感动作 guard（v1）：hotkey 的退出/强制退出/锁屏/退出登录/清空废纸篓组合、ax_press 目标标题命中
+  危险词（删除/卸载/支付/发送…）时，默认拒绝并要求 `confirm: true` 放行；安全输入角色只做标记。
+  覆盖范围与 v2 计划（视觉点击的 AX hit-test）见 README 已知限制。
+- 新增 `test/guard.test.mjs`、`test/observe-gate.test.mjs`（node:test）。
+
+0.10.1（P1 批次第二版）
+- `ax_press` / `ax_set_value`：快照索引与实时树不一致时，按 expect_role/expect_title 在当前树里
+  重新定位最近节点（|索引差| ≤16），成功时输出 `resolved: "index drifted; re-resolved by role/title"`；
+  漂移超过阈值仍拒绝，避免写错目标。
+- 新增 `ax_scroll`：优先用原生 AX scroll action（后台、不抢焦点）；App 不支持时回退为
+  「kAXRaiseAction 提窗 + 激活目标 App + 元素中心全局滚轮」，该回退会把目标 App 提到前台
+  （工具描述与 README 已注明）。
+- AX 快照：匿名容器节点（有 frame、role 在身份集合内、无 title/value）最多保留 40 个，超出裁剪并
+  在 header 标记 truncated；正文预算保持 24000 字符。
+- helper（`scripts/ax-helper.swift`）新增 --scroll / 重定位逻辑；正式二进制仍由 build-ax-helper.sh
+  出 arm64 + x86_64 通用二进制。
+
+0.10.0（2026-11-01，P1 批次首版）
+- `ax_set_value`：按 `<ax_snapshot>` 节点 index 直接设置原生文本框的值
+  （AXUIElementSetAttributeValue，后台投递）；只接受 AXTextField / AXTextArea /
+  AXComboBox / AXSearchField，secure 字段拒绝；危险标题需 `confirm: true`。
+- `ax_menu`：按菜单路径（如 `文件/新建窗口`）逐段 AXPress；路径命中危险词需 `confirm: true`。
+- Swift 助手新增 `--set-value / --value / --menu` 模式；改为通用二进制
+  （arm64 + x86_64，`scripts/build-ax-helper.sh` 用 lipo 合成，单架构失败降级）。
+- AX 快照正文加 24000 字符预算（`MAX_TEXT_CHARS`），超出截断并标 `truncated`。
