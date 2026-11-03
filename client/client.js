@@ -870,7 +870,9 @@ window.__ModuleLoader__.load({
 					elapsed > 0.05 ? h("span", { className: "dop-dock-elapsed" }, `${elapsed.toFixed(1)}s`) : null,
 					!ended && currentTool !== "" && toolMode(currentTool) === "后台" ? h("span", { className: "dop-dock-badge" }, "后台执行 · 不影响你") : null,
 					h("button", { className: "dop-dock-collapse", type: "button", title: collapsed ? "展开" : "收起", onClick: () => this.toggle() }, chevronIcon(collapsed)),
-					h("button", { className: "dop-dock-close", type: "button", title: "关闭（下次操作再出现）", onClick: () => this.close() }, closeIcon())
+					// 0.119.3：操作进行中不提供关闭按钮。关闭只是隐藏卡片、不影响宿主执行，
+					// 但会让人看不到进度、容易错过确认；折叠仍然可用。这一轮结束了才允许关掉。
+					ended ? h("button", { className: "dop-dock-close", type: "button", title: "关闭（下次操作再出现）", onClick: () => this.close() }, closeIcon()) : null
 				);
 
 				// 只列本回合的动作。回合号优先信事件（客户端立刻可用），
