@@ -61,7 +61,9 @@ check(src.includes('screens: effect.actionEffect === "suspected_noop" ? [] : [..
 check(src.includes("assertHotkeyGuarded(args.keys, args.confirm === true, config.guard !== false);"), "hotkey guard 调用在");
 check(!/required:\s*false/.test(src), "schema 不用 required: false（DSH 只允许 true 或省略）");
 
-check(existsSync(join(root, "docs", "FORK.md")), "docs/FORK.md 记录上游与差异");
+// docs/ 是维护者本地材料（.gitignore 排除、不进发布）；源码安装者视角没有 docs，
+// 这时跳过而不是判失败——否则 CI 每次都红。
+check(!existsSync(join(root, "docs")) || existsSync(join(root, "docs", "FORK.md")), "docs/FORK.md 记录上游与差异");
 check(src.includes("PATCH(computer-use)"), "fork 修改点注释（PATCH(computer-use)）在");
 check(!existsSync(join(root, "scripts", "apply-vendor-patches.mjs")), "补丁器已移除（fork 化）");
 check(!existsSync(join(root, "scripts", "vendor-patches")), "vendor-patches 目录已移除");
