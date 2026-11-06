@@ -411,6 +411,7 @@ window.__ModuleLoader__.load({
 			zoom_region: "放大查看",
 			verify_state: "校验界面状态",
 			ax_press: "按控件",
+			ax_snapshot: "读取 AX 快照",
 			ax_menu: "点菜单",
 			ax_scroll: "滚动控件",
 			ax_set_value: "填表单",
@@ -922,7 +923,9 @@ window.__ModuleLoader__.load({
 				const blockedNow = failed && calls.length > 0 && calls[0].failed === true && isGuardedResult(calls[0].summary);
 				const tone = waiting ? "waiting" : blockedNow ? "blocked" : failed ? "error" : pending ? "running" : live ? "live" : "ok";
 				const headline = waiting ? "等你确认" : blockedNow ? "已拦截 · 需确认" : failed ? "操作失败" : pending ? "正在操作" : live ? "正在执行" : "已结束";
-				const step = view.step > 0 ? view.step : calls.length;
+				// 0.121.7：宿主投影的 view.step 只反映「当前回合」，而 calls 是跨回合累积的。
+				// 两者不一致时标题会显示「共 1 步」、每行编号又都算成 1。以实际条数兜底。
+				const step = Math.max(view.step > 0 ? view.step : 0, calls.length);
 				const current = calls.length > 0 ? calls[0] : null;
 				const currentTool = waiting && view.approvalTool !== "" ? view.approvalTool : view.tool;
 				const goalTarget = current !== null && typeof current.target === "string" && current.target !== "" ? current.target : "";
@@ -978,8 +981,10 @@ window.__ModuleLoader__.load({
 						if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
 						try { return new Date(call.startedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false }); } catch { return ""; }
 					})();
-					// 正序显示：第 1 步在最上面；步号按本回合真实序号（用全集算，折叠时不串号）
-					const baseStep = typeof view.turn === "number" && view.turn === currentTurn && view.step > 0 ? view.step : all.length;
+					// 正序显示：第 1 步在最上面；步号按本回合真实序号（用全集算，折叠时不串号）。
+					// 0.121.7：view.step 可能大于我们能拿到的调用条数（宿主只投影最近几条），
+					// 这时必须用 view.step 当基准倒推，否则标题写「共 8 步」、行号却从 1 开始。
+					const baseStep = Math.max(all.length, step);
 					const number = Math.max(1, baseStep - (all.length - 1 - all.indexOf(call)));
 					const meta = `${rowState === "running" ? "进行中" : rowState === "error" ? "失败" : rowState === "blocked" ? "已拦截" : "已完成"}${toolMode(call.toolName) === "" ? "" : ` · ${toolMode(call.toolName)}`}${seconds === "" ? "" : ` · ${seconds}`}${stamp === "" ? "" : ` · ${stamp}`}`;
 					return h(
@@ -1024,11 +1029,12 @@ window.__ModuleLoader__.load({
 					)
 					: null;
 
-				const moreText = hidden > 0 ? ` · 另有 ${hidden} 步更早动作` : "";
+				const missing = Math.max(0, step - all.length);
+				const moreText = hidden > 0 ? ` · 另有 ${hidden} 步更早动作` : missing > 0 ? ` · 只显示最近 ${all.length} 步` : "";
 				const footText = waiting
 					? `第 ${step} 步等你确认：在对话里点允许或拒绝`
 					: ended
-						? `共 ${step} 步 · 截图在对话里的工具卡上`
+						? `共 ${step} 步${moreText} · 截图在对话里的工具卡上`
 						: failed
 							? blockedNow
 								? `第 ${step} 步被安全守卫拦截 · 你确认后我才能执行（不需要重试）${moreText}`

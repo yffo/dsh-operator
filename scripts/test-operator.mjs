@@ -80,7 +80,7 @@ const fakeCtx = {
 };
 registerOperatorTools(fakeCtx, { axMaxNodes: 120, failureSamples: false }, { backend: {}, defineTool: (definition) => definition, AttachmentId: (value) => value });
 const names = registered.map((tool) => tool.name);
-check(registered.length === 30, "注册三十个扩展工具（0.104.0 校正：此前断言停在 27，skill_export/skill_import/skill_delete 已加入）");
+check(registered.length === 31, "注册三十一个扩展工具（0.122.0 加 ax_snapshot；0.104.0 校正过 27→30）");
 check(
 	names.includes("ax_batch") &&
 		names.includes("failure_list") &&
@@ -88,6 +88,7 @@ check(
 		names.includes("screenshot_window") &&
 		names.includes("verify_state") &&
 		names.includes("ax_press") &&
+		names.includes("ax_snapshot") &&
 		names.includes("ax_scroll") &&
 		names.includes("ax_set_value") &&
 		names.includes("ax_menu") &&

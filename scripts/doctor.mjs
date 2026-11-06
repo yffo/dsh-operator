@@ -185,6 +185,37 @@ export async function runDoctor(options = {}) {
 		}
 	}
 
+	// 7b. 屏幕与坐标几何（人话）——「坐标点不准」时先看这里
+	if (deps.platform === "darwin" && deps.deps.exists(helper)) {
+		const listed = await deps.deps.run(helper, ["--list-windows"], { timeout: 5000 });
+		if (listed.ok) {
+			try {
+				const parsed = JSON.parse(String(listed.stdout ?? ""));
+				const displays = Array.isArray(parsed?.displays) ? parsed.displays : [];
+				const windows = Array.isArray(parsed?.windows) ? parsed.windows : [];
+				const front = windows.find((item) => Number(item.pid) === Number(parsed?.frontmostPid));
+				if (displays.length > 0) {
+					const desc = displays
+						.map((item) => {
+							const b = item.bounds ?? {};
+							return `${String(b.width)}x${String(b.height)}@${String(item.scale ?? 1)}x`;
+						})
+						.join("、");
+					results.push({ level: "ok", text: `屏幕：${desc}（${String(displays.length)} 块；多屏/混合 DPI 未验证）` });
+				}
+				if (front !== undefined && front.bounds !== undefined) {
+					const b = front.bounds;
+					results.push({
+						level: "ok",
+						text: `前台窗口：${String(front.app ?? "?")} @(${String(b.x)},${String(b.y)}) ${String(b.width)}x${String(b.height)} 逻辑点 — 截图按 scale 放大后才是像素；0–1000 坐标相对这张截图`
+					});
+				}
+			} catch {
+				results.push({ level: "warn", text: "窗口列表不是 JSON，跳过屏幕几何检查" });
+			}
+		}
+	}
+
 	// 8. 工作目录可写（审计/失败样本都落这里）
 	const dataDir = join(dshHome, "dsh-operator");
 	try {

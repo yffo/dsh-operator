@@ -1,84 +1,84 @@
 {
-  "name": "dsh-operator",
-  "version": "0.121.6",
-  "description": "给每个 DSH 会话一双手：全局 Computer Use 插件——整套桌面 GUI 工具与后台 code_agent，截图降 token、AX 文本观察、动作结果结构化校验，可选 cua-driver 后台人机并行",
-  "type": "module",
-  "main": "index.js",
-  "exports": {
-    ".": "./index.js",
-    "./code-agent": "./lib/computer-use/code-agent.js",
-    "./code-agent-registry": "./lib/computer-use/code-agent-registry.js",
-    "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json",
-    "./client": "./client/client.js"
-  },
-  "files": [
-    "index.js",
-    "lib",
-    "client",
-    "cordis.patch.yml",
-    "assets",
-    "scripts/doctor.mjs",
-    "scripts/failures.mjs",
-    "README.md",
-    "LICENSE",
-    "NOTICE"
-  ],
-  "scripts": {
-    "build:ax": "bash scripts/build-ax-helper.sh",
-    "fetch:upstream": "bash scripts/fetch-upstream.sh",
-    "test:ax": "node scripts/test-ax.mjs",
-    "test:shrink": "node scripts/test-shrink.mjs",
-    "check:p0": "node scripts/check-p0.mjs",
-    "test:operator": "node scripts/test-operator.mjs",
-    "bench": "node scripts/bench.mjs",
-    "test": "node scripts/test-ax.mjs && node scripts/test-shrink.mjs && node scripts/test-operator.mjs && node scripts/check-p0.mjs && node scripts/preflight.mjs && node scripts/bench.mjs check && node --test test/*.test.mjs",
-    "test:node": "node --test test/*.test.mjs",
-    "test:coverage": "node --test --experimental-test-coverage test/*.test.mjs",
-    "doctor": "node scripts/doctor.mjs",
-    "failures": "node scripts/failures.mjs",
-    "browser:spike": "node scripts/browser-spike.mjs",
-    "scenarios": "node scripts/scenarios.mjs",
-    "release": "node scripts/release.mjs",
-    "preflight": "node scripts/preflight.mjs",
-    "inspect": "node scripts/inspect.mjs",
-    "sync:profile": "bash scripts/sync-profile.sh",
-    "sync:profile:check": "bash scripts/sync-profile.sh --dry-run",
-    "scenarios:coverage": "node scripts/scenarios.mjs coverage"
-  },
-  "keywords": [
-    "dsh",
-    "deepseek-harness",
-    "computer-use",
-    "gui-automation",
-    "macos",
-    "accessibility",
-    "cua"
-  ],
-  "homepage": "https://github.com/yffo/dsh-operator#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/yffo/dsh-operator.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yffo/dsh-operator/issues"
-  },
-  "license": "MIT",
-  "author": "yffto (https://github.com/yffo)；上游 dsh-orb 作者 mini-yifan",
-  "dependencies": {
-    "zod": "^3.25.76"
-  },
-  "engines": {
-    "node": ">=22.18.0",
-    "dsh": ">=0.2.1-rc.2 <0.3.0"
-  },
-  "dsh": {
-    "manifestVersion": 1,
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web"
-    }
-  }
+	"name": "dsh-operator",
+	"version": "0.122.5",
+	"description": "给每个 DSH 会话一双手：全局 Computer Use 插件——整套桌面 GUI 工具与后台 code_agent，截图降 token、AX 文本观察、动作结果结构化校验，可选 cua-driver 后台人机并行",
+	"type": "module",
+	"main": "index.js",
+	"exports": {
+		".": "./index.js",
+		"./code-agent": "./lib/computer-use/code-agent.js",
+		"./code-agent-registry": "./lib/computer-use/code-agent-registry.js",
+		"./cordis.patch.yml": "./cordis.patch.yml",
+		"./package.json": "./package.json",
+		"./client": "./client/client.js"
+	},
+	"files": [
+		"index.js",
+		"lib",
+		"client",
+		"cordis.patch.yml",
+		"assets",
+		"scripts/doctor.mjs",
+		"scripts/failures.mjs",
+		"README.md",
+		"LICENSE",
+		"NOTICE"
+	],
+	"scripts": {
+		"build:ax": "bash scripts/build-ax-helper.sh",
+		"fetch:upstream": "bash scripts/fetch-upstream.sh",
+		"test:ax": "node scripts/test-ax.mjs",
+		"test:shrink": "node scripts/test-shrink.mjs",
+		"check:p0": "node scripts/check-p0.mjs",
+		"test:operator": "node scripts/test-operator.mjs",
+		"bench": "node scripts/bench.mjs",
+		"test": "node scripts/test-ax.mjs && node scripts/test-shrink.mjs && node scripts/test-operator.mjs && node scripts/check-p0.mjs && node scripts/preflight.mjs && node scripts/bench.mjs check && node --test test/*.test.mjs",
+		"test:node": "node --test test/*.test.mjs",
+		"test:coverage": "node --test --experimental-test-coverage test/*.test.mjs",
+		"doctor": "node scripts/doctor.mjs",
+		"failures": "node scripts/failures.mjs",
+		"browser:spike": "node scripts/browser-spike.mjs",
+		"scenarios": "node scripts/scenarios.mjs",
+		"release": "node scripts/release.mjs",
+		"preflight": "node scripts/preflight.mjs",
+		"inspect": "node scripts/inspect.mjs",
+		"sync:profile": "bash scripts/sync-profile.sh",
+		"sync:profile:check": "bash scripts/sync-profile.sh --dry-run",
+		"scenarios:coverage": "node scripts/scenarios.mjs coverage"
+	},
+	"keywords": [
+		"dsh",
+		"deepseek-harness",
+		"computer-use",
+		"gui-automation",
+		"macos",
+		"accessibility",
+		"cua"
+	],
+	"homepage": "https://github.com/yffo/dsh-operator#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/yffo/dsh-operator.git"
+	},
+	"bugs": {
+		"url": "https://github.com/yffo/dsh-operator/issues"
+	},
+	"license": "MIT",
+	"author": "yffto (https://github.com/yffo)；上游 dsh-orb 作者 mini-yifan",
+	"dependencies": {
+		"zod": "^3.25.76"
+	},
+	"engines": {
+		"node": ">=22.18.0",
+		"dsh": ">=0.2.1-rc.2 <0.3.0"
+	},
+	"dsh": {
+		"manifestVersion": 1,
+		"bundle": {
+			"patch": "./cordis.patch.yml"
+		},
+		"client": {
+			"platform": "web"
+		}
+	}
 }

@@ -6,7 +6,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, closeSync, openSync, readFileSync, readdirSync, readSync, rmSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -46,15 +46,29 @@ function newestLargeAttachment() {
 		}
 		for (const name of names) {
 			const path = join(prefixDir, name);
+			let size = 0;
 			try {
-				const size = statSync(path).size;
-				if (size > bestSize) {
-					bestSize = size;
-					best = path;
+				size = statSync(path).size;
+			} catch {
+				continue;
+			}
+			if (size <= bestSize || size <= 100_000) continue;
+			// 附件对象没有扩展名，必须读文件头判断是不是 JPEG；缓存里还有 webp/png，
+			// 只按字节大小挑最大会挑到 jpegDimensions 解析不了的图（曾经让 npm test 直接崩）。
+			try {
+				const fd = openSync(path, "r");
+				try {
+					const head = Buffer.alloc(Math.min(size, 65_536));
+					readSync(fd, head, 0, head.length, 0);
+					if (jpegDimensions(head) === undefined) continue;
+				} finally {
+					closeSync(fd);
 				}
 			} catch {
-				// ignore
+				continue;
 			}
+			bestSize = size;
+			best = path;
 		}
 	}
 	return bestSize > 100_000 ? best : undefined;
@@ -75,7 +89,7 @@ function findBigJpeg() {
 
 const bigPath = findBigJpeg();
 if (bigPath === undefined) {
-	console.error("找不到可用于测试的大 JPEG（截屏失败且附件缓存里没有大图），跳过。");
+	console.error("找不到可用于测试的大 JPEG（截图失败且附件缓存里没有大图），跳过。");
 	rmSync(work, { recursive: true, force: true });
 	process.exit(0);
 }

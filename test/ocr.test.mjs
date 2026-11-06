@@ -64,3 +64,17 @@ test("offsetOcrLines：裁剪图坐标偏移回整窗，且归一化用整图尺
 	// 端到端：formatOcrText 输出整窗 0–1000 坐标
 	assert.match(formatOcrText(full), /"终止" @\(390,220\)/);
 });
+
+// 0.122.3：双坐标——pixel 打开时每行附带截图内像素与全局屏幕逻辑点
+test("formatOcrText：pixel 模式给出像素坐标与屏幕坐标", () => {
+	const text = formatOcrText(sample, { pixel: true, window: { x: 100, y: 50, scale: 2 } });
+	// 「删除账户」中心像素 (200,70)；窗口逻辑原点 (100,50) + 200/2 → screen(200,85)
+	assert.match(text, /"删除账户" @\(200,140\) px\(200,70\) screen\(200,85\)/);
+	assert.match(text, /"Cancel" @\(650,830\) px\(650,415\)/);
+	// 拿不到窗口信息时只给像素，不给 screen
+	const noWindow = formatOcrText(sample, { pixel: true });
+	assert.match(noWindow, /px\(200,70\)/);
+	assert.doesNotMatch(noWindow, /screen\(/);
+	// 默认不开，省 token
+	assert.doesNotMatch(formatOcrText(sample), /px\(/);
+});

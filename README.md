@@ -163,6 +163,32 @@ Computer Use 的成本主要不在截图数量，而在每张图多大：
 - 工具策略提示词做过瘦身（8.4KB → 3.9KB），全局会话每轮都在省。
 - `suspected_noop`、`clipped`、`imageError` 等降级提示都能减少「模型反复重试同一动作」造成的浪费。
 
+## 坐标与尺寸（重要）
+
+GUI 工具（`click` / `drag` / `scroll` / `zoom_region`）用的是 **0–1000 归一化坐标**，
+相对于**这一次附给你的那张窗口截图**，不是屏幕像素：
+
+- `[500, 500]` = 截图中心，`[0, 0]` = 左上角；x、y 各自按宽度/高度缩放。
+- 窗口大小变了、被遮挡了一部分，`[500, 500]` 永远是「当前可见区域的中心」——所以不要拿上一轮的
+  坐标点下一轮的图，动作前先看最新截图。
+
+回包里跟换算有关的字段（都在 `screens[]` 里，按显示器给出）：
+
+| 字段 | 含义 |
+| --- | --- |
+| `image.width` / `image.height` | 模型实际收到的那张预览图的像素尺寸 |
+| `logicalWidth` / `logicalHeight` | 该显示器的逻辑尺寸（points） |
+| `scale` | 像素倍率（Retina 通常是 2） |
+| `sourceBounds` / `visibleBounds` | 该显示器在全屏坐标里的位置，以及当前被裁掉多少 |
+
+换算：同一显示器内，`真实 x = sourceBounds.x + round(x / 1000 × visibleBounds.width)`，y 同理。
+
+像素模式（`coordinateMode: "pixel"`）直接吃截图像素坐标，但要求先有附上的截图栅格
+（`attachedWidth` / `attachedHeight` 必须与当前截图一致），换一轮就失效。
+
+**尚未验证**：多显示器、混合 DPI（不同屏 `scale` 不同）下的换算。单屏已验证；多屏请先用
+`list_windows` 看 `displays`，动作后用 `verify_state` 确认结果。
+
 ## 安全与边界
 
 - **安装即授权**：插件能控制桌面和读取屏幕；装之前请确认这是你愿意用的工具。
